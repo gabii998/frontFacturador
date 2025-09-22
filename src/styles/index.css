@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .container-max { @apply max-w-6xl mx-auto px-4; }
+  .card { @apply bg-white rounded-2xl shadow p-6; }
+  .btn { @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-gray-300 hover:bg-gray-100 transition-colors duration-150; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-semibold text-white shadow-lg shadow-blue-500/20 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:via-indigo-500 hover:to-blue-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200; }
+  .input { @apply border border-slate-200 rounded-xl px-3 py-2.5 w-full bg-white/90 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition; }
+  .label { @apply text-sm text-gray-600; }
+
+  .auth-shell {
+    @apply min-h-screen w-full px-6 py-12 flex items-center justify-center text-white;
+    background: radial-gradient(120% 120% at 0% 0%, rgba(56, 189, 248, 0.45) 0%, rgba(56, 189, 248, 0) 55%),
+      radial-gradient(80% 120% at 100% 100%, rgba(129, 140, 248, 0.4) 0%, rgba(15, 23, 42, 0) 65%),
+      linear-gradient(140deg, #0f172a 0%, #111827 40%, #1e293b 100%);
+  }
+
+  .auth-hero { @apply space-y-6 text-indigo-100; }
+
+  .auth-hero__badge {
+    @apply inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase bg-white/10 text-white backdrop-blur;
+    letter-spacing: 0.35em;
+  }
+
+  .auth-hero__title { @apply text-4xl font-semibold text-white leading-tight; }
+  .auth-hero__subtitle { @apply text-base text-indigo-100/90 max-w-xl; }
+
+  .auth-card {
+    @apply w-full max-w-md rounded-3xl border border-white/10 bg-white/95 backdrop-blur-xl px-8 py-10 text-gray-900 shadow-2xl;
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+  }
+
+  .auth-form { @apply space-y-7; }
+  .auth-form__header { @apply space-y-3; }
+
+  .auth-eyebrow {
+    @apply text-xs font-semibold uppercase text-blue-500;
+    letter-spacing: 0.32em;
+  }
+
+  .auth-form__title { @apply text-3xl font-semibold text-slate-900 leading-tight; }
+  .auth-form__subtitle { @apply text-sm text-slate-500 leading-relaxed; }
+
+  .auth-form__body { @apply space-y-5; }
+
+  .auth-field { @apply flex flex-col gap-2 text-sm; }
+  .auth-field__label { @apply font-medium text-slate-700; }
+
+  .auth-form__footer { @apply space-y-3 text-sm text-slate-500; }
+  .auth-link { @apply font-semibold text-blue-600 hover:text-blue-500 hover:underline; }
+
+  .auth-form__success {
+    @apply rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700;
+    box-shadow: 0 10px 30px rgba(34, 197, 94, 0.15);
+  }
+}
+
+.auth-hero__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.auth-hero__list li {
+  position: relative;
+  padding-left: 1.75rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: rgba(224, 231, 255, 0.92);
+}
+
+.auth-hero__list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
