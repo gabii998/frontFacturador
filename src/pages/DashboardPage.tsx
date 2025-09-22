@@ -5,7 +5,6 @@ import type { PuntoVenta } from '../models/afip'
 import Loader from '../components/Loader'
 import ErrorBox from '../components/ErrorBox'
 import { useAuth } from '../contexts/AuthContext'
-import { useOnboarding } from '../contexts/OnboardingContext'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -13,7 +12,6 @@ export default function DashboardPage() {
   const [error, setError] = useState<unknown>(undefined)
   const [pvs, setPvs] = useState<PuntoVenta[]>([])
   const [syncedAt, setSyncedAt] = useState<Date | null>(null)
-  const { status: onboarding, loading: onboardingLoading, error: onboardingError } = useOnboarding()
 
   useEffect(() => {
     AfipService.puntosVenta()
@@ -92,25 +90,11 @@ export default function DashboardPage() {
     <div className="dashboard-layout">
       <div className="dashboard-alert">
         <div>
-          {onboardingLoading ? (
-            <>
-              <h3>Verificando estado de integración</h3>
-              <p>Consultando si ya cargaste los certificados requeridos.</p>
-            </>
-          ) : onboarding?.configured ? (
-            <>
-              <h3>Integración AFIP lista</h3>
-              <p>Alias WSAA registrado: <b>{onboarding.alias ?? 'Sin alias'}</b>. Recordá renovar tu certificado antes de su vencimiento.</p>
-            </>
-          ) : (
-            <>
-              <h3>Completá el onboarding digital</h3>
-              <p>Subí el certificado, la clave privada y el alias del WSAA para habilitar las operaciones con AFIP.</p>
-            </>
-          )}
+          <h3>Bienvenido al panel</h3>
+          <p>Mantené tus datos de perfil actualizados y gestioná toda tu operatoria con AFIP desde un solo lugar.</p>
         </div>
-        <Link to={onboarding?.configured ? '/emitir' : '/configuracion'} className="btn btn-primary">
-          {onboarding?.configured ? 'Emitir comprobante' : 'Configurar ahora'}
+        <Link to="/configuracion" className="btn btn-primary">
+          Ver mi perfil
         </Link>
       </div>
       <section className="dashboard-hero">
@@ -226,12 +210,6 @@ export default function DashboardPage() {
       </section>
 
       
-
-      {onboardingError && (
-        <div className="mt-4">
-          <ErrorBox error={onboardingError} />
-        </div>
-      )}
 
       <div className="mt-4">
         {loading && <Loader />}

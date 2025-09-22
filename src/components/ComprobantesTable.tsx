@@ -1,33 +1,206 @@
 import type { ComprobanteEmitido } from '../models/afip'
-export default function ComprobantesTable({data}:{data:ComprobanteEmitido[]}){
+
+const currencyFormatter = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  maximumFractionDigits: 2
+})
+
+const tipoMap: Record<number, string> = {
+  1: 'Factura A',
+  2: 'Nota de Débito A',
+  3: 'Nota de Crédito A',
+  6: 'Factura B',
+  7: 'Nota de Débito B',
+  8: 'Nota de Crédito B',
+  11: 'Factura C',
+  12: 'Nota de Débito C',
+  13: 'Nota de Crédito C'
+}
+
+const conceptoMap: Record<number, string> = {
+  1: 'Productos',
+  2: 'Servicios',
+  3: 'Productos y servicios'
+}
+
+const docTypeMap: Record<number, string> = {
+  80: 'CUIT',
+  86: 'CUIL',
+  89: 'LE',
+  90: 'LC',
+  96: 'DNI',
+  99: 'Sin identificar'
+}
+
+const formatAfipDate = (value?: string | null) => {
+  if (!value) return '—'
+  if (value.includes('-')) {
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('es-AR')
+  }
+  if (value.length === 8) {
+    const year = Number(value.slice(0, 4))
+    const month = Number(value.slice(4, 6)) - 1
+    const day = Number(value.slice(6, 8))
+    const parsed = new Date(year, month, day)
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('es-AR')
+  }
+  return value
+}
+
+const parseAfipDate = (value?: string | null) => {
+  if (!value) return null
+  if (value.includes('-')) {
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return null
+    parsed.setHours(23, 59, 59, 999)
+    return parsed
+  }
+  if (value.length === 8) {
+    const year = Number(value.slice(0, 4))
+    const month = Number(value.slice(4, 6)) - 1
+    const day = Number(value.slice(6, 8))
+    const parsed = new Date(year, month, day)
+    if (Number.isNaN(parsed.getTime())) return null
+    parsed.setHours(23, 59, 59, 999)
+    return parsed
+  }
+  return null
+}
+
+const formatAmount = (value?: number | null) => {
+  if (typeof value !== 'number') return '—'
+  return currencyFormatter.format(value)
+}
+
+const formatDoc = (docTipo?: number | null, docNro?: number | null) => {
+  if (!docTipo && !docNro) return '—'
+  const typeLabel = docTipo ? docTypeMap[docTipo] ?? `Doc ${docTipo}` : 'Documento'
+  if (!docNro) return typeLabel
+  return `${typeLabel} ${docNro.toLocaleString('es-AR')}`
+}
+
+const padNumber = (value: number, size: number) => value.toString().padStart(size, '0')
+
+export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[] }){
+  const today = new Date()
+
   return (
     <div className="card">
-      <h2 className="text-lg font-semibold mb-4">Comprobantes</h2>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-4">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-slate-900">Comprobantes</h2>
+          <p className="text-sm text-slate-500">Detalle de las últimas emisiones recuperadas para tus filtros seleccionados.</p>
+        </div>
+        <span className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+          {data.length} ítem{data.length === 1 ? '' : 's'}
+        </span>
+      </div>
       <div className="overflow-x-auto">
-        <table className="table">
+        <table className="table min-w-[60rem]">
           <thead>
-            <tr className="border-b">
-              <th className="th">PV</th>
-              <th className="th">Tipo</th>
-              <th className="th">Número</th>
-              <th className="th">Fecha</th>
-              <th className="th">Total</th>
+            <tr>
+              <th className="th">Comprobante</th>
+              <th className="th">Emisión</th>
+              <th className="th">Importes</th>
+              <th className="th">Cliente</th>
               <th className="th">CAE</th>
-              <th className="th">Vto</th>
+              <th className="th">Notas</th>
             </tr>
           </thead>
           <tbody>
-            {data.map(c => (
-              <tr key={`${c.puntoVenta}-${c.tipoAfip}-${c.numero}`} className="border-b">
-                <td className="td">{c.puntoVenta}</td>
-                <td className="td">{c.tipoAfip}</td>
-                <td className="td font-medium">{c.numero}</td>
-                <td className="td">{c.fechaCbte ?? '-'}</td>
-                <td className="td">{c.impTotal ?? '-'}</td>
-                <td className="td">{c.cae ?? '-'}</td>
-                <td className="td">{c.caeVto ?? '-'}</td>
-              </tr>
-            ))}
+            {data.map(c => {
+              const caeExpiry = parseAfipDate(c.caeVto)
+              const hasCAE = Boolean(c.cae)
+              const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
+              const rowHasAlerts = c.errores.length > 0
+              const docLabel = formatDoc(c.docTipo, c.docNro)
+
+              return (
+                <tr
+                  key={`${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
+                  className={`border-b transition-colors ${rowHasAlerts ? 'bg-rose-50/80 border-rose-100 hover:bg-rose-100/70' : 'border-slate-100 hover:bg-slate-50/80'}`}
+                >
+                  <td className="td">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold text-slate-800">
+                        {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`} · #{padNumber(c.numero, 8)}
+                      </span>
+                      <span className="text-xs text-slate-500">PV {padNumber(c.puntoVenta, 4)}</span>
+                    </div>
+                  </td>
+                  <td className="td">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-slate-800">{formatAfipDate(c.fechaCbte)}</span>
+                      {c.caeVto && (
+                        <span className="text-xs text-slate-500">CAE vence {formatAfipDate(c.caeVto)}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="td">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold text-slate-800">{formatAmount(c.impTotal)}</span>
+                      <span className="text-xs text-slate-500">
+                        Neto {formatAmount(c.impNeto)} · IVA {formatAmount(c.impIva)}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="td">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-slate-800">{docLabel}</span>
+                      {typeof c.concepto === 'number' && (
+                        <span className="text-xs text-slate-500">
+                          {conceptoMap[c.concepto] ?? `Concepto ${c.concepto}`}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="td">
+                    <div className="flex flex-col gap-2">
+                      <span
+                        className={`inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                          !hasCAE
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : caeValid
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}
+                      >
+                        {!hasCAE ? 'Sin CAE' : caeValid ? 'CAE vigente' : 'CAE vencido'}
+                      </span>
+                      <span className="font-mono text-xs text-slate-500">{c.cae ?? '—'}</span>
+                    </div>
+                  </td>
+                  <td className="td">
+                    {c.observaciones.length === 0 && c.errores.length === 0 ? (
+                      <span className="text-sm text-slate-400">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {c.observaciones.map((obs, index) => (
+                          <span
+                            key={`obs-${c.numero}-${index}`}
+                            className="inline-flex items-center gap-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-1 text-xs text-sky-700"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+                            {obs}
+                          </span>
+                        ))}
+                        {c.errores.map((err, index) => (
+                          <span
+                            key={`err-${c.numero}-${index}`}
+                            className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1 text-xs text-rose-700"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                            {err}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
