@@ -4,8 +4,11 @@ import type { ComprobanteEmitido } from '../models/afip'
 import Loader from '../components/Loader'
 import ErrorBox from '../components/ErrorBox'
 import ComprobantesTable from '../components/ComprobantesTable'
+import { useOnboarding } from '../contexts/OnboardingContext'
+import OnboardingReminder from '../components/OnboardingReminder'
 
 export default function ComprobantesPage(){
+  const { status: onboarding, loading: onboardingLoading, error: onboardingError } = useOnboarding()
   const [pv, setPv] = useState(2)
   const [tipo, setTipo] = useState(11) // Factura C
   const [limite, setLimite] = useState(20)
@@ -14,6 +17,7 @@ export default function ComprobantesPage(){
   const [error, setError] = useState<unknown>()
 
   async function fetchData(){
+    if (!onboarding?.configured) return
     setLoading(true); setError(undefined)
     try {
       const res = await AfipService.listar(pv, tipo, { limite })
@@ -25,7 +29,19 @@ export default function ComprobantesPage(){
     }
   }
 
-  useEffect(()=>{ fetchData() }, [])
+  useEffect(()=>{ if (onboarding?.configured) void fetchData() }, [onboarding?.configured])
+
+  if (onboardingLoading) {
+    return <Loader />
+  }
+
+  if (onboardingError) {
+    return <ErrorBox error={onboardingError} />
+  }
+
+  if (!onboarding?.configured) {
+    return <OnboardingReminder feature="el módulo de comprobantes" />
+  }
 
   return (
     <div className="space-y-4">

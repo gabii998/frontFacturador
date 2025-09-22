@@ -42,7 +42,7 @@ export default function RegisterPage() {
         <span className="auth-eyebrow">Nueva cuenta</span>
         <h1 className="auth-form__title">Registrate para comenzar</h1>
         <p className="auth-form__subtitle">
-          Generá tu acceso para emitir y consultar comprobantes AFIP antes de que caduque tu token.
+          Generá tu acceso para emitir y consultar comprobantes AFIP desde un mismo panel de control.
         </p>
       </div>
       {error && <ErrorBox error={error} />}

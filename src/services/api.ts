@@ -12,17 +12,53 @@ export function registerAuthInterceptor(next: AuthInterceptor | null) {
   interceptor = next
 }
 
+export class ApiError extends Error {
+  readonly status: number
+  readonly payload: unknown
+
+  constructor(status: number, message: string, payload?: unknown) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.payload = payload
+  }
+}
+
 async function handle(res: Response) {
   if (res.status === 401) {
     interceptor?.onUnauthorized?.()
   }
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`${res.status} ${res.statusText}: ${text}`)
+    let payload: unknown = undefined
+    let message = res.statusText || 'Error'
+    const body = await res.text().catch(() => '')
+    if (body) {
+      try {
+        payload = JSON.parse(body)
+      } catch (err) {
+        payload = body
+      }
+
+      if (typeof payload === 'object' && payload !== null) {
+        const maybeMessage = (payload as any).message ?? (payload as any).error
+        if (typeof maybeMessage === 'string') {
+          message = maybeMessage
+        }
+      } else if (typeof payload === 'string') {
+        message = payload
+      }
+    }
+
+    throw new ApiError(res.status, message, payload)
   }
-  const ct = res.headers.get('content-type') || ''
-  if (ct.includes('application/json')) return res.json()
-  return res.json().catch(async () => res.text())
+  const ct = res.headers.get('content-type')?.toLowerCase() ?? ''
+  if (ct.includes('application/json')) {
+    return res.json()
+  }
+  if (ct.startsWith('text/')) {
+    return res.text()
+  }
+  return res.arrayBuffer()
 }
 
 type RequestOptions = RequestInit & { body?: any }

@@ -3,6 +3,7 @@ import DashboardPage from './pages/DashboardPage'
 import PuntosVentaPage from './pages/PuntosVentaPage'
 import ComprobantesPage from './pages/ComprobantesPage'
 import EmitirPage from './pages/EmitirPage'
+import OnboardingPage from './pages/OnboardingPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -34,6 +35,9 @@ function Navbar() {
             </NavLink>
             <NavLink to="/emitir" className={({ isActive }) => `${link} ${isActive ? active : ''}`}>
               Emitir
+            </NavLink>
+            <NavLink to="/configuracion" className={({ isActive }) => `${link} ${isActive ? active : ''}`}>
+              Configuración
             </NavLink>
           </nav>
         </div>
@@ -109,6 +113,7 @@ export default function App() {
         <Route path="/puntos-venta" element={<PuntosVentaPage />} />
         <Route path="/comprobantes" element={<ComprobantesPage />} />
         <Route path="/emitir" element={<EmitirPage />} />
+        <Route path="/configuracion" element={<OnboardingPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
