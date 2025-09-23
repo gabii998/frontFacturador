@@ -6,6 +6,7 @@ import ComprobantesPage from './pages/ComprobantesPage'
 import ComprobantesCargaMasivaPage from './pages/ComprobantesCargaMasivaPage'
 import EmitirPage from './pages/EmitirPage'
 import ProfilePage from './pages/ProfilePage'
+import PlanesPage from './pages/PlanesPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -208,6 +209,7 @@ export default function App() {
         <Route path="/comprobantes/carga-masiva" element={<ComprobantesCargaMasivaPage />} />
         <Route path="/emitir" element={<EmitirPage />} />
         <Route path="/configuracion" element={<ProfilePage />} />
+        <Route path="/configuracion/planes" element={<PlanesPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

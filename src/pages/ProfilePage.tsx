@@ -1,4 +1,5 @@
 import { FormEvent, Fragment, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ErrorBox from '../components/ErrorBox'
 import { useAuth } from '../contexts/AuthContext'
 import { changePassword } from '../services/profile'
@@ -6,6 +7,7 @@ import SectionHeader from '../components/SectionHeader'
 import ComprobanteIcon from '../icon/ComprobanteIcon'
 import HeaderPill from '../components/HeaderPill'
 import { AuthUser } from '../services/auth'
+import { PLAN_COLORS, PlanName } from '../constants/planes'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -112,12 +114,32 @@ export default function ProfilePage() {
   )
 }
 
-const ProfileHeaderInfo = ({user}:{user:AuthUser}) => {
-  return(
+const ProfileHeaderInfo = ({ user }: { user: AuthUser }) => {
+  const navigate = useNavigate()
+  const planActual: PlanName = 'Gratuito'
+
+  const irAComparativaPlanes = () => {
+    navigate('/configuracion/planes')
+  }
+
+  return (
     <Fragment>
-      <HeaderPill label={user.name ?? 'Sin datos'} dotColor='bg-indigo-500'/>
-      <HeaderPill label={user.email} dotColor='bg-indigo-500' />
-      <HeaderPill label={user.cuit ?? 'Sin datos'} dotColor='bg-indigo-500' />
+      <HeaderPill label={user.name ?? 'Sin datos'} dotColor="bg-indigo-500" />
+      <HeaderPill label={user.email} dotColor="bg-indigo-500" />
+      <HeaderPill label={user.cuit ?? 'Sin datos'} dotColor="bg-indigo-500" />
+      <div className="flex items-center gap-3">
+        <HeaderPill
+          label={`Plan actual: ${planActual}`}
+          dotColor={PLAN_COLORS[planActual]}
+        />
+        <button
+          type="button"
+          className="btn"
+          onClick={irAComparativaPlanes}
+        >
+          Cambiar plan
+        </button>
+      </div>
     </Fragment>
   )
 }
