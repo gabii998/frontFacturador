@@ -50,6 +50,9 @@ export interface FacturaSolicitud {
   items: FacturaItem[]
   moneda: 'PES'
   cotizacion: number
+  servicioDesde?: string
+  servicioHasta?: string
+  vencimientoPago?: string
   comprobanteAsociado?: {
     tipo: 'FACTURA_C'|'FACTURA_A'|'FACTURA_B'|'NOTA_CREDITO_C'|'NOTA_DEBITO_C'
     puntoVenta: number

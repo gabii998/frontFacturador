@@ -87,7 +87,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
   const today = new Date()
 
   return (
-    <div className="card">
+    <div className="card w-full border border-slate-200 bg-white/95 shadow-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-4">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-slate-900">Comprobantes</h2>
@@ -98,7 +98,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
         </span>
       </div>
       <div className="overflow-x-auto">
-        <table className="table min-w-[60rem]">
+        <table className="table min-w-full md:min-w-[60rem]">
           <thead>
             <tr>
               <th className="th">Comprobante</th>

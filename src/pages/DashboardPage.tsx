@@ -88,15 +88,7 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-layout">
-      <div className="dashboard-alert">
-        <div>
-          <h3>Bienvenido al panel</h3>
-          <p>Mantené tus datos de perfil actualizados y gestioná toda tu operatoria con AFIP desde un solo lugar.</p>
-        </div>
-        <Link to="/configuracion" className="btn btn-primary">
-          Ver mi perfil
-        </Link>
-      </div>
+  
       <section className="dashboard-hero">
         <div className="dashboard-hero__badge">Panel AFIP</div>
         <div className="space-y-4">
