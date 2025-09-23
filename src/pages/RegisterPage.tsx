@@ -45,7 +45,7 @@ export default function RegisterPage() {
           Generá tu acceso para emitir y consultar comprobantes AFIP desde un mismo panel de control.
         </p>
       </div>
-      {error && <ErrorBox error={error} />}
+      <ErrorBox error={error} />
       <form className="auth-form__body" onSubmit={handleSubmit}>
         <label className="auth-field">
           <span className="auth-field__label">Nombre completo</span>

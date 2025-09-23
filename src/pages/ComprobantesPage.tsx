@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { AfipService } from '../services/afip'
 import type { ComprobanteEmitido } from '../models/afip'
 import Loader from '../components/Loader'
 import ErrorBox from '../components/ErrorBox'
+import { Link } from 'react-router-dom'
 import ComprobantesTable from '../components/ComprobantesTable'
+import { ComprobanteHeaderInfoProps, Stats } from '../props/ComprobantesProps'
+import SubHeaderItem from '../components/SubHeaderItem'
+import SectionHeader from '../components/SectionHeader'
+import ComprobanteIcon from '../icon/ComprobanteIcon'
+import HeaderPill from '../components/HeaderPill'
 
-export default function ComprobantesPage(){
+const ComprobantesPage = () => {
   const DEFAULT_PV = 2
   const DEFAULT_TIPO = 11
   const DEFAULT_LIMITE = 20
@@ -34,7 +40,7 @@ export default function ComprobantesPage(){
 
   useEffect(()=>{ void fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE) }, [])
 
-  const stats = useMemo(() => {
+  const stats:Stats | null = useMemo(() => {
     if (!data.length) return null
     const total = data.length
     const uniquePV = new Set(data.map(item => item.puntoVenta)).size
@@ -78,54 +84,29 @@ export default function ComprobantesPage(){
 
   return (
     <div className="space-y-6">
-      <section className="card bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 border border-blue-100">
-        <div className="flex items-center justify-between gap-6">
-          <div className="flex w-1/2 items-start gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-lg shadow-blue-500/20 text-blue-600">
-              <svg className="h-7 w-7" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="6" y="12" width="20" height="14" rx="3" fill="#fff" />
-                <path d="M10 12v-4c0-2.2 1.8-4 4-4h4l2 4h6c2.2 0 4 1.8 4 4v3" />
-                <path d="M20 8h-6" />
-                <circle cx="13" cy="20" r="2" fill="currentColor" />
-                <path d="M16 23h8" />
-                <path d="M16 27h12" />
-              </svg>
-            </div>
-            <div className="w-screen space-y-2">
-              <span className="auth-eyebrow">Comprobantes</span>
-              <h1 className="text-2xl font-semibold text-slate-900">Monitor de comprobantes emitidos</h1>
-              <p className="text-sm text-slate-600">Consultá y auditá tus últimas emisiones agrupadas por punto de venta y tipo AFIP.</p>
-            </div>
-          </div>
-          <div className="flex flex-col flex-wrap gap-3 text-sm text-indigo-700">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 font-medium shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-indigo-500" aria-hidden />
-              Última consulta: {lastFetchLabel}
-            </span>
-            <button type="button" className="btn" onClick={() => setFiltersOpen(prev => !prev)}>
-              {filtersOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
-            </button>
-          </div>
-        </div>
-      </section>
+      <SectionHeader
+      section='Comprobantes'
+      icon={<ComprobanteIcon/>}
+      title='Monitor de comprobantes emitidos'
+      subtitle='Consultá y auditá tus últimas emisiones agrupadas por punto de venta y tipo AFIP.'
+      rightContent={<ComprobanteHeaderInfo lastFetchLabel={lastFetchLabel} filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen}/>} />
 
       <section className="space-y-6">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="card border border-slate-200 bg-white/95 shadow-sm">
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Importe total</span>
-            <p className="mt-2 text-2xl font-semibold text-slate-800">{stats ? formatCurrency.format(stats.totalAmount) : '—'}</p>
-            <p className="mt-1 text-xs text-slate-500">Suma de los importes totales recibidos.</p>
-          </div>
-          <div className="card border border-slate-200 bg-white/95 shadow-sm">
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Comprobantes listados</span>
-            <p className="mt-2 text-2xl font-semibold text-slate-800">{stats ? stats.total : '—'}</p>
-            <p className="mt-1 text-xs text-slate-500">Registros recuperados con los filtros actuales.</p>
-          </div>
-          <div className="card border border-slate-200 bg-white/95 shadow-sm">
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Con CAE válido</span>
-            <p className="mt-2 text-2xl font-semibold text-slate-800">{stats ? stats.withCae : '—'}</p>
-            <p className="mt-1 text-xs text-slate-500">Cantidad de comprobantes autorizados por AFIP.</p>
-          </div>
+          <SubHeaderItem
+          title='Importe total'
+          content={stats ? formatCurrency.format(stats.totalAmount) : '—'}
+          subtitle='Suma de los importes totales recibidos.'
+          />
+          <SubHeaderItem
+          title='Comprobantes listados'
+          content={stats ? stats.total.toString() : '—'}
+          subtitle='Registros recuperados con los filtros actuales.'
+          />
+          <SubHeaderItem
+          title='Con CAE válido'
+          content={stats ? stats.withCae.toString() : '—'}
+          subtitle='Cantidad de comprobantes autorizados por AFIP.'/>
         </div>
 
         {filtersOpen && (
@@ -173,8 +154,20 @@ export default function ComprobantesPage(){
           </div>
         )}
 
+        <div className="card border border-slate-200 bg-white/95 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-slate-900">¿Necesitás validar muchos comprobantes?</h2>
+              <p className="text-sm text-slate-500">Usá la herramienta de carga masiva por Excel para procesar varios comprobantes en serie.</p>
+            </div>
+            <Link to="/comprobantes/carga-masiva" className="btn btn-primary">
+              Ir a carga masiva
+            </Link>
+          </div>
+        </div>
+
         {loading && <Loader />}
-        {error && <ErrorBox error={error} />}
+        <ErrorBox error={error} />
         {!loading && !error && (
           data.length > 0 ? (
             <ComprobantesTable data={data} />
@@ -208,3 +201,17 @@ export default function ComprobantesPage(){
     </div>
   )
 }
+
+const ComprobanteHeaderInfo = (props:ComprobanteHeaderInfoProps) => {
+  return(
+    <Fragment>
+      <HeaderPill label={`Última consulta: ${props.lastFetchLabel}`} dotColor='bg-indigo-500' />
+     
+            <button type="button" className="btn bg-white" onClick={() => props.setFiltersOpen(prev => !prev)}>
+              {props.filtersOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
+            </button>
+    </Fragment>
+  )
+}
+
+export default ComprobantesPage;

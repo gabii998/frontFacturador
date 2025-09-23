@@ -36,7 +36,7 @@ export default function LoginPage() {
           Centralizá la gestión de tus comprobantes electrónicos y seguí cada operación en tiempo real.
         </p>
       </div>
-      {error && <ErrorBox error={error} />}
+      <ErrorBox error={error} />
       <form className="auth-form__body" onSubmit={handleSubmit}>
         <label className="auth-field">
           <span className="auth-field__label">Email</span>

@@ -1,7 +1,11 @@
-import { FormEvent, useState } from 'react'
+import { FormEvent, Fragment, useState } from 'react'
 import ErrorBox from '../components/ErrorBox'
 import { useAuth } from '../contexts/AuthContext'
 import { changePassword } from '../services/profile'
+import SectionHeader from '../components/SectionHeader'
+import ComprobanteIcon from '../icon/ComprobanteIcon'
+import HeaderPill from '../components/HeaderPill'
+import { AuthUser } from '../services/auth'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -46,27 +50,12 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <section className="card space-y-4">
-        <div>
-          <span className="auth-eyebrow">Tu perfil</span>
-          <h1 className="text-3xl font-semibold text-slate-900">Información de la cuenta</h1>
-          <p className="text-sm text-slate-500">Estos datos se muestran según la información que cargaste al registrarte.</p>
-        </div>
-        <dl className="grid gap-4 md:grid-cols-2">
-          <div>
-            <dt className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Nombre completo</dt>
-            <dd className="mt-1 text-base text-slate-800">{user.name ?? 'Sin datos'}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Email</dt>
-            <dd className="mt-1 text-base text-slate-800">{user.email}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">CUIT</dt>
-            <dd className="mt-1 text-base text-slate-800">{user.cuit ?? 'Sin datos'}</dd>
-          </div>
-        </dl>
-      </section>
+      <SectionHeader
+      section='Tu perfil'
+      icon={<ComprobanteIcon/>}
+      title='Información de la cuenta'
+      subtitle='Estos datos se muestran según la información que cargaste al registrarte.'
+      rightContent={<ProfileHeaderInfo user={user} />} />
 
       <section className="card space-y-4">
         <div>
@@ -120,5 +109,15 @@ export default function ProfilePage() {
         </form>
       </section>
     </div>
+  )
+}
+
+const ProfileHeaderInfo = ({user}:{user:AuthUser}) => {
+  return(
+    <Fragment>
+      <HeaderPill label={user.name ?? 'Sin datos'} dotColor='bg-indigo-500'/>
+      <HeaderPill label={user.email} dotColor='bg-indigo-500' />
+      <HeaderPill label={user.cuit ?? 'Sin datos'} dotColor='bg-indigo-500' />
+    </Fragment>
   )
 }

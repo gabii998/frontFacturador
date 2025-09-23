@@ -4,6 +4,7 @@ export interface AuthUser {
   id: string
   email: string
   name?: string
+  cuit?: string
 }
 
 export interface AuthResponse {

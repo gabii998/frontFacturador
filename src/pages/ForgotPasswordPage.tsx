@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
           Enviaremos un enlace temporal para que puedas definir una nueva contraseña y volver al panel.
         </p>
       </div>
-      {error && <ErrorBox error={error} />}
+      <ErrorBox error={error} />
       {success && <div className="auth-form__success">{success}</div>}
       <form className="auth-form__body" onSubmit={handleSubmit}>
         <label className="auth-field">

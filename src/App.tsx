@@ -3,6 +3,7 @@ import { NavLink, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import DashboardPage from './pages/DashboardPage'
 import PuntosVentaPage from './pages/PuntosVentaPage'
 import ComprobantesPage from './pages/ComprobantesPage'
+import ComprobantesCargaMasivaPage from './pages/ComprobantesCargaMasivaPage'
 import EmitirPage from './pages/EmitirPage'
 import ProfilePage from './pages/ProfilePage'
 import LoginPage from './pages/LoginPage'
@@ -204,6 +205,7 @@ export default function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/puntos-venta" element={<PuntosVentaPage />} />
         <Route path="/comprobantes" element={<ComprobantesPage />} />
+        <Route path="/comprobantes/carga-masiva" element={<ComprobantesCargaMasivaPage />} />
         <Route path="/emitir" element={<EmitirPage />} />
         <Route path="/configuracion" element={<ProfilePage />} />
       </Route>
