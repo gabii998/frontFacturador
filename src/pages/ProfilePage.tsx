@@ -1,4 +1,4 @@
-import { FormEvent, Fragment, useState } from 'react'
+import { FormEvent, Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ErrorBox from '../components/ErrorBox'
 import { useAuth } from '../contexts/AuthContext'
@@ -7,7 +7,8 @@ import SectionHeader from '../components/SectionHeader'
 import ComprobanteIcon from '../icon/ComprobanteIcon'
 import HeaderPill from '../components/HeaderPill'
 import { AuthUser } from '../services/auth'
-import { PLAN_COLORS, PlanName } from '../constants/planes'
+import { PLAN_COLORS_BY_CODE, PLAN_CODE_TO_NAME, type PlanCode } from '../constants/planes'
+import { PlansService, type PlanStatusResponse } from '../services/plans'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -116,7 +117,73 @@ export default function ProfilePage() {
 
 const ProfileHeaderInfo = ({ user }: { user: AuthUser }) => {
   const navigate = useNavigate()
-  const planActual: PlanName = 'Gratuito'
+  const [planStatus, setPlanStatus] = useState<PlanStatusResponse | null>(null)
+  const [loadingPlan, setLoadingPlan] = useState(false)
+
+  useEffect(() => {
+    let canceled = false
+    setLoadingPlan(true)
+    PlansService.getCurrent(user.id)
+      .then((response) => {
+        if (!canceled) {
+          setPlanStatus(response)
+        }
+      })
+      .catch((error) => {
+        console.error('No se pudo obtener el plan actual', error)
+        if (!canceled) {
+          setPlanStatus(null)
+        }
+      })
+      .finally(() => {
+        if (!canceled) {
+          setLoadingPlan(false)
+        }
+      })
+    return () => {
+      canceled = true
+    }
+  }, [user.id])
+
+  const estadoPlan = planStatus?.status ?? 'ACTIVE'
+  const planActivoCode: PlanCode = estadoPlan === 'ACTIVE' ? planStatus?.plan ?? 'free' : 'free'
+  const planPendienteCode: PlanCode | null = estadoPlan === 'PENDING' ? planStatus?.plan ?? null : null
+
+  const planLabel = useMemo(() => {
+    if (loadingPlan) {
+      return 'Plan actual: cargando...'
+    }
+    if (estadoPlan === 'PENDING' && planPendienteCode) {
+      return `Plan en proceso: ${PLAN_CODE_TO_NAME[planPendienteCode]}`
+    }
+    return `Plan actual: ${PLAN_CODE_TO_NAME[planActivoCode]}`
+  }, [loadingPlan, estadoPlan, planPendienteCode, planActivoCode])
+
+  const planDotColor = estadoPlan === 'PENDING' && planPendienteCode
+    ? 'bg-amber-500'
+    : PLAN_COLORS_BY_CODE[planActivoCode]
+
+  const paymentStatusLabel = useMemo(() => {
+    if (!planStatus?.paymentStatus) {
+      return null
+    }
+    return planStatus.paymentStatus.toLowerCase().replace(/_/g, ' ')
+  }, [planStatus?.paymentStatus])
+
+  const formattedExpiration = useMemo(() => {
+    if (estadoPlan !== 'ACTIVE') {
+      return null
+    }
+    if (!planStatus?.expiresAt || planActivoCode === 'free') {
+      return null
+    }
+    const date = new Date(planStatus.expiresAt)
+    return new Intl.DateTimeFormat('es-AR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date)
+  }, [estadoPlan, planStatus?.expiresAt, planActivoCode])
 
   const irAComparativaPlanes = () => {
     navigate('/configuracion/planes')
@@ -129,8 +196,8 @@ const ProfileHeaderInfo = ({ user }: { user: AuthUser }) => {
       <HeaderPill label={user.cuit ?? 'Sin datos'} dotColor="bg-indigo-500" />
       <div className="flex items-center gap-3">
         <HeaderPill
-          label={`Plan actual: ${planActual}`}
-          dotColor={PLAN_COLORS[planActual]}
+          label={planLabel}
+          dotColor={planDotColor}
         />
         <button
           type="button"
@@ -140,6 +207,18 @@ const ProfileHeaderInfo = ({ user }: { user: AuthUser }) => {
           Cambiar plan
         </button>
       </div>
+      {estadoPlan === 'PENDING' && paymentStatusLabel && (
+        <HeaderPill
+          label={`Estado de pago: ${paymentStatusLabel}`}
+          dotColor="bg-amber-500"
+        />
+      )}
+      {formattedExpiration && (
+        <HeaderPill
+          label={`Vence: ${formattedExpiration}`}
+          dotColor="bg-slate-400"
+        />
+      )}
     </Fragment>
   )
 }

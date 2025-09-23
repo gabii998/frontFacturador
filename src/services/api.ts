@@ -3,7 +3,7 @@ const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 type AuthInterceptor = {
   getToken: () => string | null
   isTokenExpired?: () => boolean
-  onUnauthorized?: () => void
+  onUnauthorized?: () => Promise<boolean> | boolean
 }
 
 let interceptor: AuthInterceptor | null = null
@@ -25,9 +25,6 @@ export class ApiError extends Error {
 }
 
 async function handle(res: Response) {
-  if (res.status === 401) {
-    interceptor?.onUnauthorized?.()
-  }
   if (!res.ok) {
     let payload: unknown = undefined
     let message = res.statusText || 'Error'
@@ -63,36 +60,78 @@ async function handle(res: Response) {
 
 type RequestOptions = RequestInit & { body?: any }
 
-async function request<T>(url: string, options: RequestOptions): Promise<T> {
+async function triggerUnauthorized(): Promise<boolean> {
+  if (!interceptor?.onUnauthorized) return false
+  try {
+    const result = await interceptor.onUnauthorized()
+    return Boolean(result)
+  } catch (error) {
+    return false
+  }
+}
+
+async function ensureValidToken(): Promise<boolean> {
+  if (!interceptor?.isTokenExpired) {
+    return true
+  }
+  if (!interceptor.isTokenExpired()) {
+    return true
+  }
+  const refreshed = await triggerUnauthorized()
+  if (!refreshed) {
+    return false
+  }
   if (interceptor?.isTokenExpired?.()) {
-    interceptor.onUnauthorized?.()
-    throw new Error('La sesión expiró. Vuelve a iniciar sesión.')
+    return false
   }
+  return true
+}
 
-  const headers = new Headers(options.headers ?? undefined)
+async function request<T>(url: string, options: RequestOptions): Promise<T> {
+  let attempt = 0
 
-  if (options.body !== undefined && !(options.body instanceof FormData)) {
-    const jsonBody = typeof options.body === 'string' ? options.body : JSON.stringify(options.body)
-    options = { ...options, body: jsonBody }
-    if (!headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json')
+  while (attempt < 2) {
+    const authReady = await ensureValidToken()
+    if (!authReady) {
+      throw new Error('La sesión expiró. Vuelve a iniciar sesión.')
     }
-  }
 
-  if (interceptor?.getToken) {
-    const token = interceptor.getToken()
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`)
+    let requestOptions: RequestOptions = { ...options }
+    const headers = new Headers(requestOptions.headers ?? undefined)
+
+    if (requestOptions.body !== undefined && !(requestOptions.body instanceof FormData)) {
+      const jsonBody = typeof requestOptions.body === 'string' ? requestOptions.body : JSON.stringify(requestOptions.body)
+      requestOptions = { ...requestOptions, body: jsonBody }
+      if (!headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json')
+      }
     }
+
+    if (interceptor?.getToken) {
+      const token = interceptor.getToken()
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`)
+      }
+    }
+
+    const res = await fetch(`${BASE}${url}`, {
+      ...requestOptions,
+      credentials: requestOptions.credentials ?? 'include',
+      headers
+    })
+
+    if (res.status === 401 && attempt === 0) {
+      const refreshed = await triggerUnauthorized()
+      if (refreshed) {
+        attempt += 1
+        continue
+      }
+    }
+
+    return handle(res) as Promise<T>
   }
 
-  const res = await fetch(`${BASE}${url}`, {
-    ...options,
-    credentials: options.credentials ?? 'include',
-    headers
-  })
-
-  return handle(res) as Promise<T>
+  throw new Error('La sesión expiró. Vuelve a iniciar sesión.')
 }
 
 export async function get<T = unknown>(url: string, init?: RequestInit): Promise<T> {

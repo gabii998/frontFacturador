@@ -2,7 +2,22 @@ export const PLAN_NAMES = ['Gratuito', 'Estándar', 'Avanzado'] as const
 
 export type PlanName = (typeof PLAN_NAMES)[number]
 
+export type PlanCode = 'free' | 'standard' | 'advanced'
+
+export const PLAN_CODE_TO_NAME: Record<PlanCode, PlanName> = {
+  free: 'Gratuito',
+  standard: 'Estándar',
+  advanced: 'Avanzado'
+}
+
+export const PLAN_NAME_TO_CODE: Record<PlanName, PlanCode> = {
+  Gratuito: 'free',
+  'Estándar': 'standard',
+  Avanzado: 'advanced'
+}
+
 export interface PlanDetail {
+  code: PlanCode
   name: PlanName
   headline: string
   price: string
@@ -17,8 +32,15 @@ export const PLAN_COLORS: Record<PlanName, string> = {
   Avanzado: 'bg-amber-500'
 }
 
+export const PLAN_COLORS_BY_CODE: Record<PlanCode, string> = {
+  free: PLAN_COLORS['Gratuito'],
+  standard: PLAN_COLORS['Estándar'],
+  advanced: PLAN_COLORS['Avanzado']
+}
+
 export const PLAN_DETAILS: PlanDetail[] = [
   {
+    code: 'free',
     name: 'Gratuito',
     headline: 'Ideal para empezar',
     price: '$0 / mes',
@@ -30,6 +52,7 @@ export const PLAN_DETAILS: PlanDetail[] = [
     ]
   },
   {
+    code: 'standard',
     name: 'Estándar',
     headline: 'Para equipos en crecimiento',
     price: '$4.999 / mes',
@@ -43,6 +66,7 @@ export const PLAN_DETAILS: PlanDetail[] = [
     ]
   },
   {
+    code: 'advanced',
     name: 'Avanzado',
     headline: 'Operaciones de alto volumen',
     price: '$9.999 / mes',

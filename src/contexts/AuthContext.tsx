@@ -43,11 +43,7 @@ function readStoredState(): AuthState {
   const raw = window.localStorage.getItem(STORAGE_KEY)
   if (!raw) return blankState
   try {
-    const parsed = JSON.parse(raw) as AuthState
-    if (parsed.expiresAt && parsed.expiresAt <= Date.now()) {
-      window.localStorage.removeItem(STORAGE_KEY)
-      return blankState
-    }
+    const parsed = JSON.parse(raw) as Partial<AuthState>
     return {
       token: parsed.token ?? null,
       refreshToken: parsed.refreshToken ?? null,
@@ -73,12 +69,23 @@ function persistState(state: AuthState) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() => readStoredState())
   const logoutInFlight = useRef(false)
+  const refreshTimeoutRef = useRef<number | null>(null)
+  const refreshInFlight = useRef<Promise<boolean> | null>(null)
+
+  const clearRefreshSchedule = useCallback(() => {
+    if (refreshTimeoutRef.current !== null) {
+      window.clearTimeout(refreshTimeoutRef.current)
+      refreshTimeoutRef.current = null
+    }
+  }, [])
 
   const clearState = useCallback(() => {
     setState(blankState)
     persistState(blankState)
+    clearRefreshSchedule()
+    refreshInFlight.current = null
     registerAuthInterceptor(null)
-  }, [])
+  }, [clearRefreshSchedule])
 
   const applyAuth = useCallback((payload: AuthResponse) => {
     const expiresAt = Date.now() + payload.expiresIn * 1000
@@ -92,6 +99,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistState(nextState)
     return nextState
   }, [])
+
+  const refreshSession = useCallback(async () => {
+    const refreshToken = state.refreshToken
+    if (!refreshToken) {
+      return false
+    }
+
+    if (!refreshInFlight.current) {
+      refreshInFlight.current = (async () => {
+        try {
+          const response = await AuthService.refresh({ refreshToken })
+          applyAuth(response)
+          return true
+        } catch (error) {
+          clearState()
+          return false
+        } finally {
+          refreshInFlight.current = null
+        }
+      })()
+    }
+
+    return refreshInFlight.current
+  }, [state.refreshToken, applyAuth, clearState])
 
   const logout = useCallback(async () => {
     if (logoutInFlight.current) return
@@ -119,18 +150,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!state.token) return
+    if (!state.token) {
+      registerAuthInterceptor(null)
+      return
+    }
     registerAuthInterceptor({
       getToken: () => state.token,
       isTokenExpired: () => !!state.expiresAt && state.expiresAt <= Date.now(),
-      onUnauthorized: () => {
-        void logout()
+      onUnauthorized: async () => {
+        const refreshed = await refreshSession()
+        if (!refreshed) {
+          await logout()
+        }
+        return refreshed
       }
     })
     return () => {
       registerAuthInterceptor(null)
     }
-  }, [state.token, state.expiresAt, logout])
+  }, [state.token, state.expiresAt, refreshSession, logout])
+
+  useEffect(() => {
+    clearRefreshSchedule()
+    if (!state.refreshToken || !state.expiresAt) {
+      return
+    }
+
+    const buffer = 60_000
+    const now = Date.now()
+    const delay = state.expiresAt - now - buffer
+
+    if (delay <= 0) {
+      void refreshSession()
+      return
+    }
+
+    refreshTimeoutRef.current = window.setTimeout(() => {
+      void refreshSession()
+    }, delay)
+
+    return () => {
+      clearRefreshSchedule()
+    }
+  }, [state.refreshToken, state.expiresAt, refreshSession, clearRefreshSchedule])
 
   useEffect(() => {
     if (!state.expiresAt) return
