@@ -20,6 +20,9 @@ const SectionHeader = (props:SectionHeaderProps) => {
             {props.rightContent}
           </div>
         </div>
+        <div className="mt-3 subheader">
+          {props.bottomContent}
+        </div>
       </section>
     )
 }

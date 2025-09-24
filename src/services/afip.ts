@@ -1,5 +1,5 @@
 import { get, post } from './api'
-import type { PuntoVenta, ComprobanteEmitido, FacturaSolicitud, FacturaRespuesta } from '../models/afip'
+import type { PuntoVenta, ComprobanteEmitido, FacturaSolicitud, FacturaEmitida, PadronInfo } from '../models/afip'
 
 export const AfipService = {
   puntosVenta: () => get<PuntoVenta[]>('/api/afip/puntos-venta'),
@@ -14,5 +14,10 @@ export const AfipService = {
     return get<ComprobanteEmitido[]>(`/api/afip/comprobantes?${q.toString()}`)
   },
   emitir: (payload: { emisor: 'MONOTRIBUTO'|'RESPONSABLE_INSCRIPTO', solicitud: FacturaSolicitud, nota?: { tipo: 'NC'|'ND' } }) =>
-    post<FacturaRespuesta>('/api/ventas/emitir', payload)
+    post<FacturaEmitida>('/api/ventas/emitir', payload),
+  descargarComprobantePdf: (pv: number, tipo: number, numero: number) =>
+    get<ArrayBuffer>(`/api/afip/comprobantes/pdf?pv=${pv}&tipo=${tipo}&numero=${numero}`, {
+      headers: { Accept: 'application/pdf' }
+    }),
+  padron: (cuit: string) => get<PadronInfo>(`/api/afip/padron?cuit=${encodeURIComponent(cuit)}`)
 }

@@ -46,6 +46,9 @@ export interface FacturaSolicitud {
   puntoVenta: number
   fechaEmision: string
   concepto: Concepto
+  receptorNombre?: string
+  receptorDomicilio?: string
+  condicionVenta?: string
   receptor: Receptor
   items: FacturaItem[]
   moneda: 'PES'
@@ -69,4 +72,19 @@ export interface FacturaRespuesta {
   resultado: string
   observaciones: string[]
   errores: string[]
+}
+
+export interface FacturaEmitida extends FacturaRespuesta {
+  pdfBase64: string
+}
+
+export interface PadronInfo {
+  inicioActividades?: string | null
+  domicilio?: {
+    direccion?: string | null
+    localidad?: string | null
+    provincia?: string | null
+    codigoPostal?: string | null
+    datoAdicional?: string | null
+  } | null
 }

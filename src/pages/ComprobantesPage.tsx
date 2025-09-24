@@ -3,19 +3,19 @@ import { AfipService } from '../services/afip'
 import type { ComprobanteEmitido } from '../models/afip'
 import Loader from '../components/Loader'
 import ErrorBox from '../components/ErrorBox'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import ComprobantesTable from '../components/ComprobantesTable'
-import { ComprobanteHeaderInfoProps, Stats } from '../props/ComprobantesProps'
+import { ComprobanteHeaderInfoProps, FiltrosProps, Stats } from '../props/ComprobantesProps'
 import SubHeaderItem from '../components/SubHeaderItem'
 import SectionHeader from '../components/SectionHeader'
 import ComprobanteIcon from '../icon/ComprobanteIcon'
-import HeaderPill from '../components/HeaderPill'
+import { IconFileTypeXls, IconFilter, IconLoader, IconRestore, IconSearch } from '@tabler/icons-react'
+
+const DEFAULT_PV = 2
+const DEFAULT_TIPO = 11
+const DEFAULT_LIMITE = 20
 
 const ComprobantesPage = () => {
-  const DEFAULT_PV = 2
-  const DEFAULT_TIPO = 11
-  const DEFAULT_LIMITE = 20
-
   const [pv, setPv] = useState(DEFAULT_PV)
   const [tipo, setTipo] = useState(DEFAULT_TIPO) // Factura C
   const [limite, setLimite] = useState(DEFAULT_LIMITE)
@@ -25,7 +25,7 @@ const ComprobantesPage = () => {
   const [lastFetch, setLastFetch] = useState<Date | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  async function fetchData(nextPv = pv, nextTipo = tipo, nextLimite = limite){
+  async function fetchData(nextPv = pv, nextTipo = tipo, nextLimite = limite) {
     setLoading(true); setError(undefined)
     try {
       const res = await AfipService.listar(nextPv, nextTipo, { limite: nextLimite })
@@ -38,9 +38,9 @@ const ComprobantesPage = () => {
     }
   }
 
-  useEffect(()=>{ void fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE) }, [])
+  useEffect(() => { void fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE) }, [])
 
-  const stats:Stats | null = useMemo(() => {
+  const stats: Stats | null = useMemo(() => {
     if (!data.length) return null
     const total = data.length
     const uniquePV = new Set(data.map(item => item.puntoVenta)).size
@@ -85,86 +85,20 @@ const ComprobantesPage = () => {
   return (
     <div className="space-y-6">
       <SectionHeader
-      section='Comprobantes'
-      icon={<ComprobanteIcon/>}
-      title='Monitor de comprobantes emitidos'
-      subtitle='Consultá y auditá tus últimas emisiones agrupadas por punto de venta y tipo AFIP.'
-      rightContent={<ComprobanteHeaderInfo lastFetchLabel={lastFetchLabel} filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen}/>} />
+        section='Comprobantes'
+        icon={<ComprobanteIcon />}
+        title='Monitor de comprobantes emitidos'
+        subtitle='Consultá y auditá tus últimas emisiones agrupadas por punto de venta y tipo AFIP.'
+        rightContent={<ComprobanteHeaderInfo filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} />}
+        bottomContent={<ComprobanteHeaderSubtitle stats={stats} formatCurrency={formatCurrency} lastFetchLabel={lastFetchLabel} />}
+      />
 
       <section className="space-y-6">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SubHeaderItem
-          title='Importe total'
-          content={stats ? formatCurrency.format(stats.totalAmount) : '—'}
-          subtitle='Suma de los importes totales recibidos.'
-          />
-          <SubHeaderItem
-          title='Comprobantes listados'
-          content={stats ? stats.total.toString() : '—'}
-          subtitle='Registros recuperados con los filtros actuales.'
-          />
-          <SubHeaderItem
-          title='Con CAE válido'
-          content={stats ? stats.withCae.toString() : '—'}
-          subtitle='Cantidad de comprobantes autorizados por AFIP.'/>
-        </div>
+
 
         {filtersOpen && (
-          <div className="card space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-800">Filtros de búsqueda</h2>
-                <p className="text-xs text-slate-500">Ajustá los parámetros para consultar comprobantes específicos.</p>
-              </div>
-              <button
-                className="btn"
-                onClick={() => {
-                  setPv(DEFAULT_PV)
-                  setTipo(DEFAULT_TIPO)
-                  setLimite(DEFAULT_LIMITE)
-                  void fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE)
-                }}
-              >Restablecer</button>
-            </div>
-            <div className="grid gap-3 md:grid-cols-4">
-              <div>
-                <label className="label">Punto de venta</label>
-                <input className="input" type="number" value={pv} onChange={e => setPv(Number(e.target.value))} />
-              </div>
-              <div>
-                <label className="label">Tipo AFIP</label>
-                <input className="input" type="number" value={tipo} onChange={e => setTipo(Number(e.target.value))} />
-                <p className="mt-1 text-xs text-gray-500">Ej.: 11=Factura C, 6=Factura B, 1=Factura A</p>
-              </div>
-              <div>
-                <label className="label">Últimos N</label>
-                <input className="input" type="number" value={limite} onChange={e => setLimite(Number(e.target.value))} />
-                <p className="mt-1 text-xs text-gray-500">Máximo de registros a recuperar.</p>
-              </div>
-              <div className="flex items-end">
-                <button
-                  className="btn btn-primary w-full"
-                  onClick={() => void fetchData(pv, tipo, limite)}
-                  disabled={loading}
-                >
-                  {loading ? 'Consultando…' : 'Buscar'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <FiltrosComprobantes {...{ loading, setPv, setTipo, setLimite, fetchData, pv, tipo, limite }} />
         )}
-
-        <div className="card border border-slate-200 bg-white/95 shadow-sm">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold text-slate-900">¿Necesitás validar muchos comprobantes?</h2>
-              <p className="text-sm text-slate-500">Usá la herramienta de carga masiva por Excel para procesar varios comprobantes en serie.</p>
-            </div>
-            <Link to="/comprobantes/carga-masiva" className="btn btn-primary">
-              Ir a carga masiva
-            </Link>
-          </div>
-        </div>
 
         {loading && <Loader />}
         <ErrorBox error={error} />
@@ -202,14 +136,90 @@ const ComprobantesPage = () => {
   )
 }
 
-const ComprobanteHeaderInfo = (props:ComprobanteHeaderInfoProps) => {
-  return(
+const ComprobanteHeaderSubtitle = ({ stats, formatCurrency, lastFetchLabel }: { stats: Stats | null, formatCurrency: any, lastFetchLabel: string | null }) => {
+  return (<div>
+    <SubHeaderItem
+      title='Importe total'
+      content={stats ? formatCurrency.format(stats.totalAmount) : '—'}
+    />
+    <SubHeaderItem
+      title='Comprobantes listados'
+      content={stats ? stats.total.toString() : '—'}
+    />
+    <SubHeaderItem
+      title='Con CAE válido'
+      content={stats ? stats.withCae.toString() : '—'} />
+    <SubHeaderItem
+      title='Última consulta'
+      content={lastFetchLabel ? lastFetchLabel : '—'} />
+  </div>)
+}
+
+const FiltrosComprobantes = (props: FiltrosProps) => {
+  return (<div className="card space-y-4 flex flex-row">
+    <div>
+      <div className="flex justify-between flex-col pb-3">
+        <h2 className="text-lg font-semibold text-slate-800">Filtros de búsqueda</h2>
+        <p className="text-xs text-slate-500">Ajustá los parámetros para consultar comprobantes específicos.</p>
+      </div>
+      <div className="flex gap-6 pr-7">
+        <div>
+          <label className="label">Punto de venta</label>
+          <input className="input" type="number" value={props.pv} onChange={e => props.setPv(Number(e.target.value))} />
+        </div>
+        <div>
+          <label className="label">Tipo de factura</label>
+          <select
+            className="input"
+            value={props.tipo}
+            onChange={(e) => props.setTipo(Number(e.target.value))}
+          >
+            <option value="1">Factura A</option>
+            <option value="6">Factura B</option>
+            <option value="11">Factura C</option>
+          </select>
+        </div>
+        <div>
+          <label className="label">Últimos N</label>
+          <input className="input" type="number" value={props.limite} onChange={e => props.setLimite(Number(e.target.value))} />
+          <p className="mt-1 text-xs text-gray-500">Máximo de registros a recuperar.</p>
+        </div>
+      </div>
+    </div>
+    <div className='flex gap-3 flex-col w-[300px] justify-center'>
+      <button
+        className="btn justify-center"
+        onClick={() => {
+          props.setPv(DEFAULT_PV)
+          props.setTipo(DEFAULT_TIPO)
+          props.setLimite(DEFAULT_LIMITE)
+          void props.fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE)
+        }}
+      ><IconRestore /> Restablecer</button>
+      <button
+        className="btn btn-primary flex items-start"
+        onClick={() => void props.fetchData(props.pv, props.tipo, props.limite)}
+        disabled={props.loading}
+      >
+        {props.loading ? <IconLoader /> : <IconSearch />}
+        {props.loading ? 'Consultando…' : 'Buscar'}
+      </button>
+    </div>
+  </div>)
+}
+
+const ComprobanteHeaderInfo = (props: ComprobanteHeaderInfoProps) => {
+  const navigate = useNavigate();
+  return (
     <Fragment>
-      <HeaderPill label={`Última consulta: ${props.lastFetchLabel}`} dotColor='bg-indigo-500' />
-     
-            <button type="button" className="btn bg-white" onClick={() => props.setFiltersOpen(prev => !prev)}>
-              {props.filtersOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
-            </button>
+
+      <button type="button" className="btn bg-white" onClick={() => props.setFiltersOpen(prev => !prev)}>
+        <IconFilter />{props.filtersOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
+      </button>
+
+      <button type="button" className="btn bg-white text-emerald-700" onClick={() => navigate("/comprobantes/carga-masiva")}>
+        <IconFileTypeXls />  Cargar excel
+      </button>
     </Fragment>
   )
 }

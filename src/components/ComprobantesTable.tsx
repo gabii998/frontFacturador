@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import type { ComprobanteEmitido } from '../models/afip'
+import { AfipService } from '../services/afip'
+import { ApiError } from '../services/api'
 
 const currencyFormatter = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -83,8 +86,59 @@ const formatDoc = (docTipo?: number | null, docNro?: number | null) => {
 
 const padNumber = (value: number, size: number) => value.toString().padStart(size, '0')
 
+const METADATA_ERROR_MESSAGE = 'No es posible descargar el comprobante hasta completar los datos del emisor en la configuración.'
+
+function extractErrorCode(error: ApiError): string | undefined {
+  const payload = error.payload
+  if (payload && typeof payload === 'object') {
+    const maybeCode = (payload as any).code
+    if (typeof maybeCode === 'string') {
+      return maybeCode
+    }
+  }
+  return undefined
+}
+
 export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[] }){
   const today = new Date()
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [metadataUnavailable, setMetadataUnavailable] = useState(false)
+
+  async function handleDownload(comprobante: ComprobanteEmitido) {
+    const id = `${comprobante.puntoVenta}-${comprobante.tipoAfip}-${comprobante.numero}`
+    setDownloadingId(id)
+    setDownloadError(null)
+    try {
+      const buffer = await AfipService.descargarComprobantePdf(comprobante.puntoVenta, comprobante.tipoAfip, comprobante.numero)
+      const blob = new Blob([buffer], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const pv = padNumber(comprobante.puntoVenta, 4)
+      const nro = padNumber(comprobante.numero, 8)
+      link.href = url
+      link.download = `comprobante-${pv}-${nro}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      if (error instanceof ApiError) {
+        const code = extractErrorCode(error)
+        if (code === 'INVOICE_METADATA_MISSING') {
+          setMetadataUnavailable(true)
+          setDownloadError(METADATA_ERROR_MESSAGE)
+        } else {
+          setDownloadError(error.message)
+        }
+      } else {
+        const message = error instanceof Error ? error.message : 'No pudimos descargar el PDF'
+        setDownloadError(message)
+      }
+    } finally {
+      setDownloadingId(null)
+    }
+  }
 
   return (
     <div className="card w-full border border-slate-200 bg-white/95 shadow-sm">
@@ -107,6 +161,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
               <th className="th">Cliente</th>
               <th className="th">CAE</th>
               <th className="th">Notas</th>
+              <th className="th">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -198,12 +253,33 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                       </div>
                     )}
                   </td>
+                  <td className="td">
+                    {metadataUnavailable ? (
+                      <span className="text-xs font-medium text-slate-400">
+                        {METADATA_ERROR_MESSAGE}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleDownload(c)}
+                        disabled={downloadingId === `${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
+                      >
+                        {downloadingId === `${c.puntoVenta}-${c.tipoAfip}-${c.numero}` ? 'Descargando…' : 'Descargar PDF'}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               )
             })}
           </tbody>
         </table>
       </div>
+      {downloadError && (
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {downloadError}
+        </div>
+      )}
     </div>
   )
 }

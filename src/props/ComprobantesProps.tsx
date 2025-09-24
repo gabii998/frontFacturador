@@ -9,7 +9,17 @@ export interface Stats {
 }
 
 export interface ComprobanteHeaderInfoProps {
-    lastFetchLabel:string | null;
     filtersOpen:boolean;
     setFiltersOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+export interface FiltrosProps {
+    loading:boolean;
+    setPv:React.Dispatch<React.SetStateAction<number>>;
+    setTipo:React.Dispatch<React.SetStateAction<number>>;
+    setLimite:React.Dispatch<React.SetStateAction<number>>;
+    fetchData:(nextPv?: number, nextTipo?: number, nextLimite?: number) => Promise<void>;
+    pv:number;
+    tipo:number;
+    limite:number;
 }

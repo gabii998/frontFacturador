@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { FacturaSolicitud, CondicionImpositiva, DocumentoTipo, PuntoVenta, FacturaItem, Concepto } from '../models/afip'
+import type { FacturaSolicitud, CondicionImpositiva, DocumentoTipo, PuntoVenta, FacturaItem, Concepto, FacturaEmitida } from '../models/afip'
 import { AfipService } from '../services/afip'
 import { CONSUMIDOR_FINAL_IDENTIFICATION_THRESHOLD } from '../config/afip'
 import ErrorBox from './ErrorBox'
@@ -15,7 +15,8 @@ const currencyFormatter = new Intl.NumberFormat('es-AR', {
 export default function EmitirForm(){
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string|undefined>(undefined)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<FacturaEmitida | null>(null)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
   const [pv, setPv] = useState<number>(2)
   const [puntosVenta, setPuntosVenta] = useState<PuntoVenta[]>([])
@@ -60,6 +61,31 @@ export default function EmitirForm(){
   }, 0), [items])
   const requiresCustomerIdentification = cond !== 'CONSUMIDOR_FINAL' || totalAmount >= CONSUMIDOR_FINAL_IDENTIFICATION_THRESHOLD
   const requiresServicePeriod = concepto !== 'PRODUCTOS'
+
+  const downloadFileName = useMemo(() => {
+    if (!result) return 'factura.pdf'
+    const pvFormatted = String(result.puntoVenta).padStart(4, '0')
+    const numberFormatted = String(result.numero ?? 0).padStart(8, '0')
+    return `factura-${pvFormatted}-${numberFormatted}.pdf`
+  }, [result])
+
+  useEffect(() => {
+    if (!result?.pdfBase64) {
+      setPdfUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+      return
+    }
+    const url = createPdfUrl(result.pdfBase64)
+    setPdfUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev)
+      return url
+    })
+    return () => {
+      URL.revokeObjectURL(url)
+    }
+  }, [result?.pdfBase64])
 
   async function onSubmit(e: React.FormEvent){
     e.preventDefault()
@@ -329,9 +355,26 @@ export default function EmitirForm(){
             <span className="font-semibold">Comprobante generado</span>
             <span className="text-xs text-emerald-600">Respuesta AFIP</span>
           </div>
+          {pdfUrl && (
+            <a
+              className="inline-flex w-fit items-center gap-2 rounded-md border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm hover:bg-emerald-50"
+              href={pdfUrl}
+              download={downloadFileName}
+              target="_blank"
+              rel="noopener"
+            >
+              Descargar PDF
+            </a>
+          )}
           <pre className="whitespace-pre-wrap text-xs text-emerald-800">{JSON.stringify(result, null, 2)}</pre>
         </div>
       )}
     </div>
   )
+}
+
+function createPdfUrl(base64: string): string {
+  const byteArray = Uint8Array.from(atob(base64), char => char.charCodeAt(0))
+  const blob = new Blob([byteArray], { type: 'application/pdf' })
+  return URL.createObjectURL(blob)
 }

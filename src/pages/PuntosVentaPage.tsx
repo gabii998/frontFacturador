@@ -9,6 +9,7 @@ import PuntoventaIcon from '../icon/PuntoVentaIcon'
 import { PuntoVentaHeaderInfoProps, Totals } from '../props/PuntosVentaProps'
 import EmptyPuntoVentaIcon from '../icon/EmptyPuntoVentaIcon'
 import HeaderPill from '../components/HeaderPill'
+import SubHeaderItem from '../components/SubHeaderItem'
 
 const PuntosVentaPage = () => {
   const [data, setData] = useState<PuntoVenta[]>([])
@@ -49,27 +50,13 @@ const PuntosVentaPage = () => {
         icon={<PuntoventaIcon />}
         title='Gestioná la ventanilla de emisión AFIP'
         subtitle='Consultá los puntos de venta autorizados, verificá bloqueos o bajas y mantené visible qué sucursales pueden emitir comprobantes.'
-        rightContent={<PuntosVentaHeaderInfo totals={totals} lastSyncLabel={lastSyncLabel} />} />
+        rightContent={<PuntosVentaHeaderInfo totals={totals} lastSyncLabel={lastSyncLabel} />} 
+        bottomContent={<PuntosVentaSubheader totals={totals}/>}
+        />
 
 
       <section className="space-y-6">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="card border border-slate-200 bg-white/95 shadow-sm">
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Total habilitados</span>
-            <p className="mt-2 text-2xl font-semibold text-slate-800">{totals.total}</p>
-            <p className="mt-1 text-xs text-slate-500">Listado recuperado desde AFIP WSFE.</p>
-          </div>
-          <div className="card border border-slate-200 bg-white/95 shadow-sm">
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Activos</span>
-            <p className="mt-2 text-2xl font-semibold text-slate-800">{totals.activos}</p>
-            <p className="mt-1 text-xs text-slate-500">Disponibles para emitir comprobantes.</p>
-          </div>
-          <div className="card border border-slate-200 bg-white/95 shadow-sm">
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Bloqueados / Baja</span>
-            <p className="mt-2 text-2xl font-semibold text-slate-800">{totals.bloqueados + totals.dadosDeBaja}</p>
-            <p className="mt-1 text-xs text-slate-500">Incluye bloqueados ({totals.bloqueados}) y dados de baja ({totals.dadosDeBaja}).</p>
-          </div>
-        </div>
+       
 
         {loading && <Loader />}
         <ErrorBox error={error} />
@@ -94,6 +81,25 @@ const PuntosVentaPage = () => {
       </section>
     </div>
   )
+}
+
+const PuntosVentaSubheader = ({totals}:{totals:Totals}) => {
+  return(<div>
+    <SubHeaderItem
+          title='Total habilitados'
+          content={totals.total.toString()}
+          />
+
+          <SubHeaderItem
+          title='Activos'
+          content={totals.activos.toString()}
+          />
+
+          <SubHeaderItem
+          title='Bloqueados / Baja'
+          content={(totals.bloqueados + totals.dadosDeBaja).toString()}
+          />
+  </div>)
 }
 
 const PuntosVentaHeaderInfo = (props:PuntoVentaHeaderInfoProps) => {

@@ -1,14 +1,16 @@
 import { FormEvent, Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ErrorBox from '../components/ErrorBox'
-import { useAuth } from '../contexts/AuthContext'
-import { changePassword } from '../services/profile'
 import SectionHeader from '../components/SectionHeader'
 import ComprobanteIcon from '../icon/ComprobanteIcon'
 import HeaderPill from '../components/HeaderPill'
+import { useAuth } from '../contexts/AuthContext'
+import { changePassword } from '../services/profile'
+import { AfipService } from '../services/afip'
 import { AuthUser } from '../services/auth'
 import { PLAN_COLORS_BY_CODE, PLAN_CODE_TO_NAME, type PlanCode } from '../constants/planes'
 import { PlansService, type PlanStatusResponse } from '../services/plans'
+import type { PadronInfo } from '../models/afip'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -119,6 +121,9 @@ const ProfileHeaderInfo = ({ user }: { user: AuthUser }) => {
   const navigate = useNavigate()
   const [planStatus, setPlanStatus] = useState<PlanStatusResponse | null>(null)
   const [loadingPlan, setLoadingPlan] = useState(false)
+  const [padronInfo, setPadronInfo] = useState<PadronInfo | null>(null)
+  const [padronError, setPadronError] = useState<string | null>(null)
+  const [loadingPadron, setLoadingPadron] = useState(false)
 
   useEffect(() => {
     let canceled = false
@@ -144,6 +149,42 @@ const ProfileHeaderInfo = ({ user }: { user: AuthUser }) => {
       canceled = true
     }
   }, [user.id])
+
+  useEffect(() => {
+    if (!user.cuit) {
+      setPadronInfo(null)
+      setPadronError(null)
+      return
+    }
+    let canceled = false
+    setLoadingPadron(true)
+    setPadronError(null)
+    AfipService.padron(user.cuit)
+      .then((response) => {
+        if (!canceled) {
+          setPadronInfo(response)
+          setPadronError(null)
+        }
+      })
+      .catch((error: unknown) => {
+        if (!canceled) {
+          setPadronInfo(null)
+          if (error instanceof Error) {
+            setPadronError(error.message)
+          } else {
+            setPadronError('No pudimos obtener los datos del padrón en este momento.')
+          }
+        }
+      })
+      .finally(() => {
+        if (!canceled) {
+          setLoadingPadron(false)
+        }
+      })
+    return () => {
+      canceled = true
+    }
+  }, [user.cuit])
 
   const estadoPlan = planStatus?.status ?? 'ACTIVE'
   const planActivoCode: PlanCode = estadoPlan === 'ACTIVE' ? planStatus?.plan ?? 'free' : 'free'
@@ -189,11 +230,51 @@ const ProfileHeaderInfo = ({ user }: { user: AuthUser }) => {
     navigate('/configuracion/planes')
   }
 
+  const inicioActividadesLabel = useMemo(() => {
+    if (loadingPadron) {
+      return 'Inicio actividades: cargando...'
+    }
+    const inicio = padronInfo?.inicioActividades
+    if (!inicio) return null
+    const date = new Date(inicio)
+    if (Number.isNaN(date.getTime())) {
+      return `Inicio actividades: ${inicio}`
+    }
+    const formatted = new Intl.DateTimeFormat('es-AR', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    }).format(date)
+    return `Inicio actividades: ${formatted}`
+  }, [padronInfo?.inicioActividades, loadingPadron])
+
+  const domicilioLabel = useMemo(() => {
+    if (loadingPadron) {
+      return 'Domicilio fiscal: cargando...'
+    }
+    const domicilio = padronInfo?.domicilio
+    if (!domicilio) return null
+    const parts = [domicilio.direccion, domicilio.localidad, domicilio.provincia]
+      .filter(Boolean)
+      .join(', ')
+    const cp = domicilio.codigoPostal ? `CP ${domicilio.codigoPostal}` : null
+    const adicional = domicilio.datoAdicional?.trim()
+    const full = [parts, cp, adicional].filter(Boolean).join(' · ')
+    return full.length > 0 ? `Domicilio fiscal: ${full}` : null
+  }, [padronInfo?.domicilio, loadingPadron])
+
   return (
     <Fragment>
       <HeaderPill label={user.name ?? 'Sin datos'} dotColor="bg-indigo-500" />
       <HeaderPill label={user.email} dotColor="bg-indigo-500" />
       <HeaderPill label={user.cuit ?? 'Sin datos'} dotColor="bg-indigo-500" />
+      {inicioActividadesLabel && (
+        <HeaderPill label={inicioActividadesLabel} dotColor="bg-teal-500" />
+      )}
+      {domicilioLabel && (
+        <HeaderPill label={domicilioLabel} dotColor="bg-teal-500" />
+      )}
+      {padronError && (
+        <HeaderPill label={padronError} dotColor="bg-rose-500" />
+      )}
       <div className="flex items-center gap-3">
         <HeaderPill
           label={planLabel}
