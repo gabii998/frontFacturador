@@ -5,7 +5,7 @@ export interface SectionHeaderProps {
     title:string;
     subtitle:string;
     icon:ReactNode;
-    rightContent:ReactNode,
+    rightContent?:ReactNode,
     bottomContent?:ReactNode;
 }
 

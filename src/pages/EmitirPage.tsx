@@ -2,9 +2,8 @@ import { Fragment } from 'react/jsx-runtime'
 import EmitirForm from '../components/EmitirForm'
 import SectionHeader from '../components/SectionHeader'
 import { CONSUMIDOR_FINAL_IDENTIFICATION_THRESHOLD } from '../config/afip'
-import ComprobanteIcon from '../icon/ComprobanteIcon'
 import HeaderPill from '../components/HeaderPill'
-import EmitirIcon from '../icon/EmitirIcon'
+import { IconCashRegister } from '@tabler/icons-react'
 
 const formatter = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -21,7 +20,7 @@ const EmitirPage = () => {
         section='Emisión'
         title='Emití tus comprobantes desde un solo lugar'
         subtitle='Centralizá la operatoria con AFIP WSFE y generá comprobantes con validaciones automáticas y seguimiento en tiempo real.'
-        icon={<EmitirIcon />}
+        icon={<IconCashRegister />}
         rightContent={<EmitirHeaderInfo />}
       />
 

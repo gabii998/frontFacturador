@@ -1,15 +1,16 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { AfipService } from '../services/afip'
 import type { ComprobanteEmitido } from '../models/afip'
-import Loader from '../components/Loader'
 import ErrorBox from '../components/ErrorBox'
 import { useNavigate } from 'react-router-dom'
 import ComprobantesTable from '../components/ComprobantesTable'
 import { ComprobanteHeaderInfoProps, FiltrosProps, Stats } from '../props/ComprobantesProps'
-import SubHeaderItem from '../components/SubHeaderItem'
 import SectionHeader from '../components/SectionHeader'
-import ComprobanteIcon from '../icon/ComprobanteIcon'
-import { IconFileTypeXls, IconFilter, IconLoader, IconRestore, IconSearch } from '@tabler/icons-react'
+import { IconFileTypeXls, IconFilter, IconInfoCircle, IconInvoice, IconLoader, IconRestore, IconSearch } from '@tabler/icons-react'
+import SubHeaderItemProps from '../props/SubHeaderItemProps'
+import Subheader from '../components/Subheader'
+import EmptyContent from '../components/EmptyContent'
+import LoadingContent from '../components/LoadingContent'
 
 const DEFAULT_PV = 2
 const DEFAULT_TIPO = 11
@@ -86,7 +87,7 @@ const ComprobantesPage = () => {
     <div className="space-y-6">
       <SectionHeader
         section='Comprobantes'
-        icon={<ComprobanteIcon />}
+        icon={<IconInvoice />}
         title='Monitor de comprobantes emitidos'
         subtitle='Consultá y auditá tus últimas emisiones agrupadas por punto de venta y tipo AFIP.'
         rightContent={<ComprobanteHeaderInfo filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} />}
@@ -100,34 +101,16 @@ const ComprobantesPage = () => {
           <FiltrosComprobantes {...{ loading, setPv, setTipo, setLimite, fetchData, pv, tipo, limite }} />
         )}
 
-        {loading && <Loader />}
+        {loading && <LoadingContent/>}
         <ErrorBox error={error} />
         {!loading && !error && (
           data.length > 0 ? (
             <ComprobantesTable data={data} />
           ) : (
-            <div className="card flex flex-col items-center gap-4 py-12 text-slate-500">
-              <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-slate-100 shadow-inner">
-                <svg
-                  viewBox="0 0 48 48"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-14 w-14 text-slate-400"
-                >
-                  <rect x="8" y="12" width="32" height="24" rx="4" stroke="currentColor" strokeWidth="2.5" />
-                  <path d="M16 16h16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d="M16 22h16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d="M16 28h10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d="M12 12l24 24" stroke="#F87171" strokeWidth="3" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div className="space-y-2 text-center">
-                <h2 className="text-lg font-semibold text-slate-700">No hay comprobantes para mostrar</h2>
-                <p className="text-sm leading-relaxed">
-                  Ajustá los filtros o verificá que AFIP haya emitido comprobantes para este punto de venta y tipo.
-                </p>
-              </div>
-            </div>
+            <EmptyContent
+              title='No hay comprobantes para mostrar'
+              subtitle='Ajustá los filtros o verificá que AFIP haya emitido comprobantes para este punto de venta y tipo.'
+              icon={ <IconInfoCircle/> } />
           )
         )}
       </section>
@@ -137,22 +120,14 @@ const ComprobantesPage = () => {
 }
 
 const ComprobanteHeaderSubtitle = ({ stats, formatCurrency, lastFetchLabel }: { stats: Stats | null, formatCurrency: any, lastFetchLabel: string | null }) => {
-  return (<div>
-    <SubHeaderItem
-      title='Importe total'
-      content={stats ? formatCurrency.format(stats.totalAmount) : '—'}
-    />
-    <SubHeaderItem
-      title='Comprobantes listados'
-      content={stats ? stats.total.toString() : '—'}
-    />
-    <SubHeaderItem
-      title='Con CAE válido'
-      content={stats ? stats.withCae.toString() : '—'} />
-    <SubHeaderItem
-      title='Última consulta'
-      content={lastFetchLabel ? lastFetchLabel : '—'} />
-  </div>)
+  const items: SubHeaderItemProps[] = [
+    { title: 'Importe total', content: stats ? formatCurrency.format(stats.totalAmount) : '—' },
+    { title: 'Comprobantes listados', content: stats ? stats.total.toString() : '—' },
+    { title: 'Con CAE válido', content: stats ? stats.withCae.toString() : '—' },
+    { title: 'Última consulta', content: lastFetchLabel ? lastFetchLabel : '—' }
+  ]
+
+  return (<Subheader props={items} />)
 }
 
 const FiltrosComprobantes = (props: FiltrosProps) => {

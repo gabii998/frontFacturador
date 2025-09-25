@@ -11,6 +11,7 @@ import { AuthUser } from '../services/auth'
 import { PLAN_COLORS_BY_CODE, PLAN_CODE_TO_NAME, type PlanCode } from '../constants/planes'
 import { PlansService, type PlanStatusResponse } from '../services/plans'
 import type { PadronInfo } from '../models/afip'
+import { IconUser } from '@tabler/icons-react'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -57,7 +58,7 @@ export default function ProfilePage() {
     <div className="space-y-6">
       <SectionHeader
       section='Tu perfil'
-      icon={<ComprobanteIcon/>}
+      icon={<IconUser/>}
       title='Información de la cuenta'
       subtitle='Estos datos se muestran según la información que cargaste al registrarte.'
       rightContent={<ProfileHeaderInfo user={user} />} />
