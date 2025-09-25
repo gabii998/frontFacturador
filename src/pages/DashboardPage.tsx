@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AfipService } from '../services/afip'
 import type { PuntoVenta } from '../models/afip'
-import Loader from '../components/Loader'
 import ErrorBox from '../components/ErrorBox'
 import { useAuth } from '../contexts/AuthContext'
 import DashboardCard from '../components/DashboardCard'
@@ -9,6 +8,7 @@ import PuntoventaIcon from '../icon/PuntoVentaIcon'
 import EmitirIcon from '../icon/EmitirIcon'
 import ComprobanteIcon from '../icon/ComprobanteIcon'
 import DashboardHeaderPill from '../components/DashboardHeaderPill'
+import LoadingContent from '../components/LoadingContent'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -168,7 +168,7 @@ export default function DashboardPage() {
 
 
       <div className="mt-4">
-        {loading && <Loader />}
+        {loading && <LoadingContent />}
         {!loading && <ErrorBox error={error} />}
       </div>
 

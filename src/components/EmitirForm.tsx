@@ -3,6 +3,7 @@ import type { FacturaSolicitud, CondicionImpositiva, DocumentoTipo, PuntoVenta, 
 import { AfipService } from '../services/afip'
 import { CONSUMIDOR_FINAL_IDENTIFICATION_THRESHOLD } from '../config/afip'
 import ErrorBox from './ErrorBox'
+import {PrimerPasoProps,SegundoPasoProps} from '../props/EmitirProps'
 
 const today = new Date().toISOString().slice(0,10)
 
@@ -128,95 +129,13 @@ export default function EmitirForm(){
 
   return (
     <div className="card space-y-6">
-      <header className="space-y-1">
-        <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Demo WSFE</span>
-        <h2 className="text-xl font-semibold text-slate-900">Datos del comprobante</h2>
-        <p className="text-sm text-slate-600">Completá la información necesaria para emitir el comprobante y enviar la solicitud al servicio de AFIP.</p>
-      </header>
+      <HeaderFormulario />
 
       <form onSubmit={onSubmit} className="space-y-6">
-        <section className="space-y-4">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Paso 1</span>
-            <h3 className="mt-1 text-base font-semibold text-slate-800">Configuración de AFIP</h3>
-            <p className="text-xs text-slate-500">Seleccioná el punto de venta habilitado y definí el concepto del comprobante a emitir.</p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="label">Punto de venta</label>
-              {puntosVenta.length > 0 ? (
-                <select
-                  className="input"
-                  value={pv}
-                  onChange={e => setPv(Number(e.target.value))}
-                >
-                  {puntosVenta.map(item => (
-                    <option key={item.nro} value={item.nro}>
-                      PV {item.nro} · {item.emisionTipo}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  className="input"
-                  type="number"
-                  value={pv}
-                  onChange={e => setPv(Number(e.target.value))}
-                  placeholder="Ingresá el punto de venta"
-                />
-              )}
-              {puntosVentaError && (
-                <p className="mt-1 text-xs text-amber-600">{puntosVentaError}. Podés cargarlo manualmente.</p>
-              )}
-            </div>
-            <div>
-              <label className="label">Concepto</label>
-              <select className="input" value={concepto} onChange={e=>setConcepto(e.target.value as Concepto)}>
-                <option value="PRODUCTOS">Productos</option>
-                <option value="SERVICIOS">Servicios</option>
-                <option value="AMBOS">Productos y Servicios</option>
-              </select>
-            </div>
-          </div>
-        </section>
+        <PrimerPaso {...{puntosVenta,pv,setPv,puntosVentaError,concepto,setConcepto}}/>
+        <hr className="border-t border-gray-300 -mx-6" />
 
-        <section className="space-y-4">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Paso 2</span>
-            <h3 className="mt-1 text-base font-semibold text-slate-800">Datos del receptor</h3>
-            <p className="text-xs text-slate-500">Configurá la condición impositiva y completá el documento solo cuando la normativa lo requiera.</p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="label">Condición IVA receptor</label>
-              <select
-                className="input"
-                value={cond}
-                onChange={e=>setCond(e.target.value as CondicionImpositiva)}
-              >
-                <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
-                <option value="MONOTRIBUTO">Monotributo</option>
-                <option value="RESPONSABLE_INSCRIPTO">Responsable Inscripto</option>
-                <option value="EXENTO">Exento</option>
-                <option value="NO_ALCANZADO">No alcanzado</option>
-                <option value="SUJETO_NO_CATEGORIZADO">Sujeto no categorizado</option>
-              </select>
-            </div>
-            {requiresCustomerIdentification && (
-              <div className="space-y-2">
-                <label className="label">Documento</label>
-                <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                  <select className="input md:w-40" value={docTipo} onChange={e=>setDocTipo(e.target.value as DocumentoTipo)}>
-                    <option value="DNI">DNI</option>
-                    <option value="CUIT">CUIT</option>
-                    <option value="SIN_IDENTIFICAR">SIN_IDENTIFICAR</option>
-                  </select>
-                  <input className="input" value={docNro} onChange={e=>setDocNro(e.target.value)} />
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+        <SegundoPaso {...{cond,setCond,requiresCustomerIdentification,docTipo,setDocTipo,docNro,setDocNro}}/>
 
         {requiresServicePeriod && (
           <section className="space-y-4">
@@ -371,6 +290,101 @@ export default function EmitirForm(){
       )}
     </div>
   )
+}
+
+const PrimerPaso = ({puntosVenta,pv,setPv,puntosVentaError,concepto,setConcepto}:PrimerPasoProps) => {
+  return(<section className="space-y-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Paso 1</span>
+            <h3 className="mt-1 text-base font-semibold text-slate-800">Configuración de AFIP</h3>
+            <p className="text-xs text-slate-500">Seleccioná el punto de venta habilitado y definí el concepto del comprobante a emitir.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="label">Punto de venta</label>
+              {puntosVenta.length > 0 ? (
+                <select
+                  className="input"
+                  value={pv}
+                  onChange={e => setPv(Number(e.target.value))}
+                >
+                  {puntosVenta.map(item => (
+                    <option key={item.nro} value={item.nro}>
+                      PV {item.nro} · {item.emisionTipo}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className="input"
+                  type="number"
+                  value={pv}
+                  onChange={e => setPv(Number(e.target.value))}
+                  placeholder="Ingresá el punto de venta"
+                />
+              )}
+              {puntosVentaError && (
+                <p className="mt-1 text-xs text-amber-600">{puntosVentaError}. Podés cargarlo manualmente.</p>
+              )}
+            </div>
+            <div>
+              <label className="label">Concepto</label>
+              <select className="input" value={concepto} onChange={e=>setConcepto(e.target.value as Concepto)}>
+                <option value="PRODUCTOS">Productos</option>
+                <option value="SERVICIOS">Servicios</option>
+                <option value="AMBOS">Productos y Servicios</option>
+              </select>
+            </div>
+          </div>
+        </section>)
+}
+
+const SegundoPaso = ({cond,setCond,requiresCustomerIdentification,docTipo,setDocTipo,docNro,setDocNro}:SegundoPasoProps) => {
+  return(<section className="space-y-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Paso 2</span>
+            <h3 className="mt-1 text-base font-semibold text-slate-800">Datos del receptor</h3>
+            <p className="text-xs text-slate-500">Configurá la condición impositiva y completá el documento solo cuando la normativa lo requiera.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="label">Condición IVA receptor</label>
+              <select
+                className="input"
+                value={cond}
+                onChange={e=>setCond(e.target.value as CondicionImpositiva)}
+              >
+                <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
+                <option value="MONOTRIBUTO">Monotributo</option>
+                <option value="RESPONSABLE_INSCRIPTO">Responsable Inscripto</option>
+                <option value="EXENTO">Exento</option>
+                <option value="NO_ALCANZADO">No alcanzado</option>
+                <option value="SUJETO_NO_CATEGORIZADO">Sujeto no categorizado</option>
+              </select>
+            </div>
+            {requiresCustomerIdentification && (
+              <div className="space-y-2">
+                <label className="label">Documento</label>
+                <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                  <select className="input md:w-40" value={docTipo} onChange={e=>setDocTipo(e.target.value as DocumentoTipo)}>
+                    <option value="DNI">DNI</option>
+                    <option value="CUIT">CUIT</option>
+                    <option value="SIN_IDENTIFICAR">SIN_IDENTIFICAR</option>
+                  </select>
+                  <input className="input" value={docNro} onChange={e=>setDocNro(e.target.value)} />
+                </div>
+              </div>
+            )}
+          </div>
+        </section>)
+}
+
+const HeaderFormulario = () => {
+  return(<header className="space-y-1">
+        <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Nueva Factura</span>
+        <h2 className="text-xl font-semibold text-slate-900">Datos del comprobante</h2>
+        <p className="text-sm text-slate-600">Completá la información necesaria para emitir el comprobante y enviar la solicitud al servicio de AFIP.</p>
+      </header>)
 }
 
 function createPdfUrl(base64: string): string {
