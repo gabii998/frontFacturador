@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { FacturaSolicitud, CondicionImpositiva, DocumentoTipo, PuntoVenta, FacturaItem, Concepto, FacturaEmitida } from '../models/afip'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import type { FacturaSolicitud, CondicionImpositiva, DocumentoTipo, PuntoVenta, FacturaItem, Concepto, FacturaRespuesta } from '../models/afip'
 import { AfipService } from '../services/afip'
 import { CONSUMIDOR_FINAL_IDENTIFICATION_THRESHOLD } from '../config/afip'
 import ErrorBox from './ErrorBox'
-import {PrimerPasoProps,SegundoPasoProps} from '../props/EmitirProps'
+import { FooterProps, PrimerPasoProps, SegundoPasoProps, StepEmitir, TercerPasoProps } from '../props/EmitirProps'
+import { Step } from '../props/Step'
+import Steper from './Steper'
+import { SuccessLite } from './Sucess'
 
-const today = new Date().toISOString().slice(0,10)
+const today = new Date().toISOString().slice(0, 10)
 
 const currencyFormatter = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -13,10 +16,11 @@ const currencyFormatter = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2
 })
 
-export default function EmitirForm(){
+export default function EmitirForm() {
+  const [currentStep, setCurrentStep] = useState<StepEmitir>(StepEmitir.CONFIGURACION);
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string|undefined>(undefined)
-  const [result, setResult] = useState<FacturaEmitida | null>(null)
+  const [error, setError] = useState<string | undefined>(undefined)
+  const [result, setResult] = useState<FacturaRespuesta | null>(null)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
   const [pv, setPv] = useState<number>(2)
@@ -36,7 +40,7 @@ export default function EmitirForm(){
 
   useEffect(() => {
     let active = true
-    async function fetchPuntosVenta(){
+    async function fetchPuntosVenta() {
       try {
         const listado = await AfipService.puntosVenta()
         if (!active) return
@@ -70,321 +74,347 @@ export default function EmitirForm(){
     return `factura-${pvFormatted}-${numberFormatted}.pdf`
   }, [result])
 
-  useEffect(() => {
-    if (!result?.pdfBase64) {
-      setPdfUrl(prev => {
-        if (prev) URL.revokeObjectURL(prev)
-        return null
-      })
-      return
-    }
-    const url = createPdfUrl(result.pdfBase64)
-    setPdfUrl(prev => {
-      if (prev) URL.revokeObjectURL(prev)
-      return url
-    })
-    return () => {
-      URL.revokeObjectURL(url)
-    }
-  }, [result?.pdfBase64])
+  // useEffect(() => {
+  //   // if (!result?.pdfBase64) {
+  //   //   setPdfUrl(prev => {
+  //   //     if (prev) URL.revokeObjectURL(prev)
+  //   //     return null
+  //   //   })
+  //   //   return
+  //   // }
+  //   // const url = createPdfUrl(result.pdfBase64)
+  //   // setPdfUrl(prev => {
+  //   //   if (prev) URL.revokeObjectURL(prev)
+  //   //   return url
+  //   // })
+  //   return () => {
+  //     URL.revokeObjectURL(url)
+  //   }
+  // }, [result?.pdfBase64])
 
-  async function onSubmit(e: React.FormEvent){
+  const volverAtras = () => {
+    console.log("volver atras")
+    setCurrentStep(prev =>
+      prev > StepEmitir.CONFIGURACION ? (prev - 1) as StepEmitir : prev
+    );
+  }
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true); setError(undefined); setResult(null)
-    try {
-      const solicitud: FacturaSolicitud = {
-        externalId: crypto.randomUUID(),
-        puntoVenta: pv,
-        fechaEmision: today,
-        concepto,
-        receptor: {
-          condicionImpositiva: cond,
-          documentoTipo: requiresCustomerIdentification ? docTipo : 'SIN_IDENTIFICAR',
-          documentoNumero: requiresCustomerIdentification ? docNro : '00000000',
-          pais: 'AR'
-        },
-        items: items.map(item => ({
-          descripcion: item.descripcion,
-          cantidad: Number.isFinite(item.cantidad) && item.cantidad > 0 ? item.cantidad : 1,
-          precioUnitario: Number.isFinite(item.precioUnitario) && item.precioUnitario >= 0 ? item.precioUnitario : 0,
-          iva: item.iva
-        })),
-        moneda: 'PES',
-        cotizacion: 1,
-        ...(requiresServicePeriod ? {
-          servicioDesde: servicioDesde || today,
-          servicioHasta: servicioHasta || servicioDesde || today,
-          vencimientoPago: vencimientoPago || servicioHasta || today
-        } : {})
+    if (currentStep == StepEmitir.ITEMS) {
+      setLoading(true);
+      setError(undefined);
+      setResult(null)
+      try {
+        const solicitud: FacturaSolicitud = {
+          externalId: crypto.randomUUID(),
+          puntoVenta: pv,
+          fechaEmision: today,
+          concepto,
+          receptor: {
+            condicionImpositiva: cond,
+            documentoTipo: requiresCustomerIdentification ? docTipo : 'SIN_IDENTIFICAR',
+            documentoNumero: requiresCustomerIdentification ? docNro : '00000000',
+            pais: 'AR'
+          },
+          items: items.map(item => ({
+            descripcion: item.descripcion,
+            cantidad: Number.isFinite(item.cantidad) && item.cantidad > 0 ? item.cantidad : 1,
+            precioUnitario: Number.isFinite(item.precioUnitario) && item.precioUnitario >= 0 ? item.precioUnitario : 0,
+            iva: item.iva
+          })),
+          moneda: 'PES',
+          cotizacion: 1,
+          ...(requiresServicePeriod ? {
+            servicioDesde: servicioDesde || today,
+            servicioHasta: servicioHasta || servicioDesde || today,
+            vencimientoPago: vencimientoPago || servicioHasta || today
+          } : {})
+        }
+        const payload = { emisor: 'MONOTRIBUTO' as const, solicitud }
+        const r = await AfipService.emitir(payload)
+        setResult(r)
+      } catch (err: any) {
+        setError(err?.message || String(err))
+      } finally {
+        setLoading(false)
       }
-      const payload = { emisor: 'MONOTRIBUTO' as const, solicitud }
-      const r = await AfipService.emitir(payload)
-      setResult(r)
-    } catch (err:any) {
-      setError(err?.message || String(err))
-    } finally {
-      setLoading(false)
+    } else {
+      setCurrentStep(prev => {
+      // si no es el último, incremento
+      const value = prev < StepEmitir.RESULTADO ? (prev + 1) as StepEmitir : prev;
+      console.log(prev)
+      console.log(value)
+      return value;
+    });
     }
   }
 
   return (
     <div className="card space-y-6">
-      <HeaderFormulario />
+      {result == null ? <Fragment>
+        <HeaderFormulario />
+      <Header currentStep={currentStep} />
 
       <form onSubmit={onSubmit} className="space-y-6">
-        <PrimerPaso {...{puntosVenta,pv,setPv,puntosVentaError,concepto,setConcepto}}/>
-        <hr className="border-t border-gray-300 -mx-6" />
+        {currentStep == StepEmitir.CONFIGURACION &&
+          <PrimerPaso {...{ puntosVenta, pv, setPv, puntosVentaError, concepto, setConcepto, requiresServicePeriod, servicioDesde, setServicioDesde, servicioHasta, setServicioHasta, vencimientoPago, setVencimientoPago }} />
+        }
 
-        <SegundoPaso {...{cond,setCond,requiresCustomerIdentification,docTipo,setDocTipo,docNro,setDocNro}}/>
+        {currentStep == StepEmitir.DATOS_RECEPTOR &&
+          <SegundoPaso {...{ cond, setCond, requiresCustomerIdentification, docTipo, setDocTipo, docNro, setDocNro }} />
+        }
 
-        {requiresServicePeriod && (
-          <section className="space-y-4">
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Paso 3</span>
-              <h3 className="mt-1 text-base font-semibold text-slate-800">Período del servicio</h3>
-              <p className="text-xs text-slate-500">Informá las fechas de prestación y el vencimiento de pago para comprobantes de servicios o mixtos.</p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              <div>
-                <span className="text-xs text-slate-500">Desde</span>
-                <input
-                  className="input"
-                  type="date"
-                  value={servicioDesde}
-                  onChange={e => setServicioDesde(e.target.value)}
-                />
-              </div>
-              <div>
-                <span className="text-xs text-slate-500">Hasta</span>
-                <input
-                  className="input"
-                  type="date"
-                  value={servicioHasta}
-                  onChange={e => setServicioHasta(e.target.value)}
-                />
-              </div>
-              <div>
-                <span className="text-xs text-slate-500">Vencimiento de pago</span>
-                <input
-                  className="input"
-                  type="date"
-                  value={vencimientoPago}
-                  onChange={e => setVencimientoPago(e.target.value)}
-                />
-              </div>
-            </div>
-          </section>
-        )}
+        {currentStep == StepEmitir.ITEMS &&
+          <TercerPaso {...{ items, setItems, totalAmount }} />
+        }
 
-        <section className="space-y-4">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Paso {requiresServicePeriod ? 4 : 3}</span>
-              <h3 className="mt-1 text-base font-semibold text-slate-800">Detalle de ítems</h3>
-            </div>
-            <button
-              type="button"
-              className="btn px-3 py-1.5 text-sm"
-              onClick={() => setItems(prev => ([
-                ...prev,
-                { descripcion: '', cantidad: 1, precioUnitario: 0, iva: 'IVA_0' }
-              ]))}
-            >
-              Agregar ítem
-            </button>
-          </div>
-          <div className="space-y-3">
-            {items.map((item, index) => (
-              <div key={index} className="rounded-xl border border-slate-200/80 bg-white/80 p-3 shadow-sm shadow-slate-100">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Ítem #{index + 1}</span>
-                  <span className="text-[11px] font-medium text-slate-500">Alícuota: IVA 0% (Factura C)</span>
-                  {items.length > 1 && (
-                    <button
-                      type="button"
-                      className="text-rose-600 hover:text-rose-500"
-                      onClick={() => setItems(prev => prev.filter((_, idx) => idx !== index))}
-                    >
-                      Quitar
-                    </button>
-                  )}
-                </div>
-                <div className="mt-2 grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2">
-                  <div>
-                    <label className="label">Descripción</label>
-                    <input
-                      className="input py-2 text-sm"
-                      value={item.descripcion}
-                      onChange={e => {
-                        const value = e.target.value
-                        setItems(prev => prev.map((curr, idx) => idx === index ? { ...curr, descripcion: value } : curr))
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Cantidad</label>
-                    <input
-                      className="input py-2 text-sm"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={item.cantidad}
-                      onChange={e => {
-                        const value = Number(e.target.value)
-                        setItems(prev => prev.map((curr, idx) => idx === index ? { ...curr, cantidad: Number.isNaN(value) ? 0 : value } : curr))
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Precio unitario</label>
-                    <input
-                      className="input py-2 text-sm"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={item.precioUnitario}
-                      onChange={e => {
-                        const value = Number(e.target.value)
-                        setItems(prev => prev.map((curr, idx) => idx === index ? { ...curr, precioUnitario: Number.isNaN(value) ? 0 : value } : curr))
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 md:flex-row md:items-center md:justify-between">
-            <span>Total estimado</span>
-            <span className="text-base font-semibold text-slate-900">{currencyFormatter.format(totalAmount)}</span>
-          </div>
-        </section>
-
-        <div className="flex flex-col-reverse gap-3 md:flex-row md:items-center md:justify-between">
-          <p className="text-xs text-slate-500">Se genera un identificador externo automático para seguir la solicitud enviada a AFIP.</p>
-          <button className="btn btn-primary md:w-auto" type="submit" disabled={loading}>
-            {loading ? 'Emitiendo…' : 'Emitir comprobante'}
-          </button>
-        </div>
+        <Footer {...{ loading, currentStep, volverAtras }} />
       </form>
+        </Fragment> : <SuccessLite title='Factura creada correctamente' subtitle={`CAE # ${result?.cae}`}/>}
+      
 
       <ErrorBox error={error} />
-      {result && (
-        <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold">Comprobante generado</span>
-            <span className="text-xs text-emerald-600">Respuesta AFIP</span>
-          </div>
-          {pdfUrl && (
-            <a
-              className="inline-flex w-fit items-center gap-2 rounded-md border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm hover:bg-emerald-50"
-              href={pdfUrl}
-              download={downloadFileName}
-              target="_blank"
-              rel="noopener"
-            >
-              Descargar PDF
-            </a>
-          )}
-          <pre className="whitespace-pre-wrap text-xs text-emerald-800">{JSON.stringify(result, null, 2)}</pre>
-        </div>
-      )}
+      
     </div>
   )
 }
 
-const PrimerPaso = ({puntosVenta,pv,setPv,puntosVentaError,concepto,setConcepto}:PrimerPasoProps) => {
-  return(<section className="space-y-4">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Paso 1</span>
-            <h3 className="mt-1 text-base font-semibold text-slate-800">Configuración de AFIP</h3>
-            <p className="text-xs text-slate-500">Seleccioná el punto de venta habilitado y definí el concepto del comprobante a emitir.</p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="label">Punto de venta</label>
-              {puntosVenta.length > 0 ? (
-                <select
-                  className="input"
-                  value={pv}
-                  onChange={e => setPv(Number(e.target.value))}
-                >
-                  {puntosVenta.map(item => (
-                    <option key={item.nro} value={item.nro}>
-                      PV {item.nro} · {item.emisionTipo}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  className="input"
-                  type="number"
-                  value={pv}
-                  onChange={e => setPv(Number(e.target.value))}
-                  placeholder="Ingresá el punto de venta"
-                />
-              )}
-              {puntosVentaError && (
-                <p className="mt-1 text-xs text-amber-600">{puntosVentaError}. Podés cargarlo manualmente.</p>
-              )}
-            </div>
-            <div>
-              <label className="label">Concepto</label>
-              <select className="input" value={concepto} onChange={e=>setConcepto(e.target.value as Concepto)}>
-                <option value="PRODUCTOS">Productos</option>
-                <option value="SERVICIOS">Servicios</option>
-                <option value="AMBOS">Productos y Servicios</option>
-              </select>
-            </div>
-          </div>
-        </section>)
+const Header = ({ currentStep }: { currentStep: StepEmitir }) => {
+  const steps: Step[] = [
+    { title: "Datos del comprobante", subtitle: "Seleccioná el punto de venta habilitado y definí el concepto del comprobante.", isActive: currentStep == StepEmitir.CONFIGURACION },
+    { title: "Datos del Receptor", subtitle: "Completá la condicion impositiva del receptor.", isActive: currentStep == StepEmitir.DATOS_RECEPTOR },
+    { title: "Items", subtitle: "Agregá los items al comprobante.", isActive: currentStep == StepEmitir.ITEMS }
+  ]
+
+  return (<div className='pb-6'>
+    <Steper steps={steps} />
+  </div>)
 }
 
-const SegundoPaso = ({cond,setCond,requiresCustomerIdentification,docTipo,setDocTipo,docNro,setDocNro}:SegundoPasoProps) => {
-  return(<section className="space-y-4">
+const PrimerPaso = (props: PrimerPasoProps) => {
+  return (<section className="space-y-4">
+
+    <div className="grid gap-4 md:grid-cols-2">
+      <div>
+        <label className="label">Punto de venta</label>
+        {props.puntosVenta.length > 0 ? (
+          <select
+            className="input"
+            value={props.pv}
+            onChange={e => props.setPv(Number(e.target.value))}
+          >
+            {props.puntosVenta.map(item => (
+              <option key={item.nro} value={item.nro}>
+                PV {item.nro} · {item.emisionTipo}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            className="input"
+            type="number"
+            value={props.pv}
+            onChange={e => props.setPv(Number(e.target.value))}
+            placeholder="Ingresá el punto de venta"
+          />
+        )}
+        {props.puntosVentaError && (
+          <p className="mt-1 text-xs text-amber-600">{props.puntosVentaError}. Podés cargarlo manualmente.</p>
+        )}
+      </div>
+      <div>
+        <label className="label">Concepto</label>
+        <select className="input" value={props.concepto} onChange={e => props.setConcepto(e.target.value as Concepto)}>
+          <option value="PRODUCTOS">Productos</option>
+          <option value="SERVICIOS">Servicios</option>
+          <option value="AMBOS">Productos y Servicios</option>
+        </select>
+      </div>
+    </div>
+    {props.requiresServicePeriod && (
+      <section className="space-y-4">
+        <div>
+          <h3 className="mt-1 text-base font-semibold text-slate-800">Período del servicio</h3>
+          <p className="text-xs text-slate-500">Informá las fechas de prestación y el vencimiento de pago para comprobantes de servicios o mixtos.</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Paso 2</span>
-            <h3 className="mt-1 text-base font-semibold text-slate-800">Datos del receptor</h3>
-            <p className="text-xs text-slate-500">Configurá la condición impositiva y completá el documento solo cuando la normativa lo requiera.</p>
+            <span className="text-xs text-slate-500">Desde</span>
+            <input
+              className="input"
+              type="date"
+              value={props.servicioDesde}
+              onChange={e => props.setServicioDesde(e.target.value)}
+            />
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="label">Condición IVA receptor</label>
-              <select
-                className="input"
-                value={cond}
-                onChange={e=>setCond(e.target.value as CondicionImpositiva)}
+          <div>
+            <span className="text-xs text-slate-500">Hasta</span>
+            <input
+              className="input"
+              type="date"
+              value={props.servicioHasta}
+              onChange={e => props.setServicioHasta(e.target.value)}
+            />
+          </div>
+          <div>
+            <span className="text-xs text-slate-500">Vencimiento de pago</span>
+            <input
+              className="input"
+              type="date"
+              value={props.vencimientoPago}
+              onChange={e => props.setVencimientoPago(e.target.value)}
+            />
+          </div>
+        </div>
+      </section>
+    )}
+  </section>)
+}
+
+const SegundoPaso = ({ cond, setCond, requiresCustomerIdentification, docTipo, setDocTipo, docNro, setDocNro }: SegundoPasoProps) => {
+  return (<section className="space-y-4">
+    <div className="grid gap-4 md:grid-cols-2">
+      <div>
+        <label className="label">Condición IVA receptor</label>
+        <select
+          className="input"
+          value={cond}
+          onChange={e => setCond(e.target.value as CondicionImpositiva)}
+        >
+          <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
+          <option value="MONOTRIBUTO">Monotributo</option>
+          <option value="RESPONSABLE_INSCRIPTO">Responsable Inscripto</option>
+          <option value="EXENTO">Exento</option>
+          <option value="NO_ALCANZADO">No alcanzado</option>
+          <option value="SUJETO_NO_CATEGORIZADO">Sujeto no categorizado</option>
+        </select>
+      </div>
+      {requiresCustomerIdentification && (
+        <div className="space-y-2">
+          <label className="label">Documento</label>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <select className="input md:w-40" value={docTipo} onChange={e => setDocTipo(e.target.value as DocumentoTipo)}>
+              <option value="DNI">DNI</option>
+              <option value="CUIT">CUIT</option>
+              <option value="SIN_IDENTIFICAR">SIN_IDENTIFICAR</option>
+            </select>
+            <input className="input" value={docNro} onChange={e => setDocNro(e.target.value)} />
+          </div>
+        </div>
+      )}
+    </div>
+  </section>)
+}
+
+const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
+  return (<section className="space-y-4">
+    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+
+      <button
+        type="button"
+        className="btn px-3 py-1.5 text-sm"
+        onClick={() => setItems(prev => ([
+          ...prev,
+          { descripcion: '', cantidad: 1, precioUnitario: 0, iva: 'IVA_0' }
+        ]))}
+      >
+        Agregar ítem
+      </button>
+    </div>
+    <div className="space-y-3">
+      {items.map((item, index) => (
+        <div key={index} className="rounded-xl border border-slate-200/80 bg-white/80 p-3 shadow-sm shadow-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Ítem #{index + 1}</span>
+            <span className="text-[11px] font-medium text-slate-500">Alícuota: IVA 0% (Factura C)</span>
+            {items.length > 1 && (
+              <button
+                type="button"
+                className="text-rose-600 hover:text-rose-500"
+                onClick={() => setItems(prev => prev.filter((_, idx) => idx !== index))}
               >
-                <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
-                <option value="MONOTRIBUTO">Monotributo</option>
-                <option value="RESPONSABLE_INSCRIPTO">Responsable Inscripto</option>
-                <option value="EXENTO">Exento</option>
-                <option value="NO_ALCANZADO">No alcanzado</option>
-                <option value="SUJETO_NO_CATEGORIZADO">Sujeto no categorizado</option>
-              </select>
-            </div>
-            {requiresCustomerIdentification && (
-              <div className="space-y-2">
-                <label className="label">Documento</label>
-                <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                  <select className="input md:w-40" value={docTipo} onChange={e=>setDocTipo(e.target.value as DocumentoTipo)}>
-                    <option value="DNI">DNI</option>
-                    <option value="CUIT">CUIT</option>
-                    <option value="SIN_IDENTIFICAR">SIN_IDENTIFICAR</option>
-                  </select>
-                  <input className="input" value={docNro} onChange={e=>setDocNro(e.target.value)} />
-                </div>
-              </div>
+                Quitar
+              </button>
             )}
           </div>
-        </section>)
+          <div className="mt-2 grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2">
+            <div>
+              <label className="label">Descripción</label>
+              <input
+                className="input py-2 text-sm"
+                value={item.descripcion}
+                onChange={e => {
+                  const value = e.target.value
+                  setItems(prev => prev.map((curr, idx) => idx === index ? { ...curr, descripcion: value } : curr))
+                }}
+              />
+            </div>
+            <div>
+              <label className="label">Cantidad</label>
+              <input
+                className="input py-2 text-sm"
+                type="number"
+                min={0}
+                step="0.01"
+                value={item.cantidad}
+                onChange={e => {
+                  const value = Number(e.target.value)
+                  setItems(prev => prev.map((curr, idx) => idx === index ? { ...curr, cantidad: Number.isNaN(value) ? 0 : value } : curr))
+                }}
+              />
+            </div>
+            <div>
+              <label className="label">Precio unitario</label>
+              <input
+                className="input py-2 text-sm"
+                type="number"
+                min={0}
+                step="0.01"
+                value={item.precioUnitario}
+                onChange={e => {
+                  const value = Number(e.target.value)
+                  setItems(prev => prev.map((curr, idx) => idx === index ? { ...curr, precioUnitario: Number.isNaN(value) ? 0 : value } : curr))
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 md:flex-row md:items-center md:justify-between">
+      <span>Total estimado</span>
+      <span className="text-base font-semibold text-slate-900">{currencyFormatter.format(totalAmount)}</span>
+    </div>
+  </section>)
+}
+
+const Footer = ({ loading, currentStep, volverAtras }: FooterProps) => {
+  const buttonText =
+    loading
+      ? "Emitiendo…"
+      : currentStep !== StepEmitir.ITEMS
+        ? "Siguiente paso"
+        : "Emitir comprobante";
+
+  return (<div className="flex flex-col-reverse gap-3 md:flex-row md:items-center md:justify-end pt-5">
+    <p className="text-xs text-slate-500">Se genera un identificador externo automático para seguir la solicitud enviada a AFIP.</p>
+    <div className='flex-1' />
+    <button className="btn md:w-auto" type='button' onClick={volverAtras} disabled={loading}>
+      Volver
+    </button>
+    <button className="btn btn-primary md:w-auto" type="submit" disabled={loading}>
+      {buttonText}
+    </button>
+  </div>)
 }
 
 const HeaderFormulario = () => {
-  return(<header className="space-y-1">
-        <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Nueva Factura</span>
-        <h2 className="text-xl font-semibold text-slate-900">Datos del comprobante</h2>
-        <p className="text-sm text-slate-600">Completá la información necesaria para emitir el comprobante y enviar la solicitud al servicio de AFIP.</p>
-      </header>)
+  return (<header className="space-y-1">
+    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Nueva Factura</span>
+    {/* <h2 className="text-xl font-semibold text-slate-900">Datos del comprobante</h2>
+    <p className="text-sm text-slate-600">Completá la información necesaria para emitir el comprobante y enviar la solicitud al servicio de AFIP.</p> */}
+  </header>)
 }
 
 function createPdfUrl(base64: string): string {

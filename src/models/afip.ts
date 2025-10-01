@@ -74,10 +74,6 @@ export interface FacturaRespuesta {
   errores: string[]
 }
 
-export interface FacturaEmitida extends FacturaRespuesta {
-  pdfBase64: string
-}
-
 export interface PadronInfo {
   inicioActividades?: string | null
   domicilio?: {

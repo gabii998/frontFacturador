@@ -77,7 +77,7 @@ export default function RegisterPage() {
             className="input"
             value={cuit}
             onChange={(event) => setCuit(event.target.value)}
-            placeholder="Opcional"
+            required
           />
         </label>
         <label className="auth-field">

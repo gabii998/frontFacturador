@@ -141,27 +141,18 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
   }
 
   return (
-    <div className="card w-full border border-slate-200 bg-white/95 shadow-sm">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-4">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-slate-900">Comprobantes</h2>
-          <p className="text-sm text-slate-500">Detalle de las últimas emisiones recuperadas para tus filtros seleccionados.</p>
-        </div>
-        <span className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-          {data.length} ítem{data.length === 1 ? '' : 's'}
-        </span>
-      </div>
+    <div className="card w-full border border-slate-200 bg-white/95 shadow-sm p-0">
+     
       <div className="overflow-x-auto">
         <table className="table min-w-full md:min-w-[60rem]">
           <thead>
             <tr>
-              <th className="th">Comprobante</th>
+              <th className="th rounded-tl-2xl">Comprobante</th>
               <th className="th">Emisión</th>
               <th className="th">Importes</th>
               <th className="th">Cliente</th>
               <th className="th">CAE</th>
-              <th className="th">Notas</th>
-              <th className="th">Acciones</th>
+              <th className="th rounded-tr-2xl">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -227,32 +218,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                       <span className="font-mono text-xs text-slate-500">{c.cae ?? '—'}</span>
                     </div>
                   </td>
-                  <td className="td">
-                    {c.observaciones.length === 0 && c.errores.length === 0 ? (
-                      <span className="text-sm text-slate-400">—</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {c.observaciones.map((obs, index) => (
-                          <span
-                            key={`obs-${c.numero}-${index}`}
-                            className="inline-flex items-center gap-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-1 text-xs text-sky-700"
-                          >
-                            <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
-                            {obs}
-                          </span>
-                        ))}
-                        {c.errores.map((err, index) => (
-                          <span
-                            key={`err-${c.numero}-${index}`}
-                            className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1 text-xs text-rose-700"
-                          >
-                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                            {err}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
+            
                   <td className="td">
                     {metadataUnavailable ? (
                       <span className="text-xs font-medium text-slate-400">

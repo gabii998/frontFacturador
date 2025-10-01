@@ -69,7 +69,7 @@ function Navbar() {
               <path d="M4 18h16" />
             </svg>
           </button>
-          <span className="font-bold text-lg">AFIP Frontend</span>
+          <span className="font-bold text-lg">Facturador</span>
           <nav className="hidden md:flex gap-1">
             {links.map(({ to, label, end }) => (
               <NavLink
@@ -175,7 +175,7 @@ function PublicLayout() {
     <div className="auth-shell">
       <div className="grid w-full max-w-6xl gap-12 items-center lg:grid-cols-[minmax(0,1fr)_420px]">
         <section className="auth-hero">
-          <span className="auth-hero__badge">AFIP Frontend</span>
+          <span className="auth-hero__badge">Facturador</span>
           <h1 className="auth-hero__title">Controlá tu facturación sin fricción</h1>
           <p className="auth-hero__subtitle">
             Monitoreá puntos de venta, emití comprobantes y asegurá la validez de tus tokens desde un escritorio moderno.
