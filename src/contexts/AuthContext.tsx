@@ -157,7 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     registerAuthInterceptor({
       getToken: () => state.token,
       isTokenExpired: () => !!state.expiresAt && state.expiresAt <= Date.now(),
-      onUnauthorized: async () => {
+      onUnauthorized: async (forceLogout) => {
+        if (forceLogout) {
+          clearState()
+          return false
+        }
         const refreshed = await refreshSession()
         if (!refreshed) {
           await logout()
@@ -168,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       registerAuthInterceptor(null)
     }
-  }, [state.token, state.expiresAt, refreshSession, logout])
+  }, [state.token, state.expiresAt, refreshSession, logout, clearState])
 
   useEffect(() => {
     clearRefreshSchedule()

@@ -2,30 +2,47 @@ import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import ErrorBox from '../components/ErrorBox'
 import { useAuth } from '../contexts/AuthContext'
+import { RegisterForm } from '../models/RegisterForms'
+import FormField from '../components/FormField'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
   const { register } = useAuth()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [cuit, setCuit] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const [form, setForm] = useState<RegisterForm>({
+    name: '',
+    email: '',
+    cuit: '',
+    condicionImpositiva: '',
+    password: '',
+    confirmPassword: ''
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<unknown>(null)
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target
+    setForm(prev => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError(null)
 
-    if (password !== confirmPassword) {
+    if (form.password !== form.confirmPassword) {
       setError(new Error('Las contraseñas no coinciden'))
       return
     }
 
     setLoading(true)
     try {
-      await register({ name, email, cuit: cuit || undefined, password })
+      await register({
+        name: form.name,
+        email: form.email,
+        cuit: form.cuit || undefined,
+        password: form.password
+      })
       navigate('/', { replace: true })
     } catch (err) {
       setError(err)
@@ -34,7 +51,13 @@ export default function RegisterPage() {
     }
   }
 
-  const canSubmit = Boolean(name.trim() && email.trim() && password.trim() && confirmPassword.trim() && !loading)
+  const canSubmit =
+    Boolean(
+      form.name.trim() &&
+      form.email.trim() &&
+      form.password.trim() &&
+      form.confirmPassword.trim()
+    ) && !loading
 
   return (
     <div className="auth-form">
@@ -47,63 +70,63 @@ export default function RegisterPage() {
       </div>
       <ErrorBox error={error} />
       <form className="auth-form__body" onSubmit={handleSubmit}>
-        <label className="auth-field">
-          <span className="auth-field__label">Nombre completo</span>
-          <input
-            type="text"
-            className="input"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
-          />
-        </label>
-        <label className="auth-field">
-          <span className="auth-field__label">Email</span>
-          <input
-            type="email"
-            autoComplete="email"
-            className="input"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </label>
-        <label className="auth-field">
-          <span className="auth-field__label">CUIT</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            className="input"
-            value={cuit}
-            onChange={(event) => setCuit(event.target.value)}
-            required
-          />
-        </label>
-        <label className="auth-field">
-          <span className="auth-field__label">Contraseña</span>
-          <input
-            type="password"
-            autoComplete="new-password"
-            className="input"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            minLength={8}
-          />
-        </label>
-        <label className="auth-field">
-          <span className="auth-field__label">Repetir contraseña</span>
-          <input
-            type="password"
-            autoComplete="new-password"
-            className="input"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            required
-            minLength={8}
-          />
-        </label>
+        <FormField
+          label="Nombre completo"
+          name="name"
+          value={form.name}
+          onChange={handleChange}
+          required
+        />
+
+        <FormField
+          label="Email"
+          name="email"
+          type="email"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+
+        <FormField
+          label="CUIT"
+          name="cuit"
+          value={form.cuit}
+          onChange={handleChange}
+          required
+        />
+
+        <FormField
+          label="Condición Impositiva"
+          name="condicionImpositiva"
+          value={form.condicionImpositiva}
+          onChange={handleChange}
+          required
+        >
+          <option value="">Seleccione...</option>
+          <option value="Monotributista">Monotributista</option>
+          <option value="Responsable Inscripto">Responsable Inscripto</option>
+        </FormField>
+
+        <FormField
+          label="Contraseña"
+          name="password"
+          type="password"
+          value={form.password}
+          onChange={handleChange}
+          required
+          minLength={8}
+        />
+
+        <FormField
+          label="Repetir contraseña"
+          name="confirmPassword"
+          type="password"
+          value={form.confirmPassword}
+          onChange={handleChange}
+          required
+          minLength={8}
+        />
+
         <button
           type="submit"
           disabled={!canSubmit}

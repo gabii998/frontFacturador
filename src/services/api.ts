@@ -3,7 +3,7 @@ const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 type AuthInterceptor = {
   getToken: () => string | null
   isTokenExpired?: () => boolean
-  onUnauthorized?: () => Promise<boolean> | boolean
+  onUnauthorized?: (forceLogout?: boolean) => Promise<boolean> | boolean
 }
 
 let interceptor: AuthInterceptor | null = null
@@ -60,10 +60,10 @@ async function handle(res: Response) {
 
 type RequestOptions = RequestInit & { body?: any }
 
-async function triggerUnauthorized(): Promise<boolean> {
+async function triggerUnauthorized(forceLogout = false): Promise<boolean> {
   if (!interceptor?.onUnauthorized) return false
   try {
-    const result = await interceptor.onUnauthorized()
+    const result = await interceptor.onUnauthorized(forceLogout)
     return Boolean(result)
   } catch (error) {
     return false
@@ -120,12 +120,18 @@ async function request<T>(url: string, options: RequestOptions): Promise<T> {
       headers
     })
 
-    if (res.status === 401 && attempt === 0) {
-      const refreshed = await triggerUnauthorized()
-      if (refreshed) {
-        attempt += 1
-        continue
+    if (res.status === 401) {
+      if (attempt === 0) {
+        const refreshed = await triggerUnauthorized()
+        if (refreshed) {
+          attempt += 1
+          continue
+        }
+        return handle(res) as Promise<T>
       }
+
+      await triggerUnauthorized(true)
+      throw new ApiError(401, 'La sesión expiró. Vuelve a iniciar sesión.')
     }
 
     return handle(res) as Promise<T>
