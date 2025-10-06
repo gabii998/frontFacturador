@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   AuthService,
   type AuthResponse,
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutInFlight = useRef(false)
   const refreshTimeoutRef = useRef<number | null>(null)
   const refreshInFlight = useRef<Promise<boolean> | null>(null)
+  const navigate = useNavigate()
 
   const clearRefreshSchedule = useCallback(() => {
     if (refreshTimeoutRef.current !== null) {
@@ -79,13 +81,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const clearState = useCallback(() => {
+  const clearState = useCallback((redirectToLogin: boolean = true) => {
     setState(blankState)
     persistState(blankState)
     clearRefreshSchedule()
     refreshInFlight.current = null
     registerAuthInterceptor(null)
-  }, [clearRefreshSchedule])
+    if (redirectToLogin) {
+      navigate('/login', { replace: true })
+    }
+  }, [clearRefreshSchedule, navigate])
 
   const applyAuth = useCallback((payload: AuthResponse) => {
     const expiresAt = Date.now() + payload.expiresIn * 1000

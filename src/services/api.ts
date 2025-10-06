@@ -58,7 +58,7 @@ async function handle(res: Response) {
   return res.arrayBuffer()
 }
 
-type RequestOptions = RequestInit & { body?: any }
+type RequestOptions = RequestInit & { body?: any; skipAuthHandling?: boolean; includeAuthHeader?: boolean }
 
 async function triggerUnauthorized(forceLogout = false): Promise<boolean> {
   if (!interceptor?.onUnauthorized) return false
@@ -88,26 +88,37 @@ async function ensureValidToken(): Promise<boolean> {
 }
 
 async function request<T>(url: string, options: RequestOptions): Promise<T> {
-  let attempt = 0
+  const {
+    skipAuthHandling = false,
+    includeAuthHeader = true,
+    body,
+    headers: originalHeaders,
+    credentials,
+    ...rest
+  } = options
 
-  while (attempt < 2) {
-    const authReady = await ensureValidToken()
-    if (!authReady) {
-      throw new Error('La sesión expiró. Vuelve a iniciar sesión.')
+  let attempt = 0
+  const maxAttempts = skipAuthHandling ? 1 : 2
+
+  while (attempt < maxAttempts) {
+    if (!skipAuthHandling) {
+      const authReady = await ensureValidToken()
+      if (!authReady) {
+        throw new Error('La sesión expiró. Vuelve a iniciar sesión.')
+      }
     }
 
-    let requestOptions: RequestOptions = { ...options }
-    const headers = new Headers(requestOptions.headers ?? undefined)
+    let finalBody = body
+    const headers = new Headers(originalHeaders ?? undefined)
 
-    if (requestOptions.body !== undefined && !(requestOptions.body instanceof FormData)) {
-      const jsonBody = typeof requestOptions.body === 'string' ? requestOptions.body : JSON.stringify(requestOptions.body)
-      requestOptions = { ...requestOptions, body: jsonBody }
+    if (finalBody !== undefined && !(finalBody instanceof FormData)) {
+      finalBody = typeof finalBody === 'string' ? finalBody : JSON.stringify(finalBody)
       if (!headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json')
       }
     }
 
-    if (interceptor?.getToken) {
+    if (includeAuthHeader && interceptor?.getToken) {
       const token = interceptor.getToken()
       if (token) {
         headers.set('Authorization', `Bearer ${token}`)
@@ -115,12 +126,13 @@ async function request<T>(url: string, options: RequestOptions): Promise<T> {
     }
 
     const res = await fetch(`${BASE}${url}`, {
-      ...requestOptions,
-      credentials: requestOptions.credentials ?? 'include',
+      ...rest,
+      body: finalBody,
+      credentials: credentials ?? 'include',
       headers
     })
 
-    if (res.status === 401) {
+    if (!skipAuthHandling && res.status === 401) {
       if (attempt === 0) {
         const refreshed = await triggerUnauthorized()
         if (refreshed) {
@@ -140,10 +152,10 @@ async function request<T>(url: string, options: RequestOptions): Promise<T> {
   throw new Error('La sesión expiró. Vuelve a iniciar sesión.')
 }
 
-export async function get<T = unknown>(url: string, init?: RequestInit): Promise<T> {
+export async function get<T = unknown>(url: string, init?: RequestOptions): Promise<T> {
   return request<T>(url, { ...(init ?? {}), method: 'GET' })
 }
 
-export async function post<T = unknown>(url: string, body?: any, init?: RequestInit): Promise<T> {
+export async function post<T = unknown>(url: string, body?: any, init?: RequestOptions): Promise<T> {
   return request<T>(url, { ...(init ?? {}), method: 'POST', body })
 }

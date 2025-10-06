@@ -38,6 +38,10 @@ export const AuthService = {
   login: (payload: LoginPayload) => post<AuthResponse>('/api/auth/login', payload),
   register: (payload: RegisterPayload) => post<AuthResponse>('/api/auth/register', payload),
   requestPasswordReset: (payload: ForgotPasswordPayload) => post<void>('/api/auth/password/forgot', payload),
-  refresh: (payload: RefreshTokenPayload) => post<AuthResponse>('/api/auth/token/refresh', payload),
-  logout: () => post<void>('/api/auth/logout', {})
+  refresh: (payload: RefreshTokenPayload) =>
+    post<AuthResponse>('/api/auth/token/refresh', payload, {
+      skipAuthHandling: true,
+      includeAuthHeader: false
+    }),
+  logout: () => post<void>('/api/auth/logout', {}, { skipAuthHandling: true })
 }
