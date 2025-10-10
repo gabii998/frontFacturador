@@ -220,7 +220,7 @@ const PrimerPaso = (props: PrimerPasoProps) => {
           />
         )}
         {props.puntosVentaError && (
-          <p className="mt-1 text-xs text-amber-600">{props.puntosVentaError}. Podés cargarlo manualmente.</p>
+          <p className="mt-1 text-xs text-amber-600">{props.puntosVentaError}.</p>
         )}
       </div>
       <div>

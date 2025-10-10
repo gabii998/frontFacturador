@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer components {
-  .container-max { @apply max-w-6xl mx-auto px-4; }
+  .container-max { @apply max-w-6xl mx-auto px-4 w-full; }
   .card { @apply w-full bg-white rounded-2xl shadow p-6; }
 
   .btn {
@@ -68,7 +68,7 @@
   }
 
 
-  .dashboard-layout { @apply flex flex-col gap-8; }
+  .dashboard-layout { @apply flex flex-col gap-8 w-full; }
 
   .dashboard-hero {
     @apply relative overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-600 via-indigo-600 to-slate-900 px-8 py-10 text-white shadow-2xl;
