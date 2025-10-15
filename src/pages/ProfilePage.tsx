@@ -142,7 +142,7 @@ export default function ProfilePage() {
       icon={<IconUser/>}
       title='Información de la cuenta'
       subtitle='Estos datos se muestran según la información que cargaste al registrarte.'
-      bottomContent={<SubheaderContent domicilio={domicilioLabel} inicioActividades={inicioActividadesLabel} cuit={user.cuit}/>}
+      bottomContent={<SubheaderContent domicilio={domicilioLabel} inicioActividades={inicioActividadesLabel} cuit={user.cuit ?? ""}/>}
       rightContent={<ProfileHeaderInfo user={user} />} />
 
       <section className="card space-y-4">
