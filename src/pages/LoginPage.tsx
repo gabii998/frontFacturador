@@ -76,6 +76,10 @@ export default function LoginPage() {
           ¿Todavía no tenés cuenta?{' '}
           <Link to="/registrarse" className="auth-link">Registrate</Link>.
         </p>
+        <p className="text-xs text-slate-500">
+          Al continuar aceptás nuestra{' '}
+          <Link to="/politica-privacidad" className="auth-link">política de privacidad</Link>.
+        </p>
       </div>
     </div>
   )

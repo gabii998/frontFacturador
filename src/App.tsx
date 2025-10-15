@@ -10,6 +10,7 @@ import PlanesPage from './pages/PlanesPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import { useAuth } from './contexts/AuthContext'
 
 function Navbar() {
@@ -211,6 +212,7 @@ export default function App() {
         <Route path="/configuracion" element={<ProfilePage />} />
         <Route path="/configuracion/planes" element={<PlanesPage />} />
       </Route>
+      <Route path="/politica-privacidad" element={<PrivacyPolicyPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
