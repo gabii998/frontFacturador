@@ -78,7 +78,9 @@ export default function LoginPage() {
         </p>
         <p className="text-xs text-slate-500">
           Al continuar aceptás nuestra{' '}
-          <Link to="/politica-privacidad" className="auth-link">política de privacidad</Link>.
+          <Link to="/politica-privacidad" className="auth-link">política de privacidad</Link>
+          {' '}y los{' '}
+          <Link to="/terminos-condiciones" className="auth-link">términos y condiciones</Link>.
         </p>
       </div>
     </div>
