@@ -93,7 +93,7 @@ export default function TermsConditionsPage() {
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium uppercase tracking-wide text-blue-600">Términos y Condiciones de Uso</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Condiciones para operar con Facturito</h1>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Condiciones para operar con Facturador</h1>
             <p className="mt-3 max-w-2xl text-sm text-slate-600">
               Leé atentamente estas condiciones. Al continuar utilizando la aplicación aceptás cada uno de los puntos detallados más abajo.
             </p>
