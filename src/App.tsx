@@ -12,7 +12,9 @@ import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import TermsConditionsPage from './pages/TermsConditionsPage'
+import DataDeletionPage from './pages/DataDeletionPage'
 import { useAuth } from './contexts/AuthContext'
+import SiteFooter from './components/SiteFooter'
 
 function Navbar() {
   const { user, logout } = useAuth()
@@ -161,9 +163,10 @@ function PrivateLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="container-max py-6">
+      <main className="container-max flex-1 py-6">
         <Outlet />
       </main>
+      <SiteFooter />
     </div>
   )
 }
@@ -174,24 +177,27 @@ function PublicLayout() {
     return <Navigate to="/" replace />
   }
   return (
-    <div className="auth-shell">
-      <div className="grid w-full max-w-6xl gap-12 items-center lg:grid-cols-[minmax(0,1fr)_420px]">
-        <section className="auth-hero">
-          <span className="auth-hero__badge">Facturador</span>
-          <h1 className="auth-hero__title">Controlá tu facturación sin fricción</h1>
-          <p className="auth-hero__subtitle">
-            Monitoreá puntos de venta, emití comprobantes y asegurá la validez de tus tokens desde un escritorio moderno.
-          </p>
-          <ul className="auth-hero__list">
-            <li>Panel único para monitorear comprobantes emitidos</li>
-            <li>Alertas y vencimientos de token gestionados automáticamente</li>
-            <li>Experiencia rápida y responsive para todo tu equipo</li>
-          </ul>
-        </section>
-        <div className="auth-card">
-          <Outlet />
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <div className="auth-shell flex-1">
+        <div className="grid w-full max-w-6xl gap-12 items-center lg:grid-cols-[minmax(0,1fr)_420px]">
+          <section className="auth-hero">
+            <span className="auth-hero__badge">Facturador</span>
+            <h1 className="auth-hero__title">Controlá tu facturación sin fricción</h1>
+            <p className="auth-hero__subtitle">
+              Monitoreá puntos de venta, emití comprobantes y asegurá la validez de tus tokens desde un escritorio moderno.
+            </p>
+            <ul className="auth-hero__list">
+              <li>Panel único para monitorear comprobantes emitidos</li>
+              <li>Alertas y vencimientos de token gestionados automáticamente</li>
+              <li>Experiencia rápida y responsive para todo tu equipo</li>
+            </ul>
+          </section>
+          <div className="auth-card">
+            <Outlet />
+          </div>
         </div>
       </div>
+      <SiteFooter />
     </div>
   )
 }
@@ -211,10 +217,11 @@ export default function App() {
         <Route path="/comprobantes/carga-masiva" element={<ComprobantesCargaMasivaPage />} />
         <Route path="/emitir" element={<EmitirPage />} />
         <Route path="/configuracion" element={<ProfilePage />} />
-        <Route path="/configuracion/planes" element={<PlanesPage />} />
+      <Route path="/configuracion/planes" element={<PlanesPage />} />
       </Route>
       <Route path="/politica-privacidad" element={<PrivacyPolicyPage />} />
       <Route path="/terminos-condiciones" element={<TermsConditionsPage />} />
+      <Route path="/eliminar-datos" element={<DataDeletionPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

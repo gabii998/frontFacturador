@@ -96,7 +96,7 @@ export default function PrivacyPolicyPage() {
           </Link>
         </header>
 
-        <div className="mt-10 space-y-10 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+        <div className="mt-10 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200 space-y-10">
           {sections.map((section) => (
             <section key={section.title} className="space-y-3">
               <h2 className="text-xl font-semibold text-slate-800">{section.title}</h2>
