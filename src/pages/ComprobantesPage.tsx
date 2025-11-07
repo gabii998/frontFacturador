@@ -91,7 +91,15 @@ const ComprobantesPage = () => {
         title='Monitor de comprobantes emitidos'
         subtitle='Consultá y auditá tus últimas emisiones agrupadas por punto de venta y tipo AFIP.'
         rightContent={<ComprobanteHeaderInfo filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} />}
-        bottomContent={<ComprobanteHeaderSubtitle stats={stats} formatCurrency={formatCurrency} lastFetchLabel={lastFetchLabel} />}
+        collapsible
+        bottomContent={(collapsed) => (
+          <ComprobanteHeaderSubtitle
+            stats={stats}
+            formatCurrency={formatCurrency}
+            lastFetchLabel={lastFetchLabel}
+            collapsed={collapsed}
+          />
+        )}
       />
 
       <section className="space-y-6">
@@ -119,7 +127,7 @@ const ComprobantesPage = () => {
   )
 }
 
-const ComprobanteHeaderSubtitle = ({ stats, formatCurrency, lastFetchLabel }: { stats: Stats | null, formatCurrency: any, lastFetchLabel: string | null }) => {
+const ComprobanteHeaderSubtitle = ({ stats, formatCurrency, lastFetchLabel, collapsed }: { stats: Stats | null, formatCurrency: any, lastFetchLabel: string | null, collapsed: boolean }) => {
   const items: SubHeaderItemProps[] = [
     { title: 'Importe total', content: stats ? formatCurrency.format(stats.totalAmount) : '—' },
     { title: 'Comprobantes listados', content: stats ? stats.total.toString() : '—' },
@@ -127,7 +135,7 @@ const ComprobanteHeaderSubtitle = ({ stats, formatCurrency, lastFetchLabel }: { 
     { title: 'Última consulta', content: lastFetchLabel ? lastFetchLabel : '—' }
   ]
 
-  return (<Subheader props={items} />)
+  return (<Subheader props={items} collapsed={collapsed} />)
 }
 
 const FiltrosComprobantes = (props: FiltrosProps) => {
@@ -184,6 +192,7 @@ const FiltrosComprobantes = (props: FiltrosProps) => {
 }
 
 const ComprobanteHeaderInfo = (props: ComprobanteHeaderInfoProps) => {
+  const enableExcel = import.meta.env.VITE_ENABLE_EXCEL_UPLOAD ?? false;
   const navigate = useNavigate();
   return (
     <Fragment>
@@ -192,9 +201,9 @@ const ComprobanteHeaderInfo = (props: ComprobanteHeaderInfoProps) => {
         <IconFilter />{props.filtersOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
       </button>
 
-      <button type="button" className="btn bg-white text-emerald-700" onClick={() => navigate("/comprobantes/carga-masiva")}>
+      {enableExcel && <button type="button" className="btn bg-white text-emerald-700" onClick={() => navigate("/comprobantes/carga-masiva")}>
         <IconFileTypeXls />  Cargar excel
-      </button>
+      </button>}
     </Fragment>
   )
 }

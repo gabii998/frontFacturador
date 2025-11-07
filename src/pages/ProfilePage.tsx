@@ -15,13 +15,13 @@ import { IconUser } from '@tabler/icons-react'
 import SubHeaderItemProps from '../props/SubHeaderItemProps'
 import Subheader from '../components/Subheader'
 
-const SubheaderContent = ({domicilio,inicioActividades,cuit}:{domicilio:string | null,inicioActividades:string | null,cuit:string|null}) => {
+const SubheaderContent = ({domicilio,inicioActividades,cuit,collapsed = false}:{domicilio:string | null,inicioActividades:string | null,cuit:string|null, collapsed?: boolean}) => {
   const items: SubHeaderItemProps[] = [
     {title:"Domicilio fiscal",content: domicilio ?? " - "},
     {title: "Inicio actividades",content:inicioActividades ?? " - "},
     {title: "CUIT",content:cuit ?? " - "}
   ]
-  return (<Subheader props={items} />)
+  return (<Subheader props={items} collapsed={collapsed} />)
 }
 
 
@@ -138,12 +138,21 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <SectionHeader
-      section='Tu perfil'
-      icon={<IconUser/>}
-      title='Información de la cuenta'
-      subtitle='Estos datos se muestran según la información que cargaste al registrarte.'
-      bottomContent={<SubheaderContent domicilio={domicilioLabel} inicioActividades={inicioActividadesLabel} cuit={user.cuit ?? ""}/>}
-      rightContent={<ProfileHeaderInfo user={user} />} />
+        section='Tu perfil'
+        icon={<IconUser/>}
+        title='Información de la cuenta'
+        subtitle='Estos datos se muestran según la información que cargaste al registrarte.'
+        collapsible
+        bottomContent={(collapsed) => (
+          <SubheaderContent
+            domicilio={domicilioLabel}
+            inicioActividades={inicioActividadesLabel}
+            cuit={user.cuit ?? ""}
+            collapsed={collapsed}
+          />
+        )}
+        rightContent={<ProfileHeaderInfo user={user} />}
+      />
 
       <section className="card space-y-4">
         <div>

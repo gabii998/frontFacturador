@@ -13,6 +13,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import TermsConditionsPage from './pages/TermsConditionsPage'
 import DataDeletionPage from './pages/DataDeletionPage'
+import HelpPage from './pages/HelpPage'
 import { useAuth } from './contexts/AuthContext'
 import SiteFooter from './components/SiteFooter'
 
@@ -58,7 +59,7 @@ function Navbar() {
   }
 
   return (
-    <header className="bg-white border-b">
+    <header className="bg-white border-b fixed top-0 left-0 right-0 z-40 md:static md:top-auto">
       <div className="container-max flex items-center justify-between py-3">
         <div className="flex items-center gap-3">
           <button
@@ -163,7 +164,7 @@ function PrivateLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="container-max flex-1 py-6">
+      <main className="container-max flex-1 pb-6 pt-20 md:py-6">
         <Outlet />
       </main>
       <SiteFooter />
@@ -221,6 +222,7 @@ export default function App() {
       </Route>
       <Route path="/politica-privacidad" element={<PrivacyPolicyPage />} />
       <Route path="/terminos-condiciones" element={<TermsConditionsPage />} />
+      <Route path="/ayuda" element={<HelpPage />} />
       <Route path="/eliminar-datos" element={<DataDeletionPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

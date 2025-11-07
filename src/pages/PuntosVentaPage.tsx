@@ -50,7 +50,10 @@ const PuntosVentaPage = () => {
         icon={<IconBuildingStore />}
         title='Gestioná la ventanilla de emisión AFIP'
         subtitle='Consultá los puntos de venta autorizados, verificá bloqueos o bajas y mantené visible qué sucursales pueden emitir comprobantes.'
-        bottomContent={<PuntosVentaSubheader totals={totals} lastSyncLabel={lastSyncLabel} />}
+        collapsible
+        bottomContent={(collapsed) => (
+          <PuntosVentaSubheader totals={totals} lastSyncLabel={lastSyncLabel} collapsed={collapsed} />
+        )}
       />
 
       <section className="space-y-6">
@@ -73,7 +76,7 @@ const PuntosVentaPage = () => {
   )
 }
 
-const PuntosVentaSubheader = (props: PuntoVentaHeaderInfoProps) => {
+const PuntosVentaSubheader = (props: PuntoVentaHeaderInfoProps & { collapsed?: boolean }) => {
   const items: SubHeaderItemProps[] = [
     { title: 'Total habilitados', content: props.totals.total.toString() },
     { title: 'Activos', content: props.totals.activos.toString() },
@@ -81,7 +84,7 @@ const PuntosVentaSubheader = (props: PuntoVentaHeaderInfoProps) => {
     { title: 'Última sincronización:', content: `${props.lastSyncLabel}` }
   ]
 
-  return (<Subheader props={items} />)
+  return (<Subheader props={items} collapsed={props.collapsed ?? false} />)
 }
 
 export default PuntosVentaPage;

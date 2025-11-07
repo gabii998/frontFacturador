@@ -6,7 +6,8 @@ export interface SectionHeaderProps {
     subtitle:string;
     icon:ReactNode;
     rightContent?:ReactNode,
-    bottomContent?:ReactNode;
+    bottomContent?:ReactNode | ((collapsed: boolean) => ReactNode);
+    collapsible?: boolean;
 }
 
 export default SectionHeaderProps;

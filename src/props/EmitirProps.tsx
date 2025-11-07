@@ -5,6 +5,8 @@ export interface PrimerPasoProps {
     pv: number;
     setPv: React.Dispatch<React.SetStateAction<number>>;
     puntosVentaError: string | null;
+    fechaEmision: string;
+    setFechaEmision: React.Dispatch<React.SetStateAction<string>>;
     concepto: Concepto;
     setConcepto:React.Dispatch<React.SetStateAction<Concepto>>,
     requiresServicePeriod:boolean,

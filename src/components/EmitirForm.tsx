@@ -19,7 +19,7 @@ const currencyFormatter = new Intl.NumberFormat('es-AR', {
 export default function EmitirForm() {
   const [currentStep, setCurrentStep] = useState<StepEmitir>(StepEmitir.CONFIGURACION);
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | undefined>(undefined)
+  const [error, setError] = useState<unknown>(undefined)
   const [result, setResult] = useState<FacturaRespuesta | null>(null)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
@@ -31,6 +31,7 @@ export default function EmitirForm() {
   const [docNro, setDocNro] = useState('28999888')
   const [cond, setCond] = useState<CondicionImpositiva>('CONSUMIDOR_FINAL')
   const [concepto, setConcepto] = useState<Concepto>('PRODUCTOS')
+  const [fechaEmision, setFechaEmision] = useState(today)
   const [items, setItems] = useState<FacturaItem[]>([
     { descripcion: 'Producto de prueba', cantidad: 1, precioUnitario: 1000, iva: 'IVA_0' }
   ])
@@ -66,6 +67,10 @@ export default function EmitirForm() {
   }, 0), [items])
   const requiresCustomerIdentification = cond !== 'CONSUMIDOR_FINAL' || totalAmount >= CONSUMIDOR_FINAL_IDENTIFICATION_THRESHOLD
   const requiresServicePeriod = concepto !== 'PRODUCTOS'
+  const dateValidationMessage = useMemo(
+    () => validateAfipDates({ requiresServicePeriod, fechaEmision, servicioDesde, servicioHasta, vencimientoPago }),
+    [requiresServicePeriod, fechaEmision, servicioDesde, servicioHasta, vencimientoPago]
+  )
 
   const downloadFileName = useMemo(() => {
     if (!result) return 'factura.pdf'
@@ -106,10 +111,15 @@ export default function EmitirForm() {
       setError(undefined);
       setResult(null)
       try {
+        const validationError = validateAfipDates({ requiresServicePeriod, fechaEmision, servicioDesde, servicioHasta, vencimientoPago })
+        if (validationError) {
+          setError(new Error(validationError))
+          return
+        }
         const solicitud: FacturaSolicitud = {
           externalId: crypto.randomUUID(),
           puntoVenta: pv,
-          fechaEmision: today,
+          fechaEmision: fechaEmision || today,
           concepto,
           receptor: {
             condicionImpositiva: cond,
@@ -133,6 +143,12 @@ export default function EmitirForm() {
         }
         const payload = { emisor: 'MONOTRIBUTO' as const, solicitud }
         const r = await AfipService.emitir(payload)
+        if (r.resultado !== 'A') {
+          const rejectionMessage = describeAfipRejection(r)
+          setResult(null)
+          setError(new Error(rejectionMessage))
+          return
+        }
         setResult(r)
       } catch (err: any) {
         setError(err?.message || String(err))
@@ -156,9 +172,9 @@ export default function EmitirForm() {
         <HeaderFormulario />
       <Header currentStep={currentStep} />
 
-      <form onSubmit={onSubmit} className="space-y-6">
+      {error == null && <form onSubmit={onSubmit} className="space-y-6">
         {currentStep == StepEmitir.CONFIGURACION &&
-          <PrimerPaso {...{ puntosVenta, pv, setPv, puntosVentaError, concepto, setConcepto, requiresServicePeriod, servicioDesde, setServicioDesde, servicioHasta, setServicioHasta, vencimientoPago, setVencimientoPago }} />
+          <PrimerPaso {...{ puntosVenta, pv, setPv, puntosVentaError, concepto, setConcepto, fechaEmision, setFechaEmision, requiresServicePeriod, servicioDesde, setServicioDesde, servicioHasta, setServicioHasta, vencimientoPago, setVencimientoPago }} />
         }
 
         {currentStep == StepEmitir.DATOS_RECEPTOR &&
@@ -170,7 +186,9 @@ export default function EmitirForm() {
         }
 
         <Footer {...{ loading, currentStep, volverAtras }} />
-      </form>
+      </form>}
+
+      
         </Fragment> : <SuccessLite title='Factura creada correctamente' subtitle={`CAE # ${result?.cae}`}/>}
       
 
@@ -195,7 +213,7 @@ const Header = ({ currentStep }: { currentStep: StepEmitir }) => {
 const PrimerPaso = (props: PrimerPasoProps) => {
   return (<section className="space-y-4">
 
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <div>
         <label className="label">Punto de venta</label>
         {props.puntosVenta.length > 0 ? (
@@ -231,12 +249,25 @@ const PrimerPaso = (props: PrimerPasoProps) => {
           <option value="AMBOS">Productos y Servicios</option>
         </select>
       </div>
+      <div>
+        <label className="label">Fecha del comprobante</label>
+        <input
+          className="input"
+          type="date"
+          value={props.fechaEmision}
+          onChange={e => props.setFechaEmision(e.target.value)}
+        />
+        <p className="mt-1 text-xs text-slate-500">AFIP exige que la fecha sea mayor o igual al período informado.</p>
+      </div>
     </div>
     {props.requiresServicePeriod && (
       <section className="space-y-4">
         <div>
           <h3 className="mt-1 text-base font-semibold text-slate-800">Período del servicio</h3>
           <p className="text-xs text-slate-500">Informá las fechas de prestación y el vencimiento de pago para comprobantes de servicios o mixtos.</p>
+          {dateValidationMessage && (
+            <p className="text-xs text-amber-600 mt-1">{dateValidationMessage}</p>
+          )}
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           <div>
@@ -415,6 +446,62 @@ const HeaderFormulario = () => {
     {/* <h2 className="text-xl font-semibold text-slate-900">Datos del comprobante</h2>
     <p className="text-sm text-slate-600">Completá la información necesaria para emitir el comprobante y enviar la solicitud al servicio de AFIP.</p> */}
   </header>)
+}
+
+const describeAfipRejection = (resp: FacturaRespuesta): string => {
+  const reasons = [...(resp.errores ?? []), ...(resp.observaciones ?? [])]
+    .map(item => item?.trim())
+    .filter((item): item is string => Boolean(item && item.length > 0))
+  const detail = reasons.length ? reasons.join(' · ') : 'Verificá la fecha, numeración y los datos informados.'
+  return `AFIP rechazó la solicitud (${resp.resultado}). ${detail}`
+}
+
+type DateValidationInput = {
+  requiresServicePeriod: boolean
+  fechaEmision?: string
+  servicioDesde?: string
+  servicioHasta?: string
+  vencimientoPago?: string
+}
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
+
+function validateAfipDates(input: DateValidationInput): string | null {
+  if (!isIsoDate(input.fechaEmision)) {
+    return 'Ingresá una fecha de comprobante válida.'
+  }
+  if (!input.requiresServicePeriod) {
+    return null
+  }
+  if (!isIsoDate(input.servicioDesde) || !isIsoDate(input.servicioHasta)) {
+    return 'Completá las fechas Desde y Hasta del servicio.'
+  }
+  if (compareIsoDates(input.servicioHasta, input.servicioDesde) < 0) {
+    return 'La fecha “Hasta” no puede ser anterior a “Desde”.'
+  }
+  if (compareIsoDates(input.servicioHasta, input.fechaEmision) > 0) {
+    return 'La fecha “Hasta” no puede ser posterior a la fecha del comprobante.'
+  }
+  if (!isIsoDate(input.vencimientoPago)) {
+    return 'Ingresá un vencimiento de pago válido.'
+  }
+  const latestReference = maxIsoDate(input.servicioHasta, input.fechaEmision)
+  if (compareIsoDates(input.vencimientoPago, latestReference) < 0) {
+    return 'El vencimiento debe ser igual o posterior al fin del servicio y a la fecha del comprobante.'
+  }
+  return null
+}
+
+function isIsoDate(value?: string | null): value is string {
+  return Boolean(value && ISO_DATE_REGEX.test(value))
+}
+
+function compareIsoDates(a: string, b: string): number {
+  return a.localeCompare(b)
+}
+
+function maxIsoDate(a: string, b: string): string {
+  return compareIsoDates(a, b) >= 0 ? a : b
 }
 
 function createPdfUrl(base64: string): string {

@@ -207,10 +207,6 @@
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
 }
 
-.subheader > * {
-  @apply flex flex-row gap-2
-}
-
 @media (max-width: 1023px) {
   .auth-shell {
     @apply px-6 py-14 items-start;
@@ -316,4 +312,3 @@
   );
   animation: shimmer 1.5s infinite;
 }
-

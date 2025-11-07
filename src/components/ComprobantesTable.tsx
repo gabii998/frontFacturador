@@ -88,6 +88,23 @@ const padNumber = (value: number, size: number) => value.toString().padStart(siz
 
 const METADATA_ERROR_MESSAGE = 'No es posible descargar el comprobante hasta completar los datos del emisor en la configuración.'
 
+function CaeStatusBadge({ hasCAE, caeValid }: { hasCAE: boolean, caeValid: boolean }) {
+  const baseClasses = 'inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-xs font-semibold'
+  const stateClasses = !hasCAE
+    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+    : caeValid
+      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+      : 'bg-rose-50 text-rose-700 border border-rose-200'
+
+  const label = !hasCAE ? 'Sin CAE' : caeValid ? 'CAE vigente' : 'CAE vencido'
+
+  return (
+    <span className={`${baseClasses} ${stateClasses}`}>
+      {label}
+    </span>
+  )
+}
+
 function extractErrorCode(error: ApiError): string | undefined {
   const payload = error.payload
   if (payload && typeof payload === 'object') {
@@ -141,10 +158,10 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
   }
 
   return (
-    <div className="card w-full border border-slate-200 bg-white/95 shadow-sm p-0">
-     
-      <div className="overflow-x-auto">
-        <table className="table min-w-full md:min-w-[60rem]">
+    <div className="space-y-4">
+      <div className="card w-full border border-slate-200 bg-white/95 shadow-sm p-0 hidden md:block">
+        <div className="overflow-x-auto">
+          <table className="table min-w-full md:min-w-[60rem]">
           <thead>
             <tr>
               <th className="th rounded-tl-2xl">Comprobante</th>
@@ -204,17 +221,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                   </td>
                   <td className="td">
                     <div className="flex flex-col gap-2">
-                      <span
-                        className={`inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-xs font-semibold ${
-                          !hasCAE
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : caeValid
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}
-                      >
-                        {!hasCAE ? 'Sin CAE' : caeValid ? 'CAE vigente' : 'CAE vencido'}
-                      </span>
+                      <CaeStatusBadge hasCAE={hasCAE} caeValid={caeValid} />
                       <span className="font-mono text-xs text-slate-500">{c.cae ?? '—'}</span>
                     </div>
                   </td>
@@ -238,8 +245,87 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                 </tr>
               )
             })}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="flex flex-col gap-4 md:hidden">
+        {data.map(c => {
+          const caeExpiry = parseAfipDate(c.caeVto)
+          const hasCAE = Boolean(c.cae)
+          const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
+          const rowHasAlerts = c.errores.length > 0
+          const docLabel = formatDoc(c.docTipo, c.docNro)
+
+          return (
+            <div
+              key={`mobile-${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
+              className={`rounded-2xl border p-4 shadow-sm transition-colors ${
+                rowHasAlerts ? 'border-rose-200 bg-rose-50/80' : 'border-slate-200 bg-white'
+              }`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold text-slate-800">
+                    {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`} · #{padNumber(c.numero, 8)}
+                  </span>
+                  <span className="text-xs text-slate-500">PV {padNumber(c.puntoVenta, 4)}</span>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-right">
+                  <CaeStatusBadge hasCAE={hasCAE} caeValid={caeValid} />
+                  <span className="font-mono text-xs text-slate-500">{c.cae ?? '—'}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-3 text-sm text-slate-700">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Emisión</p>
+                  <p className="font-medium">{formatAfipDate(c.fechaCbte)}</p>
+                  {c.caeVto && (
+                    <p className="text-xs text-slate-500">CAE vence {formatAfipDate(c.caeVto)}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Importes</p>
+                  <p className="font-semibold">{formatAmount(c.impTotal)}</p>
+                  <p className="text-xs text-slate-500">
+                    Neto {formatAmount(c.impNeto)} · IVA {formatAmount(c.impIva)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Cliente</p>
+                  <p className="font-medium">{docLabel}</p>
+                  {typeof c.concepto === 'number' && (
+                    <p className="text-xs text-slate-500">
+                      {conceptoMap[c.concepto] ?? `Concepto ${c.concepto}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {rowHasAlerts && (
+                <p className="mt-3 text-xs font-semibold text-rose-700">Este comprobante tiene observaciones.</p>
+              )}
+
+              <div className="mt-4">
+                {metadataUnavailable ? (
+                  <span className="text-xs font-medium text-slate-400">
+                    {METADATA_ERROR_MESSAGE}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm w-full justify-center"
+                    onClick={() => handleDownload(c)}
+                    disabled={downloadingId === `${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
+                  >
+                    {downloadingId === `${c.puntoVenta}-${c.tipoAfip}-${c.numero}` ? 'Descargando…' : 'Descargar PDF'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
       {downloadError && (
         <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">

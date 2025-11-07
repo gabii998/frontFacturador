@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState<RegisterForm>({
     name: '',
     email: '',
+    phone: '',
     cuit: '',
     condicionImpositiva: '',
     password: '',
@@ -40,6 +41,7 @@ export default function RegisterPage() {
       await register({
         name: form.name,
         email: form.email,
+        phone: form.phone,
         cuit: form.cuit || undefined,
         password: form.password
       })
@@ -55,6 +57,7 @@ export default function RegisterPage() {
     Boolean(
       form.name.trim() &&
       form.email.trim() &&
+      form.phone.trim() &&
       form.password.trim() &&
       form.confirmPassword.trim()
     ) && !loading
@@ -83,6 +86,15 @@ export default function RegisterPage() {
           name="email"
           type="email"
           value={form.email}
+          onChange={handleChange}
+          required
+        />
+
+        <FormField
+          label="Celular"
+          name="phone"
+          type="tel"
+          value={form.phone}
           onChange={handleChange}
           required
         />
