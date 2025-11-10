@@ -265,9 +265,7 @@ const PrimerPaso = (props: PrimerPasoProps) => {
         <div>
           <h3 className="mt-1 text-base font-semibold text-slate-800">Período del servicio</h3>
           <p className="text-xs text-slate-500">Informá las fechas de prestación y el vencimiento de pago para comprobantes de servicios o mixtos.</p>
-          {dateValidationMessage && (
-            <p className="text-xs text-amber-600 mt-1">{dateValidationMessage}</p>
-          )}
+         
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           <div>
