@@ -22,7 +22,7 @@
   .label { @apply text-sm text-gray-600; }
 
   .auth-shell {
-    @apply min-h-screen w-full px-6 py-12 flex items-center justify-center text-white;
+    @apply w-full px-6 py-12 flex items-center justify-center text-white;
     background: radial-gradient(120% 120% at 0% 0%, rgba(56, 189, 248, 0.45) 0%, rgba(56, 189, 248, 0) 55%),
       radial-gradient(80% 120% at 100% 100%, rgba(129, 140, 248, 0.4) 0%, rgba(15, 23, 42, 0) 65%),
       linear-gradient(140deg, #0f172a 0%, #111827 40%, #1e293b 100%);
@@ -209,7 +209,7 @@
 
 @media (max-width: 1023px) {
   .auth-shell {
-    @apply px-6 py-14 items-start;
+    @apply px-6 py-10 items-center;
     background: linear-gradient(175deg, #0f172a 0%, #0b1220 40%, #111827 100%);
   }
 
@@ -230,28 +230,22 @@
     @apply text-sm max-w-sm mx-auto;
   }
 
-  .auth-hero__list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-width: 24rem;
-    margin: 0 auto;
-    font-size: 0.9rem;
-  }
+  .auth-hero__list { display: none; }
 
   .auth-card {
     @apply max-w-xl w-full px-6 py-8 mt-2;
     box-shadow: 0 20px 50px rgba(15, 23, 42, 0.45);
   }
 
-  .auth-form { @apply space-y-6; }
+  .auth-form { @apply space-y-6 text-center; }
   .auth-form__title { @apply text-2xl; }
-  .auth-form__subtitle { @apply text-sm; }
+  .auth-form__subtitle { @apply text-sm mx-auto max-w-md; }
+  .auth-form__body { @apply text-left; }
 }
 
 @media (max-width: 640px) {
   .auth-shell {
-    @apply px-4 py-10;
+    @apply px-4 py-6;
   }
 
   .auth-hero {
@@ -271,7 +265,7 @@
   }
 
   .auth-form__title { @apply text-xl; }
-  .auth-form__subtitle { @apply text-xs leading-relaxed; }
+  .auth-form__subtitle { @apply text-xs leading-relaxed text-center; }
 
   .auth-field__label { @apply text-sm; }
   .input { @apply text-sm py-2; }
