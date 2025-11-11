@@ -84,9 +84,10 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-layout">
-      <div className="mt-4">
-        {!loading && <ErrorBox error={error} />}
-      </div>
+      {!loading && <div className="mt-4">
+        <ErrorBox error={error} />
+      </div>}
+      
       {error != '' && error != "" && <Fragment>
         <section className="dashboard-hero">
           <div className="space-y-4">
@@ -118,7 +119,8 @@ export default function DashboardPage() {
 
         {loading && <LoadingContent />}
 
-        <section className="dashboard-metrics">
+        {!loading && <Fragment>
+          <section className="dashboard-metrics">
           <DashboardCard
             icon={<PuntoventaIcon />}
             section='Puntos de venta visibles'
@@ -169,7 +171,8 @@ export default function DashboardPage() {
           </div>
 
         </section>
-
+          </Fragment>}
+      
       </Fragment>}
 
 
