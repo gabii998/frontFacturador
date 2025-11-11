@@ -84,12 +84,9 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-layout">
-
       <div className="mt-4">
-        {loading && <LoadingContent />}
         {!loading && <ErrorBox error={error} />}
       </div>
-
       {error != '' && error != "" && <Fragment>
         <section className="dashboard-hero">
           <div className="space-y-4">
@@ -118,6 +115,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        {loading && <LoadingContent />}
 
         <section className="dashboard-metrics">
           <DashboardCard
