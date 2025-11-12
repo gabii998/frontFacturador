@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent iOS Safari from auto-zooming form controls */
+@media (max-width: 600px) {
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px !important;
+  }
+}
+
 @layer components {
   .container-max { @apply max-w-6xl mx-auto px-4 w-full; }
   .card { @apply w-full bg-white rounded-2xl shadow p-6; }
