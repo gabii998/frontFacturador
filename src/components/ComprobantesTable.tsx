@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import type { ComprobanteEmitido } from '../models/afip'
 import { AfipService } from '../services/afip'
 import { ApiError } from '../services/api'
@@ -183,13 +183,20 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
               return (
                 <tr
                   key={`${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
-                  className={`border-b transition-colors ${rowHasAlerts ? 'bg-rose-50/80 border-rose-100 hover:bg-rose-100/70' : 'border-slate-100 hover:bg-slate-50/80'}`}
+                  className={`border-b border-l-4 transition-colors ${
+                    rowHasAlerts
+                      ? 'bg-rose-50/80 border-rose-100 border-l-rose-300 hover:bg-rose-100/70'
+                      : 'border-slate-100 border-l-transparent hover:bg-slate-50/80'
+                  }`}
                 >
                   <td className="td">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-semibold text-slate-800">
-                        {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`} · #{padNumber(c.numero, 8)}
-                      </span>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                          {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`}
+                        </span>
+                        <span className="text-xs font-mono text-slate-500">#{padNumber(c.numero, 8)}</span>
+                      </div>
                       <span className="text-xs text-slate-500">PV {padNumber(c.puntoVenta, 4)}</span>
                     </div>
                   </td>
@@ -260,15 +267,18 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
           return (
             <div
               key={`mobile-${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
-              className={`rounded-2xl border p-4 shadow-sm transition-colors ${
-                rowHasAlerts ? 'border-rose-200 bg-rose-50/80' : 'border-slate-200 bg-white'
+              className={`rounded-2xl border border-l-4 p-4 shadow-sm transition-colors ${
+                rowHasAlerts ? 'border-rose-200 border-l-rose-300 bg-rose-50/80' : 'border-slate-200 border-l-slate-200 bg-white'
               }`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold text-slate-800">
-                    {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`} · #{padNumber(c.numero, 8)}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                      {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`}
+                    </span>
+                    <span className="text-xs font-mono text-slate-500">#{padNumber(c.numero, 8)}</span>
+                  </div>
                   <span className="text-xs text-slate-500">PV {padNumber(c.puntoVenta, 4)}</span>
                 </div>
                 <div className="flex flex-col items-end gap-1 text-right">

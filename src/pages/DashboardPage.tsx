@@ -84,11 +84,13 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-layout">
-      {!loading && <div className="mt-4">
+      {(!loading && error != null) && 
+      <div className="mt-4">
         <ErrorBox error={error} />
-      </div>}
+      </div>
+      }
       
-      {error != '' && error != "" && <Fragment>
+      {!error && <Fragment>
         <section className="dashboard-hero">
           <div className="space-y-4">
             <div>
@@ -147,29 +149,6 @@ export default function DashboardPage() {
             buttonDestination='comprobantes'
             buttonLabel='Ver comprobantes'
           />
-        </section>
-
-        <section className="dashboard-secondary">
-          <div className="dashboard-card">
-            <header className="dashboard-card__header">
-              <div>
-                <h2 className="dashboard-card__title">Actividad reciente</h2>
-                <p className="dashboard-card__subtitle">Estado general de la operación según la última actualización.</p>
-              </div>
-            </header>
-            <div className="insights-list">
-              {insights.map((item) => (
-                <div key={item.key} className="insight-item">
-                  <span className={`insight-dot insight-dot--${item.tone}`} />
-                  <div>
-                    <h3>{item.title}</h3>
-                    <p>{item.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
         </section>
           </Fragment>}
       

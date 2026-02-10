@@ -17,11 +17,9 @@ const EmitirPage = () => {
   return (
     <div className="space-y-6">
       <SectionHeader
-        section='Emisión'
-        title='Emití tus comprobantes desde un solo lugar'
+        title='Emisión'
         subtitle='Centralizá la operatoria con AFIP WSFE y generá comprobantes con validaciones automáticas y seguimiento en tiempo real.'
         icon={<IconCashRegister />}
-        rightContent={<EmitirHeaderInfo />}
       />
 
       <section>

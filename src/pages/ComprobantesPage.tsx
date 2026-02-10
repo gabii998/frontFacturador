@@ -1,14 +1,12 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+﻿import { Fragment, useEffect, useState } from 'react'
 import { AfipService } from '../services/afip'
 import type { ComprobanteEmitido } from '../models/afip'
 import ErrorBox from '../components/ErrorBox'
 import { useNavigate } from 'react-router-dom'
 import ComprobantesTable from '../components/ComprobantesTable'
-import { ComprobanteHeaderInfoProps, FiltrosProps, Stats } from '../props/ComprobantesProps'
+import { ComprobanteHeaderInfoProps, FiltrosProps } from '../props/ComprobantesProps'
 import SectionHeader from '../components/SectionHeader'
 import { IconFileTypeXls, IconFilter, IconInfoCircle, IconInvoice, IconLoader, IconRestore, IconSearch } from '@tabler/icons-react'
-import SubHeaderItemProps from '../props/SubHeaderItemProps'
-import Subheader from '../components/Subheader'
 import EmptyContent from '../components/EmptyContent'
 import LoadingContent from '../components/LoadingContent'
 
@@ -23,7 +21,6 @@ const ComprobantesPage = () => {
   const [data, setData] = useState<ComprobanteEmitido[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<unknown>()
-  const [lastFetch, setLastFetch] = useState<Date | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   async function fetchData(nextPv = pv, nextTipo = tipo, nextLimite = limite) {
@@ -31,7 +28,6 @@ const ComprobantesPage = () => {
     try {
       const res = await AfipService.listar(nextPv, nextTipo, { limite: nextLimite })
       setData(res)
-      setLastFetch(new Date())
     } catch (e) {
       setError(e)
     } finally {
@@ -41,65 +37,13 @@ const ComprobantesPage = () => {
 
   useEffect(() => { void fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE) }, [])
 
-  const stats: Stats | null = useMemo(() => {
-    if (!data.length) return null
-    const total = data.length
-    const uniquePV = new Set(data.map(item => item.puntoVenta)).size
-    const withCae = data.filter(item => !!item.cae).length
-    const totalAmount = data.reduce((sum, item) => sum + (item.impTotal ?? 0), 0)
-    const latest = data.reduce<ComprobanteEmitido | undefined>((acc, item) => {
-      if (!acc) return item
-      return item.numero > acc.numero ? item : acc
-    }, undefined)
-
-    return {
-      total,
-      uniquePV,
-      withCae,
-      totalAmount,
-      latest
-    }
-  }, [data])
-
-  const formatCurrency = useMemo(() => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 }), [])
-
-  const lastFetchLabel = useMemo(() => {
-    if (lastFetch) return lastFetch.toLocaleString('es-AR')
-    return loading ? 'Consultando…' : 'Sin consultas todavía'
-  }, [lastFetch, loading])
-
-  const formatAfipDate = (value?: string | null) => {
-    if (!value) return '—'
-    if (value.includes('-')) {
-      const d = new Date(value)
-      return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString('es-AR')
-    }
-    if (value.length === 8) {
-      const year = value.slice(0, 4)
-      const month = value.slice(4, 6)
-      const day = value.slice(6, 8)
-      return `${day}/${month}/${year}`
-    }
-    return value
-  }
-
   return (
     <div className="space-y-6">
       <SectionHeader
-        section='Comprobantes'
         icon={<IconInvoice />}
-        title='Monitor de comprobantes emitidos'
+        title='Comprobantes'
         subtitle='Consultá y auditá tus últimas emisiones agrupadas por punto de venta y tipo AFIP.'
         rightContent={<ComprobanteHeaderInfo filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} />}
-        collapsible
-        bottomContent={(collapsed) => (
-          <ComprobanteHeaderSubtitle
-            stats={stats}
-            formatCurrency={formatCurrency}
-            lastFetchLabel={lastFetchLabel}
-            collapsed={collapsed}
-          />
-        )}
       />
 
       <section className="space-y-6">
@@ -125,17 +69,6 @@ const ComprobantesPage = () => {
 
     </div>
   )
-}
-
-const ComprobanteHeaderSubtitle = ({ stats, formatCurrency, lastFetchLabel, collapsed }: { stats: Stats | null, formatCurrency: any, lastFetchLabel: string | null, collapsed: boolean }) => {
-  const items: SubHeaderItemProps[] = [
-    { title: 'Importe total', content: stats ? formatCurrency.format(stats.totalAmount) : '—' },
-    { title: 'Comprobantes listados', content: stats ? stats.total.toString() : '—' },
-    { title: 'Con CAE válido', content: stats ? stats.withCae.toString() : '—' },
-    { title: 'Última consulta', content: lastFetchLabel ? lastFetchLabel : '—' }
-  ]
-
-  return (<Subheader props={items} collapsed={collapsed} />)
 }
 
 const FiltrosComprobantes = (props: FiltrosProps) => {

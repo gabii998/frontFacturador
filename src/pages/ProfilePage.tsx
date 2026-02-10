@@ -1,8 +1,7 @@
-import { FormEvent, Fragment, useEffect, useMemo, useState } from 'react'
+﻿import { FormEvent, Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ErrorBox from '../components/ErrorBox'
 import SectionHeader from '../components/SectionHeader'
-import ComprobanteIcon from '../icon/ComprobanteIcon'
 import HeaderPill from '../components/HeaderPill'
 import { useAuth } from '../contexts/AuthContext'
 import { changePassword } from '../services/profile'
@@ -12,18 +11,6 @@ import { PLAN_COLORS_BY_CODE, PLAN_CODE_TO_NAME, type PlanCode } from '../consta
 import { PlansService, type PlanStatusResponse } from '../services/plans'
 import type { PadronInfo } from '../models/afip'
 import { IconUser } from '@tabler/icons-react'
-import SubHeaderItemProps from '../props/SubHeaderItemProps'
-import Subheader from '../components/Subheader'
-
-const SubheaderContent = ({domicilio,inicioActividades,cuit,collapsed = false}:{domicilio:string | null,inicioActividades:string | null,cuit:string|null, collapsed?: boolean}) => {
-  const items: SubHeaderItemProps[] = [
-    {title:"Domicilio fiscal",content: domicilio ?? " - "},
-    {title: "Inicio actividades",content:inicioActividades ?? " - "},
-    {title: "CUIT",content:cuit ?? " - "}
-  ]
-  return (<Subheader props={items} collapsed={collapsed} />)
-}
-
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -142,15 +129,6 @@ export default function ProfilePage() {
         icon={<IconUser/>}
         title='Información de la cuenta'
         subtitle='Estos datos se muestran según la información que cargaste al registrarte.'
-        collapsible
-        bottomContent={(collapsed) => (
-          <SubheaderContent
-            domicilio={domicilioLabel}
-            inicioActividades={inicioActividadesLabel}
-            cuit={user.cuit ?? ""}
-            collapsed={collapsed}
-          />
-        )}
         rightContent={<ProfileHeaderInfo user={user} />}
       />
 

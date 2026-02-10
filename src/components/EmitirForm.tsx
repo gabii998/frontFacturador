@@ -104,6 +104,25 @@ export default function EmitirForm() {
     );
   }
 
+  const emitirNuevoComprobante = () => {
+    setCurrentStep(StepEmitir.CONFIGURACION)
+    setLoading(false)
+    setError(undefined)
+    setResult(null)
+    setPdfUrl(null)
+    setPv(2)
+    setPuntosVentaError(null)
+    setDocTipo('DNI')
+    setDocNro('28999888')
+    setCond('CONSUMIDOR_FINAL')
+    setConcepto('PRODUCTOS')
+    setFechaEmision(today)
+    setItems([{ descripcion: 'Producto de prueba', cantidad: 1, precioUnitario: 1000, iva: 'IVA_0' }])
+    setServicioDesde(today)
+    setServicioHasta(today)
+    setVencimientoPago(today)
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (currentStep == StepEmitir.ITEMS) {
@@ -189,7 +208,14 @@ export default function EmitirForm() {
       </form>}
 
       
-        </Fragment> : <SuccessLite title='Factura creada correctamente' subtitle={`CAE # ${result?.cae}`}/>}
+        </Fragment> : (
+          <div className="flex flex-col items-center gap-4">
+            <SuccessLite title='Factura creada correctamente' subtitle={`CAE # ${result?.cae}`}/>
+            <button type="button" className="btn btn-primary" onClick={emitirNuevoComprobante}>
+              Emitir nuevo comprobante
+            </button>
+          </div>
+        )}
       
 
       <ErrorBox error={error} />
