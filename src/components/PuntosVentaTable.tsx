@@ -1,29 +1,27 @@
+﻿import { IonCard, IonCardContent, IonGrid, IonRow, IonCol, IonText } from '@ionic/react'
 import type { PuntoVenta } from '../models/afip'
-export default function PuntosVentaTable({data}:{data:PuntoVenta[]}){
+
+export default function PuntosVentaTable({ data }: { data: PuntoVenta[] }) {
   return (
-    <div className="card w-full border border-slate-200 bg-white/95 shadow-sm p-0">
-      <div className="overflow-x-auto">
-        <table className="table">
-          <thead>
-            <tr className="border-b">
-              <th className="th rounded-tl-2xl">Nro</th>
-              <th className="th">Emisión</th>
-              <th className="th">Bloqueado</th>
-              <th className="th rounded-tr-2xl">Baja</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map(pv => (
-              <tr key={pv.nro} className="border-b">
-                <td className="td font-medium">{pv.nro}</td>
-                <td className="td">{pv.emisionTipo}</td>
-                <td className="td">{pv.bloqueado ? 'Sí' : 'No'}</td>
-                <td className="td">{pv.fchBaja ?? '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <IonCard className="card w-full surface-card-soft">
+      <IonCardContent>
+        <IonGrid>
+          <IonRow className="border-b border-slate-200 pb-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
+            <IonCol size="3">Nro</IonCol>
+            <IonCol size="3">Emision</IonCol>
+            <IonCol size="3">Bloqueado</IonCol>
+            <IonCol size="3">Baja</IonCol>
+          </IonRow>
+          {data.map((pv) => (
+            <IonRow key={pv.nro} className="border-b border-slate-100 py-2 text-sm text-slate-700 last:border-b-0">
+              <IonCol size="3" className="font-medium">{pv.nro}</IonCol>
+              <IonCol size="3">{pv.emisionTipo}</IonCol>
+              <IonCol size="3">{pv.bloqueado ? 'Si' : 'No'}</IonCol>
+              <IonCol size="3"><IonText>{pv.fchBaja ?? '-'}</IonText></IonCol>
+            </IonRow>
+          ))}
+        </IonGrid>
+      </IonCardContent>
+    </IonCard>
   )
 }

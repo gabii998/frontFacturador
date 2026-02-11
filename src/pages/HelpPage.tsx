@@ -1,118 +1,113 @@
-import { Link } from 'react-router-dom'
+import { IonButton, IonCard, IonCardContent, IonItem, IonLabel } from '@ionic/react'
+import { useNavigate } from 'react-router-dom'
+import PageHeroCard from '../components/PageHeroCard'
 
 const quickStart = [
   {
-    title: '1. Prepará tu cuenta',
+    title: '1. Prepara tu cuenta',
     description:
-      'Verificá que tu token de AFIP esté vigente y que tengas configurados los datos fiscales básicos en el apartado de Configuración.'
+      'Verifica que tu token de AFIP este vigente y que tengas configurados los datos fiscales basicos en Configuracion.'
   },
   {
-    title: '2. Cargá tus puntos de venta',
+    title: '2. Carga tus puntos de venta',
     description:
-      'Ingresá a Puntos de venta para sincronizar los puntos habilitados en AFIP. Esto asegura que puedas emitir comprobantes desde Facturador.'
+      'Ingresa a Puntos de venta para sincronizar los puntos habilitados en AFIP y poder emitir comprobantes.'
   },
   {
-    title: '3. Emití tu primer comprobante',
+    title: '3. Emite tu primer comprobante',
     description:
-      'Desde la opción Emitir seguí los pasos guiados. La app valida automáticamente la información obligatoria antes de enviarla a AFIP.'
+      'Desde Emitir sigue los pasos guiados. La app valida automaticamente la informacion obligatoria antes de enviar a AFIP.'
   }
 ]
 
 const helpTopics = [
   {
-    title: 'Gestión de comprobantes',
+    title: 'Gestion de comprobantes',
     items: [
-      'El tablero principal muestra un resumen de los últimos comprobantes emitidos y sus estados.',
-      'Podés descargar en formato PDF o XML desde la sección Comprobantes.',
-      'Si emitís en lote, usá la opción de carga masiva con la plantilla que se indica en la página.'
+      'El tablero principal muestra resumen de ultimos comprobantes y sus estados.',
+      'Puedes descargar en PDF desde la seccion Comprobantes.',
+      'Si emites en lote, usa la opcion de carga masiva con plantilla.'
     ]
   },
   {
     title: 'Tokens y vencimientos',
     items: [
-      'Controlamos el vencimiento de los certificados cada vez que ingresás a la app.',
-      'Recibirás alertas cuando un token esté próximo a expirar para que puedas renovarlo sin perder operatividad.'
+      'Controlamos el vencimiento de certificados al ingresar a la app.',
+      'Recibiras alertas cuando un token este proximo a expirar.'
     ]
   },
   {
     title: 'Privacidad y datos personales',
     items: [
-      'Tus datos se protegen según nuestra Política de privacidad y no se comparten con terceros.',
-      'Podés solicitar la eliminación de tus datos en cualquier momento desde la sección dedicada.'
+      'Tus datos se protegen segun la politica de privacidad.',
+      'Puedes solicitar eliminacion de datos cuando lo necesites.'
     ]
   }
 ]
 
 export default function HelpPage() {
+  const navigate = useNavigate()
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex max-w-4xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-0">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-wide text-blue-600">Centro de ayuda</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Respondemos las dudas frecuentes de Facturador</h1>
-            <p className="mt-3 text-sm text-slate-600">
-              Reunimos los pasos básicos para operar, guías sobre comprobantes y enlaces para que puedas contactarnos si necesitás soporte.
-            </p>
-          </div>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          >
-            Volver al panel
-          </Link>
-        </header>
+    <div className="page-bg">
+      <div className="page-shell flex flex-col gap-8">
+        <PageHeroCard
+          eyebrow="Centro de ayuda"
+          title="Preguntas frecuentes de Facturador"
+          description="Reunimos pasos basicos para operar, guias de comprobantes y enlaces de soporte."
+          action={(
+            <IonButton fill="outline" onClick={() => navigate('/')}>
+              Volver al panel
+            </IonButton>
+          )}
+        />
 
-        <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Cómo comenzar</h2>
-          <div className="grid gap-6 md:grid-cols-3">
-            {quickStart.map((step) => (
-              <article key={step.title} className="space-y-2">
-                <p className="text-sm font-semibold text-blue-600">{step.title}</p>
-                <p className="text-sm text-slate-600">{step.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+        <IonCard className="surface-card">
+          <IonCardContent>
+            <h2 className="mb-4 text-xl font-semibold text-slate-900">Como comenzar</h2>
+            <div className="grid gap-4 md:grid-cols-3">
+              {quickStart.map((step) => (
+                <article key={step.title} className="space-y-2 rounded-xl border border-slate-200 p-4">
+                  <p className="text-sm font-semibold text-blue-600">{step.title}</p>
+                  <p className="body-copy">{step.description}</p>
+                </article>
+              ))}
+            </div>
+          </IonCardContent>
+        </IonCard>
 
-        <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Temas destacados</h2>
-          <div className="space-y-6">
-            {helpTopics.map((topic) => (
-              <article key={topic.title} className="space-y-3">
-                <h3 className="text-lg font-semibold text-slate-800">{topic.title}</h3>
-                <ul className="space-y-2">
+        <IonCard className="surface-card">
+          <IonCardContent>
+            <h2 className="mb-4 text-xl font-semibold text-slate-900">Temas destacados</h2>
+            <div className="space-y-5">
+              {helpTopics.map((topic) => (
+                <article key={topic.title} className="space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-800">{topic.title}</h3>
                   {topic.items.map((item) => (
-                    <li key={item} className="text-sm text-slate-600">
-                      {item}
-                    </li>
+                    <IonItem key={item} lines="none" className="rounded-lg border border-slate-100 bg-slate-50">
+                      <IonLabel>{item}</IonLabel>
+                    </IonItem>
                   ))}
-                </ul>
-              </article>
-            ))}
-          </div>
-        </section>
+                </article>
+              ))}
+            </div>
+          </IonCardContent>
+        </IonCard>
 
-        <section className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50 p-8">
-          <h2 className="text-lg font-semibold text-blue-900">¿Necesitás más ayuda?</h2>
-          <p className="text-sm text-blue-900/80">
-            Escribinos a <a className="font-medium underline" href="mailto:soporte@facturador.app">soporte@facturador.app</a> para recibir asistencia personalizada.
-          </p>
-          <div className="grid gap-4 text-sm text-blue-900/80 sm:grid-cols-2">
-            <Link to="/politica-privacidad" className="hover:text-blue-800 hover:underline">
-              Revisar la política de privacidad
-            </Link>
-            <Link to="/eliminar-datos" className="hover:text-blue-800 hover:underline">
-              Solicitar eliminación de datos
-            </Link>
-            <Link to="/terminos-condiciones" className="hover:text-blue-800 hover:underline">
-              Ver términos y condiciones del servicio
-            </Link>
-            <a href="https://www.afip.gob.ar" target="_blank" rel="noreferrer" className="hover:text-blue-800 hover:underline">
-              Ir al sitio de AFIP para más recursos oficiales
-            </a>
-          </div>
-        </section>
+        <IonCard className="border border-blue-100 bg-blue-50">
+          <IonCardContent>
+            <h2 className="text-lg font-semibold text-blue-900">Necesitas mas ayuda?</h2>
+            <p className="mt-2 text-sm text-blue-900/80">
+              Escribenos a <a className="font-medium underline" href="mailto:soporte@facturador.app">soporte@facturador.app</a>.
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <IonButton fill="clear" size="small" onClick={() => navigate('/politica-privacidad')}>Politica de privacidad</IonButton>
+              <IonButton fill="clear" size="small" onClick={() => navigate('/eliminar-datos')}>Eliminar datos</IonButton>
+              <IonButton fill="clear" size="small" onClick={() => navigate('/terminos-condiciones')}>Terminos y condiciones</IonButton>
+              <IonButton fill="clear" size="small" href="https://www.afip.gob.ar" target="_blank" rel="noreferrer">Sitio AFIP</IonButton>
+            </div>
+          </IonCardContent>
+        </IonCard>
       </div>
     </div>
   )

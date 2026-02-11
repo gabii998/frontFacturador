@@ -1,66 +1,64 @@
-import { FormEvent, useState } from 'react'
+import { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import ErrorBox from '../components/ErrorBox'
+import { IonButton, IonText } from '@ionic/react'
+import AuthFormLayout from '../components/AuthFormLayout'
+import FormFieldsArray, { type FormFieldConfig } from '../components/FormFieldsArray'
 import { useAuth } from '../contexts/AuthContext'
+import { useAsyncRequest } from '../hooks/useAsyncRequest'
+import { useFormState } from '../hooks/useFormState'
+import { mapForgotPasswordFormToRequest } from '../mappers/formToRequest'
+
+type ForgotPasswordFormValues = {
+  email: string
+}
+
+const FORGOT_PASSWORD_FIELDS: FormFieldConfig<ForgotPasswordFormValues>[] = [
+  {
+    name: 'email',
+    label: 'Email',
+    type: 'email',
+    autocomplete: 'email',
+    required: true,
+    variant: 'auth',
+    labelClassName: 'auth-field__label'
+  }
+]
 
 export default function ForgotPasswordPage() {
   const { requestPasswordReset } = useAuth()
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<unknown>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const { values, setField } = useFormState<ForgotPasswordFormValues>({ email: '' })
+  const { loading, error, success, run } = useAsyncRequest<void>()
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setError(null)
-    setSuccess(null)
-    setLoading(true)
-    try {
-      await requestPasswordReset({ email })
-      setSuccess('Si el correo existe, vas a recibir un email con los pasos para recuperar tu contraseña.')
-    } catch (err) {
-      setError(err)
-    } finally {
-      setLoading(false)
-    }
+    await run(() => requestPasswordReset(mapForgotPasswordFormToRequest(values)))
   }
 
-  const canSubmit = Boolean(email.trim()) && !loading
+  const canSubmit = Boolean(values.email.trim()) && !loading
 
   return (
-    <div className="auth-form">
-      <div className="auth-form__header">
-        <span className="auth-eyebrow">Recuperar acceso</span>
-        <h1 className="auth-form__title">Restablecé tu contraseña</h1>
-        <p className="auth-form__subtitle">
-          Enviaremos un enlace temporal para que puedas definir una nueva contraseña y volver al panel.
-        </p>
-      </div>
-      <ErrorBox error={error} />
-      {success && <div className="auth-form__success">{success}</div>}
-      <form className="auth-form__body" onSubmit={handleSubmit}>
-        <label className="auth-field">
-          <span className="auth-field__label">Email</span>
-          <input
-            type="email"
-            autoComplete="email"
-            className="input"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </label>
-        <button
+    <AuthFormLayout
+      eyebrow="Recuperar acceso"
+      title="Restablece tu contrasena"
+      subtitle="Enviaremos un enlace temporal para que puedas definir una nueva contrasena y volver al panel."
+      error={error}
+      notice={success ? (
+        <IonText className="auth-form__success block">
+          Si el correo existe, vas a recibir un email con los pasos para recuperar tu contrasena.
+        </IonText>
+      ) : null}
+      onSubmit={handleSubmit}
+      footer={<Link to="/login" className="auth-link">Volver a iniciar sesion</Link>}
+    >
+        <FormFieldsArray fields={FORGOT_PASSWORD_FIELDS} values={values} setField={setField} />
+        <IonButton
           type="submit"
           disabled={!canSubmit}
-          className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
+          expand="block"
+          className="w-full"
         >
           {loading ? 'Enviando instrucciones...' : 'Enviarme instrucciones'}
-        </button>
-      </form>
-      <div className="auth-form__footer">
-        <Link to="/login" className="auth-link">Volver a iniciar sesión</Link>
-      </div>
-    </div>
+        </IonButton>
+    </AuthFormLayout>
   )
 }

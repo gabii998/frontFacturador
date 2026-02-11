@@ -9,7 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ionic/react": "^8.7.17",
     "@tabler/icons-react": "^3.35.0",
+    "ionicons": "^8.0.13",
     "jszip": "^3.10.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

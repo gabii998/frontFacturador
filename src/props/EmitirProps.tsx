@@ -30,7 +30,9 @@ export interface SegundoPasoProps {
 
 export interface TercerPasoProps {
     items:FacturaItem[];
-    setItems:React.Dispatch<React.SetStateAction<FacturaItem[]>>;
+    addItem:() => void;
+    removeItem:(index: number) => void;
+    updateItem:(index: number, patch: Partial<Pick<FacturaItem, 'descripcion' | 'cantidad' | 'precioUnitario'>>) => void;
     totalAmount:number;
 }
 

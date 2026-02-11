@@ -1,9 +1,11 @@
-import { useMemo, useRef, useState } from 'react'
+﻿import { useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import * as XLSX from 'xlsx'
+import { IonBadge, IonButton, IonCard, IonCardContent, IonIcon, IonText } from '@ionic/react'
+import { cloudUploadOutline, refreshOutline } from 'ionicons/icons'
 import { AfipService } from '../services/afip'
 import type { Concepto, CondicionImpositiva, DocumentoTipo, FacturaRespuesta, FacturaSolicitud } from '../models/afip'
 import { ExcelHelper } from '../utils/excel'
+import ActionButtonsGroup from './ActionButtonsGroup'
 
 type EmisorTipo = 'MONOTRIBUTO' | 'RESPONSABLE_INSCRIPTO'
 type FacturaSolicitudDraft = Omit<FacturaSolicitud, 'externalId'>
@@ -33,7 +35,7 @@ const STATUS_META: Record<UploadStatus, StatusMeta> = {
     badge: 'bg-slate-100 text-slate-600 border border-slate-200'
   },
   processing: {
-    label: 'Emitiendo…',
+    label: 'Emitiendo...',
     badge: 'bg-sky-50 text-sky-700 border border-sky-200'
   },
   success: {
@@ -138,26 +140,26 @@ const generateId = () =>
 const parseEmisor = (value: unknown, rowLabel: string, warnings: string[]): EmisorTipo => {
   const str = stringValue(value)
   if (!str) {
-    warnings.push(`${rowLabel}: sin emisor, se usará MONOTRIBUTO.`)
+    warnings.push(`${rowLabel}: sin emisor, se usara MONOTRIBUTO.`)
     return 'MONOTRIBUTO'
   }
   const normalized = normalizeEnumValue(str)
   if (normalized === 'RESPONSABLE_INSCRIPTO' || normalized === 'RI') return 'RESPONSABLE_INSCRIPTO'
   if (normalized === 'MONOTRIBUTO' || normalized === 'MT' || normalized === 'MONO') return 'MONOTRIBUTO'
-  warnings.push(`${rowLabel}: emisor "${str}" no reconocido, se usará MONOTRIBUTO.`)
+  warnings.push(`${rowLabel}: emisor "${str}" no reconocido, se usara MONOTRIBUTO.`)
   return 'MONOTRIBUTO'
 }
 
 const parseConcepto = (value: unknown, rowLabel: string, warnings: string[]): Concepto => {
   const str = stringValue(value)
   if (!str) {
-    warnings.push(`${rowLabel}: sin concepto, se usará PRODUCTOS.`)
+    warnings.push(`${rowLabel}: sin concepto, se usara PRODUCTOS.`)
     return 'PRODUCTOS'
   }
   const normalized = normalizeEnumValue(str)
   if (normalized === 'SERVICIOS' || normalized === 'SERVICIO') return 'SERVICIOS'
   if (normalized === 'PRODUCTOS' || normalized === 'PRODUCTO') return 'PRODUCTOS'
-  warnings.push(`${rowLabel}: concepto "${str}" no reconocido, solo se permite "Productos" o "Servicios". Se usará PRODUCTOS.`)
+  warnings.push(`${rowLabel}: concepto "${str}" no reconocido, solo se permite "Productos" o "Servicios". Se usara PRODUCTOS.`)
   return 'PRODUCTOS'
 }
 
@@ -173,7 +175,7 @@ const CONDICIONES_IVA: Record<string, CondicionImpositiva> = {
 const parseCondicionIva = (value: unknown, rowLabel: string, warnings: string[]): CondicionImpositiva => {
   const str = stringValue(value)
   if (!str) {
-    warnings.push(`${rowLabel}: sin condición IVA del receptor, se usará CONSUMIDOR_FINAL.`)
+    warnings.push(`${rowLabel}: sin condicion IVA del receptor, se usara CONSUMIDOR_FINAL.`)
     return 'CONSUMIDOR_FINAL'
   }
   const normalized = normalizeEnumValue(str)
@@ -181,21 +183,21 @@ const parseCondicionIva = (value: unknown, rowLabel: string, warnings: string[])
   if (normalized === 'RI') return 'RESPONSABLE_INSCRIPTO'
   if (normalized === 'MT' || normalized === 'MONO') return 'MONOTRIBUTO'
   if (normalized in CONDICIONES_IVA) return CONDICIONES_IVA[normalized]
-  warnings.push(`${rowLabel}: condición IVA "${str}" no reconocida, se usará CONSUMIDOR_FINAL.`)
+  warnings.push(`${rowLabel}: condicion IVA "${str}" no reconocida, se usara CONSUMIDOR_FINAL.`)
   return 'CONSUMIDOR_FINAL'
 }
 
 const parseDocumentoTipo = (value: unknown, rowLabel: string, warnings: string[]): DocumentoTipo => {
   const str = stringValue(value)
   if (!str) {
-    warnings.push(`${rowLabel}: sin tipo de documento, se usará SIN_IDENTIFICAR.`)
+    warnings.push(`${rowLabel}: sin tipo de documento, se usara SIN_IDENTIFICAR.`)
     return 'SIN_IDENTIFICAR'
   }
   const normalized = normalizeEnumValue(str)
   if (normalized === 'DNI') return 'DNI'
   if (normalized === 'CUIT' || normalized === 'CUIL') return 'CUIT'
   if (normalized === 'SIN_IDENTIFICAR' || normalized === 'SINIDENTIFICAR' || normalized === 'SINID') return 'SIN_IDENTIFICAR'
-  warnings.push(`${rowLabel}: tipo de documento "${str}" no reconocido, se usará SIN_IDENTIFICAR.`)
+  warnings.push(`${rowLabel}: tipo de documento "${str}" no reconocido, se usara SIN_IDENTIFICAR.`)
   return 'SIN_IDENTIFICAR'
 }
 
@@ -205,7 +207,7 @@ const parsePais = (value: unknown, rowLabel: string, warnings: string[]): 'AR' |
   const normalized = normalizeEnumValue(str)
   if (normalized === 'AR' || normalized === 'ARGENTINA' || normalized === 'ARG') return 'AR'
   if (normalized === 'EXT' || normalized === 'EXTERIOR' || normalized === 'EXTRANJERO') return 'EXT'
-  warnings.push(`${rowLabel}: país "${str}" no reconocido, se usará AR.`)
+  warnings.push(`${rowLabel}: pais "${str}" no reconocido, se usara AR.`)
   return 'AR'
 }
 
@@ -214,7 +216,7 @@ const parsePais = (value: unknown, rowLabel: string, warnings: string[]): 'AR' |
 const parseIva = (value: unknown, rowLabel: string, warnings: string[]): string => {
   const str = stringValue(value)
   if (!str) {
-    warnings.push(`${rowLabel}: sin código de IVA, se usará IVA 0%.`)
+    warnings.push(`${rowLabel}: sin codigo de IVA, se usara IVA 0%.`)
     return 'IVA_0'
   }
   const normalized = normalizeEnumValue(str)
@@ -229,7 +231,7 @@ const parseIva = (value: unknown, rowLabel: string, warnings: string[]): string 
   })()
   const candidate = normalizedWithPrefix
   if (ExcelHelper.IVA_CODES.has(candidate)) return candidate
-  warnings.push(`${rowLabel}: código de IVA "${str}" no reconocido, se usará IVA_0.`)
+  warnings.push(`${rowLabel}: codigo de IVA "${str}" no reconocido, se usara IVA_0.`)
   return 'IVA_0'
 }
 
@@ -288,11 +290,12 @@ export default function ComprobantesExcelUpload(){
     setRows([])
 
     try {
+      const XLSX = await import('xlsx')
       const buffer = await file.arrayBuffer()
       const workbook = XLSX.read(buffer, { type: 'array' })
-      if (!workbook.SheetNames.length) throw new Error('El archivo no contiene hojas válidas')
+      if (!workbook.SheetNames.length) throw new Error('El archivo no contiene hojas validas')
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-      if (!firstSheet) throw new Error('No se encontró la primera hoja del archivo')
+      if (!firstSheet) throw new Error('No se encontro la primera hoja del archivo')
 
       const rawRows = XLSX.utils.sheet_to_json<unknown[]>(firstSheet, { defval: null, header: 1 })
       const mandatoryHeaders = ['puntoventa', 'concepto', 'descripcion', 'cantidad', 'preciounitario']
@@ -306,7 +309,7 @@ export default function ComprobantesExcelUpload(){
           .filter(Boolean)
         return mandatoryHeaders.every(key => normalizedHeaders.includes(key))
       })
-      if (headerRowIndex === -1) throw new Error('No se detectó un encabezado válido en el archivo.')
+      if (headerRowIndex === -1) throw new Error('No se detecto un encabezado valido en el archivo.')
       const headerRow = rawRows[headerRowIndex] ?? []
       const headerKeys = headerRow.map(cell => stringValue(cell) ?? '')
       const normalizedHeaderKeys = headerKeys.map(key => normalizeKey(key))
@@ -332,7 +335,7 @@ export default function ComprobantesExcelUpload(){
           return { record, rowNumber: excelRowNumber }
         })
         .filter((entry): entry is { record: Record<string, unknown>; rowNumber: number } => Boolean(entry))
-      if (!entries.length) throw new Error('No se encontraron filas con datos después del encabezado.')
+      if (!entries.length) throw new Error('No se encontraron filas con datos despues del encabezado.')
 
       const warnings: string[] = []
       const parsed: ParsedRow[] = []
@@ -405,7 +408,7 @@ export default function ComprobantesExcelUpload(){
           : null
         if (!documentoNumero) {
           documentoNumero = documentoTipo === 'CUIT' ? '00000000000' : '00000000'
-          warnings.push(`${rowLabel}: sin número de documento, se usará ${documentoNumero}.`)
+          warnings.push(`${rowLabel}: sin numero de documento, se usara ${documentoNumero}.`)
         }
 
         const descripcion = stringValue(
@@ -416,7 +419,7 @@ export default function ComprobantesExcelUpload(){
           normalized.producto
         )
         if (!descripcion) {
-          warnings.push(`${rowLabel}: falta la descripción del ítem. La fila se omitirá.`)
+          warnings.push(`${rowLabel}: falta la descripcion del item. La fila se omitira.`)
           return
         }
 
@@ -426,7 +429,7 @@ export default function ComprobantesExcelUpload(){
         )
         if (cantidad === null || cantidad <= 0) {
           cantidad = 1
-          warnings.push(`${rowLabel}: cantidad inválida, se usará 1.`)
+          warnings.push(`${rowLabel}: cantidad invalida, se usara 1.`)
         }
 
         let precioUnitario = decimalValue(
@@ -437,7 +440,7 @@ export default function ComprobantesExcelUpload(){
         )
         if (precioUnitario === null || precioUnitario < 0) {
           precioUnitario = 0
-          warnings.push(`${rowLabel}: precio unitario inválido, se usará 0.`)
+          warnings.push(`${rowLabel}: precio unitario invalido, se usara 0.`)
         }
 
         const iva = parseIva(
@@ -485,22 +488,22 @@ export default function ComprobantesExcelUpload(){
         if (concepto === 'SERVICIOS') {
           if (!servicioDesde) {
             servicioDesde = fechaEmision
-            warnings.push(`${rowLabel}: sin Servicio Desde, se usará la fecha de emisión.`)
+            warnings.push(`${rowLabel}: sin Servicio Desde, se usara la fecha de emision.`)
           }
           if (!servicioHasta) {
             servicioHasta = servicioDesde
-            warnings.push(`${rowLabel}: sin Servicio Hasta, se usará Servicio Desde.`)
+            warnings.push(`${rowLabel}: sin Servicio Hasta, se usara Servicio Desde.`)
           }
           if (!vencimientoPago) {
             vencimientoPago = servicioHasta
-            warnings.push(`${rowLabel}: sin Vencimiento de Pago, se usará Servicio Hasta.`)
+            warnings.push(`${rowLabel}: sin Vencimiento de Pago, se usara Servicio Hasta.`)
           }
         } else {
           if (servicioDesde) {
-            warnings.push(`${rowLabel}: Servicio Desde se ignorará porque el concepto es Productos.`)
+            warnings.push(`${rowLabel}: Servicio Desde se ignorara porque el concepto es Productos.`)
           }
           if (servicioHasta) {
-            warnings.push(`${rowLabel}: Servicio Hasta se ignorará porque el concepto es Productos.`)
+            warnings.push(`${rowLabel}: Servicio Hasta se ignorara porque el concepto es Productos.`)
           }
           servicioDesde = null
           servicioHasta = null
@@ -552,7 +555,7 @@ export default function ComprobantesExcelUpload(){
       })
 
       if (!parsed.length) {
-        throw new Error('No se encontraron filas con los datos obligatorios para emitir (PuntoVenta, descripción, cantidad y precio).')
+        throw new Error('No se encontraron filas con los datos obligatorios para emitir (PuntoVenta, descripcion, cantidad y precio).')
       }
 
       setParsingWarnings(warnings)
@@ -594,7 +597,7 @@ export default function ComprobantesExcelUpload(){
       if (!messageParts.length) messageParts.push('Emitido correctamente')
       setRows(prev => prev.map(row => (
         row.id === target.id
-          ? { ...row, status: 'success', message: messageParts.join(' · '), response }
+          ? { ...row, status: 'success', message: messageParts.join(' - '), response }
           : row
       )))
     } catch (error) {
@@ -639,16 +642,18 @@ export default function ComprobantesExcelUpload(){
   }
 
   return (
-    <section className="card space-y-5 border border-slate-200 bg-white/95 shadow-sm">
+    <IonCard className="card space-y-5 surface-card-soft">
+      <IonCardContent>
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-slate-900">Carga masiva desde Excel</h2>
-          <p className="text-sm text-slate-500">Subí un archivo con los datos completos para emitir cada comprobante en forma individual.</p>
+          <p className="body-copy-muted">Subi un archivo con los datos completos para emitir cada comprobante en forma individual.</p>
         </div>
         {rows.length > 0 && (
-          <button type="button" className="btn btn-light" onClick={resetUpload} disabled={processing}>
+          <IonButton type="button" fill="outline" size="small" onClick={resetUpload} disabled={processing}>
+            <IonIcon icon={refreshOutline} slot="start" />
             Reiniciar
-          </button>
+          </IonButton>
         )}
       </div>
 
@@ -663,40 +668,31 @@ export default function ComprobantesExcelUpload(){
             disabled={processing}
           />
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-6 w-6"
-            >
-              <path d="M12 16V4" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M7 9l5-5 5 5" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <IonIcon icon={cloudUploadOutline} className="h-6 w-6" />
           </span>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-slate-700">Seleccioná un archivo Excel</p>
-            <p className="text-xs text-slate-500">Formatos compatibles: .xlsx, .xls</p>
+            <p className="text-sm font-medium text-slate-700">Selecciona un archivo Excel</p>
+            <p className="caption-copy">Formatos compatibles: .xlsx, .xls</p>
           </div>
-          {fileName && (<p className="text-xs text-slate-500">Archivo seleccionado: {fileName}</p>)}
+          {fileName && (<p className="caption-copy">Archivo seleccionado: {fileName}</p>)}
         </label>
 
-        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left text-sm text-slate-600 shadow-inner">
+        <div className="panel-inset body-copy flex flex-col gap-3 text-left">
           <p className="font-medium text-slate-800">Formato sugerido</p>
           <ul className="list-disc pl-5 text-xs leading-relaxed text-slate-500">
             <li>Encabezados obligatorios: PuntoVenta, Emisor, Concepto, CondicionIVAReceptor, DocumentoTipo, DocumentoNumero, Descripcion, Cantidad, PrecioUnitario.</li>
-            <li>IVA (por ej. IVA_0, IVA_21) y fechas opcionales en formato AAAA-MM-DD. Los importes deben ser numéricos.</li>
-            <li>Una fila representa un comprobante a emitir con un único ítem.</li>
+            <li>IVA (por ej. IVA_0, IVA_21) y fechas opcionales en formato AAAA-MM-DD. Los importes deben ser numericos.</li>
+            <li>Una fila representa un comprobante a emitir con un unico item.</li>
           </ul>
-          <button
+          <IonButton
             type="button"
-            className="btn btn-light btn-sm self-start"
+            fill="outline"
+            size="small"
+            className="self-start"
             onClick={ExcelHelper.generateTemplate}
           >
             Descargar modelo Excel
-          </button>
+          </IonButton>
           {stats && (
             <div className="mt-1 grid gap-2 text-xs">
               <div className="flex items-center justify-between">
@@ -725,9 +721,9 @@ export default function ComprobantesExcelUpload(){
       </div>
 
       {parsingError && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <IonText color="danger" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {parsingError}
-        </div>
+        </IonText>
       )}
 
       {parsingWarnings.length > 0 && (
@@ -745,28 +741,30 @@ export default function ComprobantesExcelUpload(){
         <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-slate-800">Resultado de la emisión</p>
-              <p className="text-xs text-slate-500">Emití los comprobantes cargados. El proceso se ejecuta de manera secuencial.</p>
+              <p className="text-sm font-semibold text-slate-800">Resultado de la emision</p>
+              <p className="caption-copy">Emiti los comprobantes cargados. El proceso se ejecuta de manera secuencial.</p>
             </div>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleProcess}
-              disabled={processing || !rows.some(row => row.status === 'pending' || row.status === 'error')}
-            >
-              {processing ? 'Emitiendo…' : 'Emitir comprobantes'}
-            </button>
+            <ActionButtonsGroup
+              className="flex sm:justify-end"
+              primary={{
+                label: 'Emitir comprobantes',
+                loadingLabel: 'Emitiendo...',
+                loading: processing,
+                onClick: handleProcess,
+                disabled: !rows.some(row => row.status === 'pending' || row.status === 'error')
+              }}
+            />
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-inner">
+          <div className="panel-inset">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-slate-800">Listado de futuros comprobantes</p>
-                <p className="text-xs text-slate-500">Revisá los datos que se enviarán a AFIP y monitoreá el resultado de cada emisión.</p>
+                <p className="caption-copy">Revisa los datos que se enviaran a AFIP y monitorea el resultado de cada emision.</p>
               </div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              <IonBadge className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                 {rows.length} comprobantes
-              </span>
+              </IonBadge>
             </div>
             <div className="mt-3 max-h-72 overflow-y-auto divide-y divide-slate-200">
               {rows.map(row => {
@@ -774,7 +772,7 @@ export default function ComprobantesExcelUpload(){
                 const solicitud = row.payload.solicitud
                 const receptor = solicitud.receptor
                 const [firstItem] = solicitud.items
-                const item = firstItem ?? { descripcion: 'Sin ítem', cantidad: 0, precioUnitario: 0, iva: 'IVA_0' }
+                const item = firstItem ?? { descripcion: 'Sin item', cantidad: 0, precioUnitario: 0, iva: 'IVA_0' }
                 const total = solicitud.items.reduce((acc, curr) => acc + (Number(curr.cantidad) * Number(curr.precioUnitario)), 0)
                 const fechaEmision = formatAfipDate(solicitud.fechaEmision)
 
@@ -785,15 +783,15 @@ export default function ComprobantesExcelUpload(){
                       <div className="flex flex-col gap-1">
                         <div className="flex flex-wrap items-center gap-1 text-sm font-semibold text-slate-800">
                           <span>PV {padNumber(solicitud.puntoVenta, 4)}</span>
-                          <span>· {solicitud.concepto}</span>
-                          {fechaEmision && <span className="text-xs font-medium text-slate-500">· Emisión {fechaEmision}</span>}
+                          <span>- {solicitud.concepto}</span>
+                          {fechaEmision && <span className="text-xs font-medium text-slate-500">- Emision {fechaEmision}</span>}
                         </div>
-                        <div className="text-xs text-slate-500">
-                          {receptor.condicionImpositiva} · {receptor.documentoTipo} {receptor.documentoNumero}
-                          {solicitud.receptorNombre ? ` · ${solicitud.receptorNombre}` : ''}
+                        <div className="caption-copy">
+                          {receptor.condicionImpositiva} - {receptor.documentoTipo} {receptor.documentoNumero}
+                          {solicitud.receptorNombre ? ` - ${solicitud.receptorNombre}` : ''}
                         </div>
-                        <div className="text-xs text-slate-500">
-                          Ítem: {item.descripcion} · {item.cantidad} × {currencyFormatter.format(item.precioUnitario)} ({item.iva})
+                        <div className="caption-copy">
+                          Item: {item.descripcion} - {item.cantidad} x {currencyFormatter.format(item.precioUnitario)} ({item.iva})
                         </div>
                         <div className="text-xs font-semibold text-slate-700">
                           Total estimado: {currencyFormatter.format(total)}
@@ -806,18 +804,19 @@ export default function ComprobantesExcelUpload(){
                         {meta.label}
                       </span>
                       {row.message ? (
-                        <span className="text-sm text-slate-600 sm:text-right">{row.message}</span>
+                        <span className="body-copy sm:text-right">{row.message}</span>
                       ) : (
-                        <span className="text-sm text-slate-400 sm:text-right">—</span>
+                        <span className="text-sm text-slate-400 sm:text-right">-</span>
                       )}
-                      <button
+                      <IonButton
                         type="button"
-                        className="btn btn-primary btn-xs sm:self-end"
+                        size="small"
+                        className="sm:self-end"
                         onClick={() => handleEmitSingle(row)}
                         disabled={processing || row.status === 'processing' || row.status === 'success'}
                       >
                         {row.status === 'success' ? 'Emitido' : 'Emitir'}
-                      </button>
+                      </IonButton>
                     </div>
                   </div>
                 )
@@ -826,6 +825,10 @@ export default function ComprobantesExcelUpload(){
           </div>
         </div>
       )}
-    </section>
+      </IonCardContent>
+    </IonCard>
   )
 }
+
+
+

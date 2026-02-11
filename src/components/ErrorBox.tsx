@@ -1,4 +1,5 @@
-import { IconError404, IconExclamationCircle } from '@tabler/icons-react'
+﻿import { IonCard, IonCardContent, IonIcon } from '@ionic/react'
+import { alertCircleOutline } from 'ionicons/icons'
 import { ApiError } from '../services/api'
 
 export default function ErrorBox({ error }: { error?: unknown }) {
@@ -15,15 +16,17 @@ export default function ErrorBox({ error }: { error?: unknown }) {
     message = String(error)
   }
 
-  return (<div className="card flex flex-col items-center gap-5 py-12 text-red-500 bg-red-100 w-100">
-    <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br bg-white shadow-inner text-red-500">
-      <IconExclamationCircle size="35px" />
-    </div>
-    <div className="space-y-2 text-center">
-      <h2 className="text-lg font-semibold text-red-700">Ha ocurrido un error</h2>
-      <p className="text-sm leading-relaxed">
-        {message}
-      </p>
-    </div>
-  </div>)
+  return (
+    <IonCard className="card w-full bg-red-100 text-red-500">
+      <IonCardContent className="flex flex-col items-center gap-5 py-12">
+        <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-inner text-red-500">
+          <IonIcon icon={alertCircleOutline} className="text-4xl" />
+        </div>
+        <div className="space-y-2 text-center">
+          <h2 className="text-lg font-semibold text-red-700">Ha ocurrido un error</h2>
+          <p className="text-sm leading-relaxed">{message}</p>
+        </div>
+      </IonCardContent>
+    </IonCard>
+  )
 }

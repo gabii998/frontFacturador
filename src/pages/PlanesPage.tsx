@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
+import { IonBadge, IonButton, IonCard, IonCardContent, IonIcon, IonItem, IonLabel, IonList, IonSpinner, IonText } from '@ionic/react'
+import { checkmarkCircleOutline } from 'ionicons/icons'
 import SectionHeader from '../components/SectionHeader'
 import HeaderPill from '../components/HeaderPill'
 import ErrorBox from '../components/ErrorBox'
+import StatusNoticeCard from '../components/StatusNoticeCard'
 import PlanesIcon from '../icon/PlanesIcon'
 import {
   PLAN_COLORS,
@@ -14,19 +17,22 @@ import {
 } from '../constants/planes'
 import { ensureMercadoPago, MercadoPagoInstance } from '../lib/mercadopago'
 import { PaymentsService } from '../services/payments'
-import { PlansService, type PlanStatusResponse } from '../services/plans'
 import { useAuth } from '../contexts/AuthContext'
+import { usePlanStatus } from '../hooks/usePlanStatus'
 
 const PlanesPage = () => {
   const { user } = useAuth()
   const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY
   const [mercadoPago, setMercadoPago] = useState<MercadoPagoInstance | null>(null)
   const [loadingPlan, setLoadingPlan] = useState<PlanCode | null>(null)
-  const [planStatus, setPlanStatus] = useState<PlanStatusResponse | null>(null)
-  const [fetchingPlanStatus, setFetchingPlanStatus] = useState(false)
   const [configError, setConfigError] = useState<unknown>(null)
-  const [planError, setPlanError] = useState<unknown>(null)
   const [checkoutError, setCheckoutError] = useState<unknown>(null)
+  const {
+    planStatus,
+    loading: fetchingPlanStatus,
+    error: planError,
+    refresh: fetchPlanStatus
+  } = usePlanStatus({ userId: user?.id ?? null })
 
   const estadoPlan = planStatus?.status ?? 'ACTIVE'
   const planActivoCode: PlanCode = estadoPlan === 'ACTIVE' ? planStatus?.plan ?? 'free' : 'free'
@@ -35,7 +41,7 @@ const PlanesPage = () => {
 
   useEffect(() => {
     if (!publicKey) {
-      setConfigError(new Error('Mercado Pago no está configurado. Revisá la variable VITE_MERCADOPAGO_PUBLIC_KEY.'))
+      setConfigError(new Error('Mercado Pago no esta configurado. Revisa la variable VITE_MERCADOPAGO_PUBLIC_KEY.'))
       return
     }
 
@@ -59,33 +65,9 @@ const PlanesPage = () => {
     }
   }, [publicKey])
 
-  const fetchPlanStatus = useCallback(async () => {
-    if (!user) {
-      setPlanStatus(null)
-      setPlanError(null)
-      return
-    }
-
-    setFetchingPlanStatus(true)
-    setPlanError(null)
-
-    try {
-      const response = await PlansService.getCurrent(user.id)
-      setPlanStatus(response)
-    } catch (err) {
-      setPlanError(err)
-    } finally {
-      setFetchingPlanStatus(false)
-    }
-  }, [user])
-
-  useEffect(() => {
-    void fetchPlanStatus()
-  }, [fetchPlanStatus])
-
   const obtenerMercadoPago = async () => {
     if (!publicKey) {
-      throw new Error('Mercado Pago no está configurado. Revisá la variable VITE_MERCADOPAGO_PUBLIC_KEY.')
+      throw new Error('Mercado Pago no esta configurado. Revisa la variable VITE_MERCADOPAGO_PUBLIC_KEY.')
     }
     if (mercadoPago) {
       return mercadoPago
@@ -97,7 +79,7 @@ const PlanesPage = () => {
 
   const iniciarPago = async (plan: PlanDetail) => {
     if (!user) {
-      setCheckoutError(new Error('Debés iniciar sesión para cambiar de plan.'))
+      setCheckoutError(new Error('Debes iniciar sesion para cambiar de plan.'))
       return
     }
 
@@ -164,29 +146,28 @@ const PlanesPage = () => {
   return (
     <div className="space-y-6">
       <SectionHeader
-        section="Planes"
         icon={<PlanesIcon />}
-        title="Compará y elegí el plan ideal"
-        subtitle="Encontrá la opción que mejor se adapta a tu negocio y escalá tu facturación sin obstáculos."
+        title="Compara y elige el plan ideal"
+        subtitle="Encontra la opcion que mejor se adapta a tu negocio y escala tu facturacion sin obstaculos."
         rightContent={<HeaderPill label={headerLabel} dotColor={headerDotColor} />}
       />
 
       {planStatus?.status === 'EXPIRED' && planStatus.previousPlan && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Tu plan {PLAN_CODE_TO_NAME[planStatus.previousPlan]} expiró. Pasaste nuevamente al plan Gratuito.
-        </div>
+        <StatusNoticeCard tone="warning">
+          Tu plan {PLAN_CODE_TO_NAME[planStatus.previousPlan]} expiro. Pasaste nuevamente al plan Gratuito.
+        </StatusNoticeCard>
       )}
 
       {planStatus?.status === 'PENDING' && planPendienteCode && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-          Generamos el checkout de Mercado Pago para el plan {PLAN_CODE_TO_NAME[planPendienteCode]}. Apenas el pago se apruebe, se activará automáticamente.
-        </div>
+        <StatusNoticeCard tone="info">
+          Generamos el checkout de Mercado Pago para el plan {PLAN_CODE_TO_NAME[planPendienteCode]}. Apenas el pago se apruebe, se activara automaticamente.
+        </StatusNoticeCard>
       )}
 
       {estadoPlan === 'ACTIVE' && formattedExpiration && (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-          Renová antes del <span className="font-semibold text-slate-800">{formattedExpiration}</span> para evitar interrupciones.
-        </div>
+        <StatusNoticeCard>
+          Renova antes del <span className="font-semibold text-slate-800">{formattedExpiration}</span> para evitar interrupciones.
+        </StatusNoticeCard>
       )}
 
       <ErrorBox error={error} />
@@ -198,7 +179,7 @@ const PlanesPage = () => {
           const estaCargando = loadingPlan === plan.code
 
           return (
-            <article
+            <IonCard
               key={plan.name}
               className={`card flex h-full flex-col gap-5 border ${
                 plan.highlighted
@@ -206,58 +187,52 @@ const PlanesPage = () => {
                   : 'border-slate-200 shadow-slate-900/5'
               }`}
             >
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <span className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500">Plan</span>
-                  <h2 className="text-2xl font-semibold text-slate-900">{plan.name}</h2>
-                  <p className="text-sm text-slate-600">{plan.headline}</p>
+              <IonCardContent className="flex h-full flex-col gap-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500">Plan</span>
+                    <h2 className="text-2xl font-semibold text-slate-900">{plan.name}</h2>
+                    <p className="body-copy">{plan.headline}</p>
+                  </div>
+                  <IonBadge className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold uppercase text-white ${PLAN_COLORS[plan.name]}`}>
+                    {plan.name.charAt(0)}
+                  </IonBadge>
                 </div>
-                <span
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold uppercase text-white ${PLAN_COLORS[plan.name]}`}
-                >
-                  {plan.name.charAt(0)}
-                </span>
-              </div>
 
-              <div className="space-y-1">
-                <div className="text-3xl font-semibold text-slate-900">{plan.price}</div>
-                <p className="text-sm text-slate-500">{plan.description}</p>
-              </div>
+                <div className="space-y-1">
+                  <div className="text-3xl font-semibold text-slate-900">{plan.price}</div>
+                  <p className="body-copy-muted">{plan.description}</p>
+                </div>
 
-              <ul className="space-y-3 text-sm text-slate-600">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-blue-500" aria-hidden />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
+                <IonList className="space-y-2 bg-transparent p-0">
+                  {plan.features.map((feature) => (
+                    <IonItem key={feature} lines="none" className="body-copy rounded-lg bg-transparent">
+                      <IonIcon icon={checkmarkCircleOutline} slot="start" className="text-blue-500" />
+                      <IonLabel>{feature}</IonLabel>
+                    </IonItem>
+                  ))}
+                </IonList>
 
-              <div className="mt-auto pt-3">
-                <button
-                  type="button"
-                  className={`${
-                    esActual
-                      ? 'btn w-full cursor-default bg-slate-100 text-slate-500'
-                    : esPendiente
-                    ? 'btn w-full cursor-default bg-amber-100 text-amber-700'
-                    : plan.highlighted
-                    ? 'btn-primary w-full'
-                    : 'btn w-full'
-                  }`}
-                  disabled={esActual || esPendiente || estaCargando}
-                  onClick={() => iniciarPago(plan)}
-                >
-                  {esActual
-                    ? 'Plan activo'
-                    : esPendiente
-                    ? 'Pago pendiente...'
-                    : estaCargando
-                    ? 'Generando pago...'
-                    : 'Elegir este plan'}
-                </button>
-              </div>
-            </article>
+                <div className="mt-auto pt-3">
+                  <IonButton
+                    expand="block"
+                    fill={plan.highlighted && !esActual && !esPendiente ? 'solid' : 'outline'}
+                    color={esActual ? 'medium' : esPendiente ? 'warning' : 'primary'}
+                    disabled={esActual || esPendiente || estaCargando}
+                    onClick={() => iniciarPago(plan)}
+                  >
+                    {estaCargando && <IonSpinner slot="start" name="crescent" />}
+                    {esActual
+                      ? 'Plan activo'
+                      : esPendiente
+                        ? 'Pago pendiente...'
+                        : estaCargando
+                          ? 'Generando pago...'
+                          : 'Elegir este plan'}
+                  </IonButton>
+                </div>
+              </IonCardContent>
+            </IonCard>
           )
         })}
       </div>
@@ -266,3 +241,4 @@ const PlanesPage = () => {
 }
 
 export default PlanesPage
+

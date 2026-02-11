@@ -1,144 +1,194 @@
-﻿import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
+import { IonButton, IonCard, IonCardContent } from '@ionic/react'
+import { useNavigate } from 'react-router-dom'
+import { IconFileTypeXls, IconFilter, IconInfoCircle } from '@tabler/icons-react'
+import { refreshOutline, searchOutline } from 'ionicons/icons'
 import { AfipService } from '../services/afip'
 import type { ComprobanteEmitido } from '../models/afip'
 import ErrorBox from '../components/ErrorBox'
-import { useNavigate } from 'react-router-dom'
 import ComprobantesTable from '../components/ComprobantesTable'
-import { ComprobanteHeaderInfoProps, FiltrosProps } from '../props/ComprobantesProps'
 import SectionHeader from '../components/SectionHeader'
-import { IconFileTypeXls, IconFilter, IconInfoCircle, IconInvoice, IconLoader, IconRestore, IconSearch } from '@tabler/icons-react'
+import ActionButtonsGroup from '../components/ActionButtonsGroup'
 import EmptyContent from '../components/EmptyContent'
 import LoadingContent from '../components/LoadingContent'
+import FormFieldsArray, { type FormFieldConfig } from '../components/FormFieldsArray'
+import { useAsyncResource } from '../hooks/useAsyncResource'
+import { useFormState } from '../hooks/useFormState'
+import { ComprobanteHeaderInfoProps } from '../props/ComprobantesProps'
 
 const DEFAULT_PV = 2
 const DEFAULT_TIPO = 11
 const DEFAULT_LIMITE = 20
 
-const ComprobantesPage = () => {
-  const [pv, setPv] = useState(DEFAULT_PV)
-  const [tipo, setTipo] = useState(DEFAULT_TIPO) // Factura C
-  const [limite, setLimite] = useState(DEFAULT_LIMITE)
-  const [data, setData] = useState<ComprobanteEmitido[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<unknown>()
-  const [filtersOpen, setFiltersOpen] = useState(false)
+type FiltrosValues = {
+  pv: string
+  tipo: string
+  limite: string
+}
 
-  async function fetchData(nextPv = pv, nextTipo = tipo, nextLimite = limite) {
-    setLoading(true); setError(undefined)
-    try {
-      const res = await AfipService.listar(nextPv, nextTipo, { limite: nextLimite })
-      setData(res)
-    } catch (e) {
-      setError(e)
-    } finally {
-      setLoading(false)
-    }
+const FILTER_FIELDS: FormFieldConfig<FiltrosValues>[] = [
+  {
+    name: 'pv',
+    label: 'Punto de venta',
+    type: 'number',
+    variant: 'default'
+  },
+  {
+    name: 'tipo',
+    label: 'Tipo de factura',
+    kind: 'select',
+    variant: 'default',
+    options: [
+      { value: '1', label: 'Factura A' },
+      { value: '6', label: 'Factura B' },
+      { value: '11', label: 'Factura C' }
+    ]
+  },
+  {
+    name: 'limite',
+    label: 'Ultimos N',
+    type: 'number',
+    variant: 'default'
+  }
+]
+
+const parseNumber = (value: string, fallback: number) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const ComprobantesPage = () => {
+  const { values, setField, setFields } = useFormState<FiltrosValues>({
+    pv: String(DEFAULT_PV),
+    tipo: String(DEFAULT_TIPO),
+    limite: String(DEFAULT_LIMITE)
+  })
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const {
+    data,
+    loading,
+    error,
+    load
+  } = useAsyncResource<ComprobanteEmitido[]>([])
+
+  const fetchData = async (
+    nextPv = values.pv,
+    nextTipo = values.tipo,
+    nextLimite = values.limite
+  ) => {
+    await load(() => AfipService.listar(
+      parseNumber(nextPv, DEFAULT_PV),
+      parseNumber(nextTipo, DEFAULT_TIPO),
+      { limite: parseNumber(nextLimite, DEFAULT_LIMITE) }
+    ))
   }
 
-  useEffect(() => { void fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE) }, [])
+  useEffect(() => {
+    void fetchData(String(DEFAULT_PV), String(DEFAULT_TIPO), String(DEFAULT_LIMITE))
+  }, [])
 
   return (
     <div className="space-y-6">
       <SectionHeader
-        icon={<IconInvoice />}
-        title='Comprobantes'
-        subtitle='Consultá y auditá tus últimas emisiones agrupadas por punto de venta y tipo AFIP.'
+        icon={<IconInfoCircle />}
+        title="Comprobantes"
+        subtitle="Consulta y audita tus ultimas emisiones agrupadas por punto de venta y tipo AFIP."
         rightContent={<ComprobanteHeaderInfo filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} />}
       />
 
       <section className="space-y-6">
-
-
         {filtersOpen && (
-          <FiltrosComprobantes {...{ loading, setPv, setTipo, setLimite, fetchData, pv, tipo, limite }} />
+          <FiltrosComprobantes
+            loading={loading}
+            values={values}
+            setField={setField}
+            setFields={setFields}
+            fetchData={fetchData}
+          />
         )}
 
-        {loading && <LoadingContent/>}
+        {loading && <LoadingContent />}
         <ErrorBox error={error} />
         {!loading && !error && (
           data.length > 0 ? (
             <ComprobantesTable data={data} />
           ) : (
             <EmptyContent
-              title='No hay comprobantes para mostrar'
-              subtitle='Ajustá los filtros o verificá que AFIP haya emitido comprobantes para este punto de venta y tipo.'
-              icon={ <IconInfoCircle/> } />
+              title="No hay comprobantes para mostrar"
+              subtitle="Ajusta los filtros o verifica que AFIP haya emitido comprobantes para este punto de venta y tipo."
+              icon={<IconInfoCircle />}
+            />
           )
         )}
       </section>
-
     </div>
   )
 }
 
-const FiltrosComprobantes = (props: FiltrosProps) => {
-  return (<div className="card space-y-4 flex flex-row">
-    <div>
-      <div className="flex justify-between flex-col pb-3">
-        <h2 className="text-lg font-semibold text-slate-800">Filtros de búsqueda</h2>
-        <p className="text-xs text-slate-500">Ajustá los parámetros para consultar comprobantes específicos.</p>
-      </div>
-      <div className="flex gap-6 pr-7">
-        <div>
-          <label className="label">Punto de venta</label>
-          <input className="input" type="number" value={props.pv} onChange={e => props.setPv(Number(e.target.value))} />
-        </div>
-        <div>
-          <label className="label">Tipo de factura</label>
-          <select
-            className="input"
-            value={props.tipo}
-            onChange={(e) => props.setTipo(Number(e.target.value))}
-          >
-            <option value="1">Factura A</option>
-            <option value="6">Factura B</option>
-            <option value="11">Factura C</option>
-          </select>
-        </div>
-        <div>
-          <label className="label">Últimos N</label>
-          <input className="input" type="number" value={props.limite} onChange={e => props.setLimite(Number(e.target.value))} />
-          <p className="mt-1 text-xs text-gray-500">Máximo de registros a recuperar.</p>
-        </div>
-      </div>
-    </div>
-    <div className='flex gap-3 flex-col w-[300px] justify-center'>
-      <button
-        className="btn justify-center"
-        onClick={() => {
-          props.setPv(DEFAULT_PV)
-          props.setTipo(DEFAULT_TIPO)
-          props.setLimite(DEFAULT_LIMITE)
-          void props.fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE)
-        }}
-      ><IconRestore /> Restablecer</button>
-      <button
-        className="btn btn-primary flex items-start"
-        onClick={() => void props.fetchData(props.pv, props.tipo, props.limite)}
-        disabled={props.loading}
-      >
-        {props.loading ? <IconLoader /> : <IconSearch />}
-        {props.loading ? 'Consultando…' : 'Buscar'}
-      </button>
-    </div>
-  </div>)
+type FiltrosFormProps = {
+  loading: boolean
+  values: FiltrosValues
+  setField: <K extends keyof FiltrosValues>(field: K, value: FiltrosValues[K]) => void
+  setFields: (patch: Partial<FiltrosValues>) => void
+  fetchData: (pv?: string, tipo?: string, limite?: string) => Promise<void>
 }
 
+const FiltrosComprobantes = ({ loading, values, setField, setFields, fetchData }: FiltrosFormProps) => (
+  <IonCard className="card">
+    <IonCardContent className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="space-y-3">
+        <div className="flex flex-col pb-1">
+          <h2 className="text-lg font-semibold text-slate-800">Filtros de busqueda</h2>
+          <p className="caption-copy">Ajusta los parametros para consultar comprobantes especificos.</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <FormFieldsArray fields={FILTER_FIELDS} values={values} setField={setField} />
+        </div>
+      </div>
+      <ActionButtonsGroup
+        className="flex flex-col gap-3 lg:w-[280px]"
+        secondary={{
+          label: 'Restablecer',
+          icon: refreshOutline,
+          onClick: () => {
+            setFields({
+              pv: String(DEFAULT_PV),
+              tipo: String(DEFAULT_TIPO),
+              limite: String(DEFAULT_LIMITE)
+            })
+            void fetchData(String(DEFAULT_PV), String(DEFAULT_TIPO), String(DEFAULT_LIMITE))
+          }
+        }}
+        primary={{
+          label: 'Buscar',
+          loadingLabel: 'Consultando...',
+          loading,
+          icon: searchOutline,
+          onClick: () => {
+            void fetchData(values.pv, values.tipo, values.limite)
+          }
+        }}
+      />
+    </IonCardContent>
+  </IonCard>
+)
+
 const ComprobanteHeaderInfo = (props: ComprobanteHeaderInfoProps) => {
-  const enableExcel = import.meta.env.VITE_ENABLE_EXCEL_UPLOAD ?? false;
-  const navigate = useNavigate();
+  const enableExcel = import.meta.env.VITE_ENABLE_EXCEL_UPLOAD ?? false
+  const navigate = useNavigate()
   return (
     <Fragment>
+      <IonButton fill="outline" onClick={() => props.setFiltersOpen(prev => !prev)}>
+        <IconFilter /> {props.filtersOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
+      </IonButton>
 
-      <button type="button" className="btn bg-white" onClick={() => props.setFiltersOpen(prev => !prev)}>
-        <IconFilter />{props.filtersOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
-      </button>
-
-      {enableExcel && <button type="button" className="btn bg-white text-emerald-700" onClick={() => navigate("/comprobantes/carga-masiva")}>
-        <IconFileTypeXls />  Cargar excel
-      </button>}
+      {enableExcel && (
+        <IonButton color="success" fill="outline" onClick={() => navigate('/comprobantes/carga-masiva')}>
+          <IconFileTypeXls /> Cargar excel
+        </IonButton>
+      )}
     </Fragment>
   )
 }
 
-export default ComprobantesPage;
+export default ComprobantesPage

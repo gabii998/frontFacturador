@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ion-font-family: "Inter", "Segoe UI", sans-serif;
+  --ion-color-primary: #2563eb;
+  --ion-color-primary-rgb: 37, 99, 235;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #1f57cf;
+  --ion-color-primary-tint: #3b74eb;
+}
+
 /* Prevent iOS Safari from auto-zooming form controls */
 @media (max-width: 600px) {
   input,
@@ -15,6 +24,18 @@
 @layer components {
   .container-max { @apply max-w-6xl mx-auto px-4 w-full; }
   .card { @apply w-full bg-white rounded-2xl shadow p-6; }
+  .page-bg { @apply min-h-screen bg-slate-50; }
+  .page-shell { @apply mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-0; }
+  .page-shell-spacious { @apply mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 lg:px-0; }
+  .surface-card { @apply rounded-2xl border border-slate-200 bg-white shadow-sm; }
+  .surface-card-soft { @apply rounded-2xl border border-slate-200 bg-white/95 shadow-sm; }
+  .body-copy { @apply text-sm text-slate-600; }
+  .body-copy-muted { @apply text-sm text-slate-500; }
+  .caption-copy { @apply text-xs text-slate-500; }
+  .panel-inset { @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-inner; }
+  .form-item { @apply rounded-xl border border-slate-200 bg-white px-2; }
+  .form-item-sm { @apply rounded-xl border border-slate-200 bg-white px-2 text-sm; }
+  .auth-input-item { @apply flex flex-col gap-2 text-sm rounded-xl border border-slate-200 bg-white/90 px-2; }
 
   .btn {
     @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-gray-300 hover:bg-gray-100 transition-colors duration-150;
@@ -315,4 +336,19 @@
     transparent
   );
   animation: shimmer 1.5s infinite;
+}
+
+ion-header,ion-footer,ion-card,.dashboard-hero {
+  box-shadow: none!important;
+}
+ion-card {
+  border: 1px solid rgb(226 232 240 / var(--tw-border-opacity, 1));
+}
+ion-button {
+  --border-radius: 2rem;
+  text-transform: capitalize;
+}
+
+ion-content {
+  --padding-left:10px;
 }

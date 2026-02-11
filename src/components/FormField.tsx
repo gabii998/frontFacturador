@@ -1,9 +1,10 @@
-import { FormFielProps } from "../props/FormFieldProps"
+﻿import { IonInput, IonItem, IonLabel } from '@ionic/react'
+import { FormFielProps } from '../props/FormFieldProps'
 
-const FormField = (props:FormFielProps) => {
-    return (
-    <label className="auth-field">
-      <span className="auth-field__label">{props.label}</span>
+const FormField = (props: FormFielProps) => {
+  return (
+    <IonItem lines="none" className="auth-input-item shadow-sm">
+      <IonLabel position="stacked" className="auth-field__label">{props.label}</IonLabel>
       {props.children ? (
         <select
           name={props.name}
@@ -15,18 +16,23 @@ const FormField = (props:FormFielProps) => {
           {props.children}
         </select>
       ) : (
-        <input
-          type={props.type}
+        <IonInput
+          type={props.type as any}
           name={props.name}
-          className="input"
           value={props.value}
-          onChange={props.onChange}
           required={props.required}
-          minLength={props.minLength}
+          minlength={props.minLength}
+          className="input"
+          onIonInput={(event) => {
+            const value = event.detail.value ?? ''
+            props.onChange({
+              target: { name: props.name, value }
+            } as React.ChangeEvent<HTMLInputElement>)
+          }}
         />
       )}
-    </label>
+    </IonItem>
   )
 }
 
-export default FormField;
+export default FormField

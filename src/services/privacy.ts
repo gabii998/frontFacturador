@@ -1,7 +1,11 @@
 import { post } from './api'
 
-export async function requestDataDeletion(email: string): Promise<void> {
-  await post('/api/privacy/data-deletion', { email }, {
+export interface DataDeletionPayload {
+  email: string
+}
+
+export const requestDataDeletion = async (payload: DataDeletionPayload): Promise<void> => {
+  await post('/api/privacy/data-deletion', payload, {
     includeAuthHeader: false,
     skipAuthHandling: true
   })
