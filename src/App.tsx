@@ -62,7 +62,7 @@ function Navbar() {
               autoHide={false}
               aria-label="Abrir menu"
             />
-            <span className="text-lg font-bold">Facturador</span>
+            <span className="text-lg font-bold pl-3">Facturador</span>
             <nav className="hidden gap-1 md:flex">
               {LINKS.map(({ to, label, end }) => (
                 <NavLink
@@ -77,7 +77,7 @@ function Navbar() {
             </nav>
           </div>
 
-          <div className="hidden items-center gap-3 text-sm md:flex">
+          <div className="hidden items-center gap-3 text-sm md:flex pr-3">
             {user && (
               <div className="text-right text-gray-600">
                 <div className="font-medium text-gray-800">{user.name ?? user.email}</div>

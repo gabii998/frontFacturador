@@ -50,10 +50,57 @@
   .body-copy-muted { @apply text-sm; color: color-mix(in srgb, var(--app-muted) 85%, #000 15%); }
   .caption-copy { @apply text-xs; color: color-mix(in srgb, var(--app-muted) 80%, #000 20%); }
   .panel-inset { @apply rounded-2xl border p-4 shadow-inner; background: var(--app-surface); border-color: var(--app-border); }
-  .form-item { @apply rounded-xl border px-2; background: var(--app-surface); border-color: var(--app-border); }
+  .form-item { 
+    @apply rounded-full px-6 border;
+     border-color: var(--app-border); 
+     transition: .5s;
+  }
+  .form-item:has(.has-focus) {
+    border: 1px solid var(--ion-color-primary);
+    transition: .5s;
+    background: var(--app-accent-soft);
+  }
+   .form-item:has(.has-focus) > label {
+    color: var(--ion-color-primary);
+    transition: .5s;
+  }
+  .form-item > ion-select {
+    height: 20px;
+    min-height: 22px;
+    font-size: 13px;
+     --highlight-height: 0px;   /* línea al hacer focus */
+  --border-width: 0px;       /* línea normal */
+  --inner-border-width: 0px;
+  }
+
+  .form-item > ion-input {
+    height: 20px;
+    min-height: 22px;
+    font-size: 13px;
+    --highlight-height: 0px;   /* línea al hacer focus */
+  --border-width: 0px;       /* línea normal */
+  --inner-border-width: 0px;
+  }
+  .form-item > label {
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.7px;
+  }
   .form-item-sm { @apply rounded-xl border px-2 text-sm; background: var(--app-surface); border-color: var(--app-border); }
   .auth-input-item { @apply flex flex-col gap-2 text-sm rounded-xl border px-2; background: var(--app-surface-tint); border-color: var(--app-border); }
 
+  .text-inactive {
+    color: var(--app-muted)
+  }
+  .badge-inactive {
+    background: var(--app-muted);
+  }
+  .badge-main {
+    background: var(--ion-color-primary);
+  }
+  .text-main {
+    color: var(--ion-color-primary);
+  }
   .btn {
     @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 border transition-colors duration-150;
     border-color: var(--app-border);
@@ -525,7 +572,6 @@ ion-item {
 ion-input,
 ion-select,
 ion-textarea {
-  --background: var(--app-surface-tint);
   --color: var(--app-text);
   --placeholder-color: color-mix(in srgb, var(--app-muted) 80%, #ffffff 20%);
 }
@@ -537,12 +583,14 @@ ion-button {
   --color-hover: #ffffff;
   --border-color: var(--app-border);
   --ripple-color: color-mix(in srgb, var(--app-accent-soft) 60%, transparent);
+  --transition:.5s;
 }
 
 ion-button[fill="outline"] {
   --background: transparent;
-  --background-hover: var(--app-accent-soft);
+  --background-hover: var(--ion-color-primary);
   --color: var(--app-accent-strong);
+  --color-hover: var(--ion-color-primary);
   --border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-border) 55%);
 }
 

@@ -28,9 +28,9 @@ export default function FormItemField({
   variant = 'default'
 }: FormItemFieldProps) {
   return (
-    <IonItem lines="none" className={joinClassNames(ITEM_VARIANT_CLASS[variant], className)}>
-      <IonLabel position="stacked" className={labelClassName}>{label}</IonLabel>
+    <div className={joinClassNames(ITEM_VARIANT_CLASS[variant], className)}>
+      <label className={labelClassName}>{label}</label>
       {children}
-    </IonItem>
+    </div>
   )
 }

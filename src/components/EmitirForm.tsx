@@ -378,7 +378,7 @@ const Footer = ({ loading, currentStep, volverAtras }: FooterProps) => {
 
 const HeaderFormulario = () => (
   <header className="space-y-1">
-    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Nueva factura</span>
+    <span className="text-[1.5rem] text-slate-900  ">Nueva factura</span>
   </header>
 )
 

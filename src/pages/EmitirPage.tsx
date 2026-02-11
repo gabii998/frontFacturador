@@ -16,11 +16,6 @@ const identificationThreshold = formatter.format(CONSUMIDOR_FINAL_IDENTIFICATION
 const EmitirPage = () => {
   return (
     <div className="space-y-6">
-      <SectionHeader
-        title='Emisión'
-        subtitle='Centralizá la operatoria con AFIP WSFE y generá comprobantes con validaciones automáticas y seguimiento en tiempo real.'
-        icon={<IconCashRegister />}
-      />
 
       <section>
         <EmitirForm />

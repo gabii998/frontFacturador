@@ -7,11 +7,10 @@ const Steper = ({ steps }: { steps: Step[] }) => {
       {steps.map((step, index) => (
         <li
           key={index}
-          className={`flex items-center space-x-2.5 rtl:space-x-reverse ${step.isActive ? 'text-blue-700' : 'text-slate-500'}`}
+          className={`flex items-center space-x-2.5 rtl:space-x-reverse ${step.isActive ? 'text-main' : 'text-inactive'}`}
         >
           <IonBadge
-            color={step.isActive ? 'primary' : 'medium'}
-            className="flex h-8 w-8 items-center justify-center rounded-full"
+            className={`flex px-4 py-3 items-center justify-center rounded-full ${step.isActive ? 'badge-main' : 'badge-inactive'}`}
           >
             {index + 1}
           </IonBadge>
