@@ -53,7 +53,7 @@ function Navbar() {
 
   return (
     <IonHeader className="fixed left-0 right-0 top-0 z-40 border-b border-slate-200 bg-white md:static md:top-auto">
-      <IonToolbar className="container-max">
+      <IonToolbar>
         <div className="flex items-center justify-between py-2">
           <div className="flex items-center gap-3">
             <IonMenuButton

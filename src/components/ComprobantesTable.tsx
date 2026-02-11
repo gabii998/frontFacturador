@@ -34,7 +34,7 @@ const docTypeMap: Record<number, string> = {
   89: 'LE',
   90: 'LC',
   96: 'DNI',
-  99: 'Sin identificar'
+  99: 'Consumidor Final'
 }
 
 const formatAfipDate = (value?: string | null) => {
@@ -91,8 +91,8 @@ const METADATA_ERROR_MESSAGE = 'No es posible descargar el comprobante hasta com
 
 function CaeStatusBadge({ hasCAE, caeValid }: { hasCAE: boolean, caeValid: boolean }) {
   const color = !hasCAE ? 'warning' : caeValid ? 'success' : 'danger'
-  const label = !hasCAE ? 'Sin CAE' : caeValid ? 'CAE vigente' : 'CAE vencido'
-  return <IonBadge color={color}>{label}</IonBadge>
+  const label = !hasCAE ? 'Sin CAE' : caeValid ? 'Vigente' : 'Vencido'
+  return <IonBadge className='cae-pill' color={color}>{label}</IonBadge>
 }
 
 function extractErrorCode(error: ApiError): string | undefined {
@@ -149,99 +149,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
 
   return (
     <div className="space-y-4">
-      <IonCard className="card hidden w-full border border-slate-200 bg-white/95 p-0 shadow-sm md:block">
-        <IonCardContent className="overflow-x-auto p-0">
-          <table className="table min-w-full md:min-w-[60rem]">
-            <thead>
-              <tr>
-                <th className="th rounded-tl-2xl">Comprobante</th>
-                <th className="th">Emision</th>
-                <th className="th">Importes</th>
-                <th className="th">Cliente</th>
-                <th className="th">CAE</th>
-                <th className="th rounded-tr-2xl">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((c) => {
-                const caeExpiry = parseAfipDate(c.caeVto)
-                const hasCAE = Boolean(c.cae)
-                const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
-                const rowHasAlerts = c.errores.length > 0
-                const docLabel = formatDoc(c.docTipo, c.docNro)
-                const rowKey = `${c.puntoVenta}-${c.tipoAfip}-${c.numero}`
-
-                return (
-                  <tr
-                    key={rowKey}
-                    className={`border-b border-l-4 transition-colors ${
-                      rowHasAlerts
-                        ? 'border-rose-100 border-l-rose-300 bg-rose-50/80 hover:bg-rose-100/70'
-                        : 'border-slate-100 border-l-transparent hover:bg-slate-50/80'
-                    }`}
-                  >
-                    <td className="td">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                            {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`}
-                          </span>
-                          <span className="font-mono caption-copy">#{padNumber(c.numero, 8)}</span>
-                        </div>
-                        <span className="caption-copy">PV {padNumber(c.puntoVenta, 4)}</span>
-                      </div>
-                    </td>
-                    <td className="td">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm font-medium text-slate-800">{formatAfipDate(c.fechaCbte)}</span>
-                        {c.caeVto && <span className="caption-copy">CAE vence {formatAfipDate(c.caeVto)}</span>}
-                      </div>
-                    </td>
-                    <td className="td">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm font-semibold text-slate-800">{formatAmount(c.impTotal)}</span>
-                        <span className="caption-copy">
-                          Neto {formatAmount(c.impNeto)} - IVA {formatAmount(c.impIva)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="td">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm font-medium text-slate-800">{docLabel}</span>
-                        {typeof c.concepto === 'number' && (
-                          <span className="caption-copy">{conceptoMap[c.concepto] ?? `Concepto ${c.concepto}`}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="td">
-                      <div className="flex flex-col gap-2">
-                        <CaeStatusBadge hasCAE={hasCAE} caeValid={caeValid} />
-                        <span className="font-mono caption-copy">{c.cae ?? '-'}</span>
-                      </div>
-                    </td>
-                    <td className="td">
-                      {metadataUnavailable ? (
-                        <span className="text-xs font-medium text-slate-400">{METADATA_ERROR_MESSAGE}</span>
-                      ) : (
-                        <IonButton
-                          size="small"
-                          fill="outline"
-                          onClick={() => handleDownload(c)}
-                          disabled={downloadingId === rowKey}
-                        >
-                          {downloadingId === rowKey ? 'Descargando...' : 'Descargar PDF'}
-                        </IonButton>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </IonCardContent>
-      </IonCard>
-
-      <div className="flex flex-col gap-4 md:hidden">
+      <div className="comprobantes-grid">
         {data.map((c) => {
           const caeExpiry = parseAfipDate(c.caeVto)
           const hasCAE = Boolean(c.cae)
@@ -252,62 +160,59 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
 
           return (
             <IonCard
-              key={`mobile-${rowKey}`}
-              className={`rounded-2xl border border-l-4 p-1 shadow-sm transition-colors ${
-                rowHasAlerts ? 'border-rose-200 border-l-rose-300 bg-rose-50/80' : 'border-slate-200 border-l-slate-200 bg-white'
-              }`}
+              key={rowKey}
+              className={`comprobante-card ${rowHasAlerts ? 'comprobante-card--alert' : ''}`}
             >
               <IonCardContent>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                        {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`}
-                      </span>
-                      <span className="font-mono caption-copy">#{padNumber(c.numero, 8)}</span>
+                <div className="comprobante-card__header">
+                  <div className="comprobante-date">
+                      {formatAfipDate(c.fechaCbte)}
                     </div>
-                    <span className="caption-copy">PV {padNumber(c.puntoVenta, 4)}</span>
+                  <div>
+                    <span className="comprobante-pill">{tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`} #{padNumber(c.numero, 8)}</span>
                   </div>
-                  <div className="flex flex-col items-end gap-1 text-right">
-                    <CaeStatusBadge hasCAE={hasCAE} caeValid={caeValid} />
-                    <span className="font-mono caption-copy">{c.cae ?? '-'}</span>
-                  </div>
+                  
                 </div>
 
-                <div className="mt-4 space-y-3 text-sm text-slate-700">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Emision</p>
-                    <p className="font-medium">{formatAfipDate(c.fechaCbte)}</p>
-                    {c.caeVto && <p className="caption-copy">CAE vence {formatAfipDate(c.caeVto)}</p>}
+                <div className="comprobante-card__meta">
+                  <div className="flex flex-col items-end gap-1 text-right">
+                    
+                    
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Importes</p>
-                    <p className="font-semibold">{formatAmount(c.impTotal)}</p>
-                    <p className="caption-copy">
-                      Neto {formatAmount(c.impNeto)} - IVA {formatAmount(c.impIva)}
-                    </p>
+                  <div className="comprobante-stack">
+                    <div className='cae-header'>
+                      <div className="comprobante-label">CAE</div>
+                      
+                        <CaeStatusBadge hasCAE={hasCAE} caeValid={caeValid} />
+                      
+                    </div>
+                    <span className="comprobante-subtitle">{c.cae ?? '-'}</span>
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Cliente</p>
-                    <p className="font-medium">{docLabel}</p>
-                    {typeof c.concepto === 'number' && (
-                      <p className="caption-copy">{conceptoMap[c.concepto] ?? `Concepto ${c.concepto}`}</p>
-                    )}
+              
+                  <div className="comprobante-stack">
+                    <p className="comprobante-label">Cliente</p>
+                    <p className="comprobante-title">{docLabel}</p>
+               
+                  </div>
+
+                   <div className="comprobante-stack">
+                    <p className="comprobante-label">Total</p>
+                    <p className="comprobante-kpi">{formatAmount(c.impTotal)}</p>
+
                   </div>
                 </div>
 
                 {rowHasAlerts && (
-                  <p className="mt-3 text-xs font-semibold text-rose-700">Este comprobante tiene observaciones.</p>
+                  <p className="mt-3 text-xs font-semibold text-amber-700">Este comprobante tiene observaciones.</p>
                 )}
 
-                <div className="mt-4">
+                <div className="comprobante-actions">
                   {metadataUnavailable ? (
-                    <span className="text-xs font-medium text-slate-400">{METADATA_ERROR_MESSAGE}</span>
+                    <span className="comprobante-subtle">{METADATA_ERROR_MESSAGE}</span>
                   ) : (
                     <IonButton
                       size="small"
                       fill="outline"
-                      expand="block"
                       onClick={() => handleDownload(c)}
                       disabled={downloadingId === rowKey}
                     >
