@@ -15,7 +15,7 @@ export const PuntoVentaField = ({
 }) => (
   <FormItemField label="Punto de venta">
     {puntosVenta.length > 0 ? (
-      <IonSelect value={pv} onIonChange={e => setPv(Number(e.detail.value))}>
+      <IonSelect interface="action-sheet" value={pv} onIonChange={e => setPv(Number(e.detail.value))}>
         {puntosVenta.map(item => (
           <IonSelectOption key={item.nro} value={item.nro}>
             PV {item.nro} - {item.emisionTipo}
@@ -41,7 +41,7 @@ export const ConceptoField = ({
   setConcepto: (value: Concepto) => void
 }) => (
   <FormItemField label="Concepto">
-    <IonSelect value={concepto} onIonChange={e => setConcepto(e.detail.value as Concepto)}>
+    <IonSelect interface="action-sheet" value={concepto} onIonChange={e => setConcepto(e.detail.value as Concepto)}>
       <IonSelectOption value="PRODUCTOS">Productos</IonSelectOption>
       <IonSelectOption value="SERVICIOS">Servicios</IonSelectOption>
       <IonSelectOption value="AMBOS">Productos y servicios</IonSelectOption>

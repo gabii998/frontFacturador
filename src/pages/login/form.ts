@@ -12,8 +12,7 @@ export const LOGIN_FIELDS: FormFieldConfig<LoginFormValues>[] = [
     type: 'email',
     autocomplete: 'email',
     required: true,
-    variant: 'auth',
-    labelClassName: 'auth-field__label'
+    labelClassName: 'auth-item'
   },
   {
     name: 'password',
@@ -21,7 +20,5 @@ export const LOGIN_FIELDS: FormFieldConfig<LoginFormValues>[] = [
     type: 'password',
     autocomplete: 'current-password',
     required: true,
-    variant: 'auth',
-    labelClassName: 'auth-field__label'
   }
 ]

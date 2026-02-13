@@ -27,7 +27,6 @@ export default function LoginPage() {
 
   return (
     <AuthFormLayout
-      eyebrow="Acceso seguro"
       title="Ingresa a tu cuenta"
       subtitle="Centraliza la gestion de tus comprobantes electronicos y segui cada operacion en tiempo real."
       error={error}

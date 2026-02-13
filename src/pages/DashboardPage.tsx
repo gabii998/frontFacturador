@@ -10,6 +10,7 @@ import ComprobanteIcon from '../icon/ComprobanteIcon'
 import DashboardHeaderPill from '../components/DashboardHeaderPill'
 import LoadingContent from '../components/LoadingContent'
 import { useAsyncResource } from '../hooks/useAsyncResource'
+import { IonCard } from '@ionic/react'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -32,26 +33,6 @@ export default function DashboardPage() {
     return 'Resumen de tu operacion fiscal'
   }, [user?.name, user?.email])
 
-  const afipServices = useMemo(() => {
-    const hasError = Boolean(error)
-    const tone = hasError ? 'warn' : 'ok'
-
-    return [
-      {
-        key: 'wsfe',
-        label: 'AFIP WSFE',
-        status: hasError ? 'Verificar conexion' : 'Operativo',
-        tone
-      },
-      {
-        key: 'wsaa',
-        label: 'AFIP WSAA',
-        status: hasError ? 'Autenticacion pendiente' : 'Sesion valida',
-        tone
-      }
-    ]
-  }, [error])
-
   return (
     <div className="dashboard-layout">
       {!loading && error != null && (
@@ -62,7 +43,7 @@ export default function DashboardPage() {
 
       {!error && (
         <Fragment>
-          <section className="dashboard-hero">
+          <IonCard className="dashboard-hero">
             <div className="space-y-4">
               <div>
                 <h1 className="dashboard-hero__title">{displayName}</h1>
@@ -70,25 +51,9 @@ export default function DashboardPage() {
                   Seguimiento centralizado de puntos de venta, emision y monitoreo de operaciones. Todo en un mismo lugar para tu equipo.
                 </p>
               </div>
-              <div className="dashboard-hero__meta">
-                <div>
-                  <span className="meta-label">Panel activo</span>
-                  <span className="meta-value">{user?.email ?? 'Usuario sin email'}</span>
-                </div>
-                <div>
-                  <span className="meta-label">Ultima sincronizacion</span>
-                  <span className="meta-value">
-                    {syncedAt ? syncedAt.toLocaleString() : loading ? 'Sincronizando...' : 'Sin datos'}
-                  </span>
-                </div>
-              </div>
-              <div className="dashboard-hero__services">
-                {afipServices.map((service) => (
-                  <DashboardHeaderPill key={service.key} service={service} />
-                ))}
-              </div>
+
             </div>
-          </section>
+          </IonCard>
 
           {loading && <LoadingContent />}
 

@@ -8,11 +8,15 @@ const DashboardCard = (props: DashboardCardProps) => {
   return (
     <IonCard className="metric-card">
       <IonCardContent className="flex flex-col gap-4">
-        <div className="metric-card__icon metric-card__icon--blue">{props.icon}</div>
-        <header className="metric-card__header">
+        <div className='metric-header'>
+          <div className="metric-card__icon metric-card__icon--blue">{props.icon}</div>
+          <header className="metric-card__header">
           <span className="metric-card__label">{props.section}</span>
           <strong className="metric-card__value">{props.title}</strong>
         </header>
+        </div>
+        
+        
         <p className="metric-card__description">{props.content}</p>
         <IonButton
           fill="clear"

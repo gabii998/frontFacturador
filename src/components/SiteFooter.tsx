@@ -5,7 +5,7 @@ export default function SiteFooter() {
   const navigate = useNavigate()
 
   return (
-    <IonFooter className="border-t border-slate-200 bg-white text-xs md:text-sm">
+    <IonFooter className="border-t border-slate-200 bg-white text-xs md:text-sm hidden sm:block">
       <IonToolbar className="container-max py-2">
         <div className="flex flex-col items-center gap-3 text-center text-slate-600 md:flex-row md:items-center md:justify-between md:gap-6 md:text-left">
           <div className="hidden space-y-1 md:block">

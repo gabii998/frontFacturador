@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --ion-font-family: "Inter", "Segoe UI", sans-serif;
+  --ion-font-family: "Outfit", sans-serif;
   --ion-color-primary: #2563eb;
   --ion-color-primary-rgb: 37, 99, 235;
   --ion-color-primary-contrast: #ffffff;
@@ -81,10 +81,22 @@
   --border-width: 0px;       /* línea normal */
   --inner-border-width: 0px;
   }
+  .form-item > ion-select {
+    height: 20px;
+    min-height: 22px;
+    font-size: 13px;
+    --highlight-height: 0px;   /* línea al hacer focus */
+  --border-width: 0px;       /* línea normal */
+  --inner-border-width: 0px;
+  width: 100%;
+  }
   .form-item > label {
     font-weight: 600;
     font-size: 11px;
     letter-spacing: 0.7px;
+  }
+  ion-card {
+    @apply p-8 rounded-3xl;
   }
   .form-item-sm { @apply rounded-xl border px-2 text-sm; background: var(--app-surface); border-color: var(--app-border); }
   .auth-input-item { @apply flex flex-col gap-2 text-sm rounded-xl border px-2; background: var(--app-surface-tint); border-color: var(--app-border); }
@@ -97,6 +109,10 @@
   }
   .badge-main {
     background: var(--ion-color-primary);
+  }
+  .metric-header {
+    display: flex;
+    gap: 20px;
   }
   .text-main {
     color: var(--ion-color-primary);
@@ -146,11 +162,6 @@
   .auth-hero__title { @apply text-4xl font-semibold text-white leading-tight; }
   .auth-hero__subtitle { @apply text-base text-indigo-100/90 max-w-xl; }
 
-  .auth-card {
-    @apply w-full max-w-md rounded-3xl border border-white/10 bg-white/95 backdrop-blur-xl px-8 py-10 text-gray-900 shadow-2xl;
-    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
-  }
-
   .auth-form { @apply space-y-7; }
   .auth-form__header { @apply space-y-3; }
 
@@ -179,8 +190,51 @@
 
   .dashboard-layout { @apply flex flex-col gap-8 w-full; }
 
+  .side-menu {
+    --padding-start:0px;
+    --padding-end:0px;
+    --padding-top:0px;
+  }
+  .side-menu::part(scroll) {
+  padding-top: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+  .user-info {
+    background: linear-gradient(135deg, #3f6fe0 0%, #5b8ef5 50%, #23335f 100%);
+    color: white;
+    padding: 40px 20px;
+  }
+  .user-info > ion-note {
+    color: white;
+  }
+  .menu-content {
+    flex: 1 1;
+        display: flex;
+    flex-direction: column;
+    align-content: space-between;
+    flex-wrap: wrap;
+    width: 100%;
+    background: white;
+  }
+  .menu-list {
+    width: 100%;
+    flex: 1 1 auto;
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .drawer-item {
+    padding-left: 20px;
+    padding-right: 20px;
+    font-size: 14px;
+    font-weight: 400;
+    --border-radius: 10px;
+  }
+
   .dashboard-hero {
-    @apply relative overflow-hidden rounded-3xl border px-8 py-10 text-white shadow-2xl;
+    @apply relative overflow-hidden border px-8 py-10 text-white;
     border-color: color-mix(in srgb, var(--app-accent) 25%, transparent);
     background: linear-gradient(135deg, #3f6fe0 0%, #5b8ef5 50%, #23335f 100%);
   }
@@ -228,9 +282,7 @@
   }
 
   .metric-card {
-    @apply flex flex-col gap-4 rounded-3xl border p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-xl;
-    background: var(--app-surface);
-    border-color: var(--app-border);
+    @apply pt-2 pb-1;
   }
 
   .metric-card__icon {
@@ -597,6 +649,56 @@ ion-button[fill="outline"] {
 ion-button[fill="clear"] {
   --background: transparent;
   --color: var(--app-accent-strong);
+}
+
+.action-buttons--sticky-mobile {
+  @apply md:static;
+}
+
+.item-container {
+  @apply mt-2 grid gap-2 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)];
+  padding: 0px;
+  display: flex;
+}
+.item-card {
+  padding: 0px 20px;
+}
+.remove {
+  --ion-color-base: #c5000f!important;
+}
+
+@media (max-width: 767px) {
+  .comprobante-card__meta {
+    margin-top: 0px;
+  }
+  .comprobante-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .comprobante-stack {
+    gap: 0px;
+  }
+  .text-inactive {
+      display: none
+    }
+  .action-buttons--sticky-mobile {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    padding: 12px 12px 16px;
+    border-top: 1px solid var(--app-border);
+    background: white;
+    backdrop-filter: blur(8px);
+  }
+  .caption-copy {
+    display: none;
+  }
+  ion-content {
+    --padding-top: 100px!important;
+  }
 }
 ion-button {
   --border-radius: 2rem;

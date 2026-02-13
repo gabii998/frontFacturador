@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { IonInput } from '@ionic/react'
+import { IonInput, IonSelect, IonSelectOption } from '@ionic/react'
 import FormItemField from './FormItemField'
 
 type SelectOption = {
@@ -70,17 +70,17 @@ const FormFieldsArray = <T extends object>({
         labelClassName={field.labelClassName}
       >
         {isSelectField(field) ? (
-          <select
+          <IonSelect
             name={field.name}
-            className="input"
+            interface="action-sheet"
             value={fieldValueAsString(values, field.name)}
-            onChange={(event) => setField(field.name, event.target.value as T[typeof field.name])}
+            onIonChange={(event) => setField(field.name, event.detail.value as T[typeof field.name])}
             required={field.required}
           >
             {field.options.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+              <IonSelectOption  key={option.value} value={option.value}>{option.label}</IonSelectOption>
             ))}
-          </select>
+          </IonSelect>
         ) : (
           <IonInput
             type={field.type}

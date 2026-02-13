@@ -139,8 +139,8 @@ export default function EmitirForm() {
     setVencimientoPago(today)
   }
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
 
     if (currentStep !== StepEmitir.ITEMS) {
       setCurrentStep(prev => (prev < StepEmitir.ITEMS ? (prev + 1) as StepEmitir : prev))
@@ -201,59 +201,63 @@ export default function EmitirForm() {
   }
 
   return (
-    <IonCard className="card space-y-6">
-      <IonCardContent className="space-y-6">
-        {result == null ? (
-          <Fragment>
-            <HeaderFormulario />
-            <Header currentStep={currentStep} />
+    <div className="space-y-6">
+      <IonCard className="card space-y-6">
+        <IonCardContent className="space-y-6">
+          {result == null ? (
+            <Fragment>
+              <HeaderFormulario />
+              <Header currentStep={currentStep} />
 
-            {emitRequest.error == null && (
-              <form onSubmit={onSubmit} className="space-y-6">
-                {currentStep == StepEmitir.CONFIGURACION && (
-                  <PrimerPaso
-                    {...{
-                      puntosVenta,
-                      pv,
-                      setPv,
-                      puntosVentaError,
-                      concepto,
-                      setConcepto,
-                      fechaEmision,
-                      setFechaEmision,
-                      requiresServicePeriod,
-                      servicioDesde,
-                      setServicioDesde,
-                      servicioHasta,
-                      setServicioHasta,
-                      vencimientoPago,
-                      setVencimientoPago
-                    }}
-                  />
-                )}
+              {emitRequest.error == null && (
+                <form onSubmit={onSubmit} className="space-y-6 md:pb-0">
+                  {currentStep == StepEmitir.CONFIGURACION && (
+                    <PrimerPaso
+                      {...{
+                        puntosVenta,
+                        pv,
+                        setPv,
+                        puntosVentaError,
+                        concepto,
+                        setConcepto,
+                        fechaEmision,
+                        setFechaEmision,
+                        requiresServicePeriod,
+                        servicioDesde,
+                        setServicioDesde,
+                        servicioHasta,
+                        setServicioHasta,
+                        vencimientoPago,
+                        setVencimientoPago
+                      }}
+                    />
+                  )}
 
-                {currentStep == StepEmitir.DATOS_RECEPTOR && (
-                  <SegundoPaso {...{ cond, setCond, requiresCustomerIdentification, docTipo, setDocTipo, docNro, setDocNro }} />
-                )}
+                  {currentStep == StepEmitir.DATOS_RECEPTOR && (
+                    <SegundoPaso {...{ cond, setCond, requiresCustomerIdentification, docTipo, setDocTipo, docNro, setDocNro }} />
+                  )}
 
-                {currentStep == StepEmitir.ITEMS && (
-                  <TercerPaso {...{ items, addItem, removeItem, updateItem, totalAmount }} />
-                )}
-
-                <Footer {...{ loading: emitRequest.loading, currentStep, volverAtras }} />
-              </form>
-            )}
-          </Fragment>
-        ) : (
-          <div className="flex flex-col items-center gap-4">
-            <SuccessLite title="Factura creada correctamente" subtitle={`CAE # ${result?.cae}`} />
-            <IonButton type="button" onClick={emitirNuevoComprobante}>Emitir nuevo comprobante</IonButton>
-          </div>
-        )}
+                  {currentStep == StepEmitir.ITEMS && (
+                    <TercerPaso {...{ items, addItem, removeItem, updateItem, totalAmount }} />
+                  )}
+                </form>
+              )}
+            </Fragment>
+          ) : (
+            <div className="flex flex-col items-center gap-4">
+              <SuccessLite title="Factura creada correctamente" subtitle={`CAE # ${result?.cae}`} />
+              <IonButton type="button" onClick={emitirNuevoComprobante}>Emitir nuevo comprobante</IonButton>
+            </div>
+          )}
 
         <ErrorBox error={emitRequest.error} />
       </IonCardContent>
-    </IonCard>
+      </IonCard>
+
+      {result == null && emitRequest.error == null && (
+        <Footer {...{ loading: emitRequest.loading, currentStep, volverAtras,onSubmit }} />
+      )}
+    </div>
   )
 }
 
@@ -347,7 +351,7 @@ const TercerPaso = ({ items, addItem, removeItem, updateItem, totalAmount }: Ter
   </section>
 )
 
-const Footer = ({ loading, currentStep, volverAtras }: FooterProps) => {
+const Footer = ({ loading, currentStep, volverAtras,onSubmit }: FooterProps) => {
   const buttonText = currentStep !== StepEmitir.ITEMS
     ? 'Siguiente paso'
     : 'Emitir comprobante'
@@ -358,6 +362,7 @@ const Footer = ({ loading, currentStep, volverAtras }: FooterProps) => {
       <div className="flex-1" />
       <ActionButtonsGroup
         className="flex flex-col gap-3 md:flex-row"
+        stickyOnMobile
         secondary={{
           label: 'Volver',
           fill: 'outline',
@@ -368,6 +373,7 @@ const Footer = ({ loading, currentStep, volverAtras }: FooterProps) => {
           label: buttonText,
           type: 'submit',
           loading,
+          onClick: () => {onSubmit()},
           loadingLabel: 'Emitiendo...',
           showLoadingSpinner: false
         }}

@@ -40,6 +40,7 @@ export interface FooterProps {
     loading:boolean;
     currentStep:StepEmitir;
     volverAtras:() => void;
+    onSubmit:(e?: React.FormEvent) => Promise<void>;
 }
 
 export enum StepEmitir {

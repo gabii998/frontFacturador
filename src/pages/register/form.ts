@@ -6,39 +6,29 @@ export const REGISTER_FIELDS: FormFieldConfig<RegisterForm>[] = [
     name: 'name',
     label: 'Nombre completo',
     required: true,
-    variant: 'auth',
-    labelClassName: 'auth-field__label'
   },
   {
     name: 'email',
     label: 'Email',
     type: 'email',
     required: true,
-    variant: 'auth',
-    labelClassName: 'auth-field__label'
   },
   {
     name: 'phone',
     label: 'Celular',
     type: 'tel',
     required: true,
-    variant: 'auth',
-    labelClassName: 'auth-field__label'
   },
   {
     name: 'cuit',
     label: 'CUIT',
     required: true,
-    variant: 'auth',
-    labelClassName: 'auth-field__label'
   },
   {
     name: 'condicionImpositiva',
     label: 'Condicion Impositiva',
     kind: 'select',
     required: true,
-    variant: 'auth',
-    labelClassName: 'auth-field__label',
     options: [
       { value: '', label: 'Seleccione...' },
       { value: 'Monotributista', label: 'Monotributista' },
@@ -51,8 +41,6 @@ export const REGISTER_FIELDS: FormFieldConfig<RegisterForm>[] = [
     type: 'password',
     required: true,
     minLength: 8,
-    variant: 'auth',
-    labelClassName: 'auth-field__label'
   },
   {
     name: 'confirmPassword',
@@ -60,8 +48,6 @@ export const REGISTER_FIELDS: FormFieldConfig<RegisterForm>[] = [
     type: 'password',
     required: true,
     minLength: 8,
-    variant: 'auth',
-    labelClassName: 'auth-field__label'
   }
 ]
 

@@ -42,7 +42,6 @@ export default function RegisterPage() {
 
   return (
     <AuthFormLayout
-      eyebrow="Nueva cuenta"
       title="Registrate para comenzar"
       subtitle="Genera tu acceso para emitir y consultar comprobantes AFIP desde un mismo panel de control."
       error={error}

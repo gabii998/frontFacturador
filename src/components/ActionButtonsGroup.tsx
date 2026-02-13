@@ -23,6 +23,7 @@ type ActionButtonsGroupProps = {
   primary: ActionButtonConfig
   secondary?: ActionButtonConfig
   className?: string
+  stickyOnMobile?: boolean
 }
 
 const DEFAULT_CONTAINER_CLASS = 'flex flex-col gap-3 md:flex-row md:items-center md:justify-end'
@@ -64,9 +65,13 @@ const renderButton = (config: ActionButtonConfig, defaultFill: IonButtonProps['f
   )
 }
 
-const ActionButtonsGroup = ({ primary, secondary, className }: ActionButtonsGroupProps) => {
+const ActionButtonsGroup = ({ primary, secondary, className, stickyOnMobile = false }: ActionButtonsGroupProps) => {
+  const baseClass = className ?? DEFAULT_CONTAINER_CLASS
+  const stickyClass = stickyOnMobile
+    ? 'action-buttons--sticky-mobile'
+    : undefined
   return (
-    <div className={className ?? DEFAULT_CONTAINER_CLASS}>
+    <div className={joinClassNames(baseClass, stickyClass)}>
       {secondary && renderButton(secondary, 'outline')}
       {renderButton(primary, 'solid')}
     </div>

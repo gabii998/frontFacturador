@@ -2,7 +2,6 @@ import type { FormEvent, ReactNode } from 'react'
 import ErrorBox from './ErrorBox'
 
 type AuthFormLayoutProps = {
-  eyebrow: string
   title: string
   subtitle: string
   error?: unknown
@@ -13,7 +12,6 @@ type AuthFormLayoutProps = {
 }
 
 const AuthFormLayout = ({
-  eyebrow,
   title,
   subtitle,
   error,
@@ -24,7 +22,6 @@ const AuthFormLayout = ({
 }: AuthFormLayoutProps) => (
   <div className="auth-form">
     <div className="auth-form__header">
-      <span className="auth-eyebrow">{eyebrow}</span>
       <h1 className="auth-form__title">{title}</h1>
       <p className="auth-form__subtitle">{subtitle}</p>
     </div>

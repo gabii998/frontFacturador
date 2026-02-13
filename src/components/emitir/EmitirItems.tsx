@@ -21,17 +21,17 @@ export const ItemCard = ({
   onRemove: (index: number) => void
   onUpdate: (index: number, patch: Partial<Pick<FacturaItem, 'descripcion' | 'cantidad' | 'precioUnitario'>>) => void
 }) => (
-  <IonCard className="rounded-xl border border-slate-200/80 bg-white/80 shadow-sm shadow-slate-100">
+  <IonCard className="item-card">
     <IonCardContent>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
         <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Item #{index + 1}</span>
-        <span className="text-[11px] font-medium text-slate-500">Alicuota: IVA 0% (Factura C)</span>
         {totalItems > 1 && (
           <IonButton
             type="button"
             size="small"
             fill="clear"
             color="danger"
+            className='remove'
             onClick={() => onRemove(index)}
           >
             <IonIcon icon={removeOutline} slot="start" />
@@ -39,13 +39,14 @@ export const ItemCard = ({
           </IonButton>
         )}
       </div>
-      <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)]">
-        <FormItemField label="Descripcion">
+      <FormItemField label="Descripcion">
           <IonInput
             value={item.descripcion}
             onIonInput={e => onUpdate(index, { descripcion: e.detail.value ?? '' })}
           />
         </FormItemField>
+      <div className="item-container">
+        
         <FormItemField label="Cantidad">
           <IonInput
             type="number"

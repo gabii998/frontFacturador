@@ -1,6 +1,7 @@
 ﻿import { Suspense, lazy } from 'react'
 import {
   IonButton,
+  IonCard,
   IonContent,
   IonHeader,
   IonItem,
@@ -99,32 +100,30 @@ function PrivateMenu() {
 
   return (
     <IonMenu menuId="private-menu" contentId="private-layout-content" side="start" type="overlay">
-      <IonHeader>
-        <IonToolbar color="primary">
-          <IonTitle>Facturador</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent>
+      <IonContent className='side-menu'>
         {user && (
-          <div className="border-b border-slate-200 px-4 py-4">
-            <p className="font-semibold text-slate-800">{user.name ?? user.email}</p>
+          <div className="user-info">
+            <p className="font-semibold">{user.name ?? user.email}</p>
             <IonNote>{user.email}</IonNote>
           </div>
         )}
-        <IonList>
+        <div className='menu-content'>
+          <div className='menu-list'>
           {LINKS.map(({ to, label }) => (
             <IonMenuToggle key={`menu-${to}`} autoHide>
-              <IonItem button detail={false} routerLink={to} routerDirection="root">
+              <IonItem lines='none' button detail={false} routerLink={to} routerDirection="root" className='drawer-item'>
                 <IonLabel>{label}</IonLabel>
               </IonItem>
             </IonMenuToggle>
           ))}
-        </IonList>
+        </div>
         <div className="px-4 py-4">
           <IonButton expand="block" fill="outline" onClick={() => void logout()}>
             Cerrar sesion
           </IonButton>
         </div>
+        </div>
+        
       </IonContent>
     </IonMenu>
   )
@@ -170,9 +169,9 @@ function PublicLayout() {
               <li>Experiencia rapida y responsive para todo tu equipo</li>
             </ul>
           </section>
-          <div className="auth-card">
+          <IonCard>
             <Outlet />
-          </div>
+          </IonCard>
         </div>
       </div>
       <SiteFooter />

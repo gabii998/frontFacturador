@@ -10,7 +10,7 @@ export const CondicionReceptorField = ({
   setCond: (value: CondicionImpositiva) => void
 }) => (
   <FormItemField label="Condicion IVA receptor">
-    <IonSelect value={cond} onIonChange={e => setCond(e.detail.value as CondicionImpositiva)}>
+    <IonSelect interface="action-sheet" value={cond} onIonChange={e => setCond(e.detail.value as CondicionImpositiva)}>
       <IonSelectOption value="CONSUMIDOR_FINAL">Consumidor Final</IonSelectOption>
       <IonSelectOption value="MONOTRIBUTO">Monotributo</IonSelectOption>
       <IonSelectOption value="RESPONSABLE_INSCRIPTO">Responsable Inscripto</IonSelectOption>
@@ -36,14 +36,14 @@ export const DocumentoFields = ({
     <label className="label">Documento</label>
     <div className="flex flex-col gap-2 md:flex-row">
       <FormItemField label="Tipo" className="md:w-44">
-        <IonSelect value={docTipo} onIonChange={e => setDocTipo(e.detail.value as DocumentoTipo)}>
+        <IonSelect interface="action-sheet" value={docTipo} onIonChange={e => setDocTipo(e.detail.value as DocumentoTipo)}>
           <IonSelectOption value="DNI">DNI</IonSelectOption>
           <IonSelectOption value="CUIT">CUIT</IonSelectOption>
           <IonSelectOption value="SIN_IDENTIFICAR">SIN_IDENTIFICAR</IonSelectOption>
         </IonSelect>
       </FormItemField>
       <FormItemField label="Numero" className="flex-1">
-        <IonInput value={docNro} onIonInput={e => setDocNro(e.detail.value ?? '')} />
+        <IonInput maxlength={8} value={docNro} onIonInput={e => setDocNro(e.detail.value ?? '')} />
       </FormItemField>
     </div>
   </div>

@@ -166,60 +166,71 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
               <IonCardContent>
                 <div className="comprobante-card__header">
                   <div className="comprobante-date">
-                      {formatAfipDate(c.fechaCbte)}
-                    </div>
+                    {formatAfipDate(c.fechaCbte)}
+                  </div>
                   <div>
                     <span className="comprobante-pill">{tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`} #{padNumber(c.numero, 8)}</span>
                   </div>
-                  
+
                 </div>
 
                 <div className="comprobante-card__meta">
                   <div className="flex flex-col items-end gap-1 text-right">
-                    
-                    
+
+
                   </div>
-                  <div className="comprobante-stack">
-                    <div className='cae-header'>
-                      <div className="comprobante-label">CAE</div>
-                      
+
+                  <div className='comprobante-content'>
+                    <div className="comprobante-stack">
+                      <div className='cae-header'>
+                        <div className="comprobante-label">CAE</div>
+
                         <CaeStatusBadge hasCAE={hasCAE} caeValid={caeValid} />
-                      
+
+                      </div>
+                      <span className="comprobante-subtitle">{c.cae ?? '-'}</span>
                     </div>
-                    <span className="comprobante-subtitle">{c.cae ?? '-'}</span>
-                  </div>
-              
-                  <div className="comprobante-stack">
-                    <p className="comprobante-label">Cliente</p>
-                    <p className="comprobante-title">{docLabel}</p>
-               
+
+                    <div className="comprobante-stack">
+                      <p className="comprobante-label">Cliente</p>
+                      <p className="comprobante-title">{docLabel}</p>
+
+                    </div>
                   </div>
 
-                   <div className="comprobante-stack">
-                    <p className="comprobante-label">Total</p>
-                    <p className="comprobante-kpi">{formatAmount(c.impTotal)}</p>
+                  <div className='comprobante-content'>
 
+                    <div className="comprobante-stack">
+                      <p className="comprobante-label">Total</p>
+                      <p className="comprobante-kpi">{formatAmount(c.impTotal)}</p>
+
+                    </div>
+                    <div className="comprobante-actions">
+                      {metadataUnavailable ? (
+                        <span className="comprobante-subtle">{METADATA_ERROR_MESSAGE}</span>
+                      ) : (
+                        <IonButton
+                          size="small"
+                          fill="outline"
+                          onClick={() => handleDownload(c)}
+                          disabled={downloadingId === rowKey}
+                        >
+                          {downloadingId === rowKey ? 'Descargando...' : 'Descargar PDF'}
+                        </IonButton>
+                      )}
+                    </div>
                   </div>
+
+
+
+
                 </div>
 
                 {rowHasAlerts && (
                   <p className="mt-3 text-xs font-semibold text-amber-700">Este comprobante tiene observaciones.</p>
                 )}
 
-                <div className="comprobante-actions">
-                  {metadataUnavailable ? (
-                    <span className="comprobante-subtle">{METADATA_ERROR_MESSAGE}</span>
-                  ) : (
-                    <IonButton
-                      size="small"
-                      fill="outline"
-                      onClick={() => handleDownload(c)}
-                      disabled={downloadingId === rowKey}
-                    >
-                      {downloadingId === rowKey ? 'Descargando...' : 'Descargar PDF'}
-                    </IonButton>
-                  )}
-                </div>
+
               </IonCardContent>
             </IonCard>
           )

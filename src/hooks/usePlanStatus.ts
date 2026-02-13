@@ -12,6 +12,7 @@ export const usePlanStatus = ({ userId, onError }: UsePlanStatusOptions) => {
   const [error, setError] = useState<unknown>(null)
   const requestIdRef = useRef(0)
   const mountedRef = useRef(true)
+  const onErrorRef = useRef<UsePlanStatusOptions['onError']>(onError)
 
   useEffect(() => {
     mountedRef.current = true
@@ -19,6 +20,10 @@ export const usePlanStatus = ({ userId, onError }: UsePlanStatusOptions) => {
       mountedRef.current = false
     }
   }, [])
+
+  useEffect(() => {
+    onErrorRef.current = onError
+  }, [onError])
 
   const refresh = useCallback(async () => {
     if (!userId) {
@@ -39,12 +44,12 @@ export const usePlanStatus = ({ userId, onError }: UsePlanStatusOptions) => {
       if (!mountedRef.current || requestId !== requestIdRef.current) return
       setPlanStatus(null)
       setError(requestError)
-      onError?.(requestError)
+      onErrorRef.current?.(requestError)
     } finally {
       if (!mountedRef.current || requestId !== requestIdRef.current) return
       setLoading(false)
     }
-  }, [onError, userId])
+  }, [userId])
 
   useEffect(() => {
     void refresh()
