@@ -38,7 +38,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthFormLayout
-      eyebrow="Recuperar acceso"
       title="Restablece tu contrasena"
       subtitle="Enviaremos un enlace temporal para que puedas definir una nueva contrasena y volver al panel."
       error={error}

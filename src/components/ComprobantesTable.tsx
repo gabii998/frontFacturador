@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react'
-import { IonBadge, IonButton, IonCard, IonCardContent, IonText } from '@ionic/react'
+import { IonBadge, IonButton, IonText } from '@ionic/react'
 import type { ComprobanteEmitido } from '../models/afip'
 import { AfipService } from '../services/afip'
 import { ApiError } from '../services/api'
@@ -112,7 +112,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [metadataUnavailable, setMetadataUnavailable] = useState(false)
 
-  async function handleDownload(comprobante: ComprobanteEmitido) {
+  const handleDownload = async (comprobante: ComprobanteEmitido) => {
     const id = `${comprobante.puntoVenta}-${comprobante.tipoAfip}-${comprobante.numero}`
     setDownloadingId(id)
     setDownloadError(null)
@@ -148,7 +148,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
   }
 
   return (
-    <div className="space-y-4">
+    <div className="comprobantes-table">
       <div className="comprobantes-grid">
         {data.map((c) => {
           const caeExpiry = parseAfipDate(c.caeVto)
@@ -159,11 +159,11 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
           const rowKey = `${c.puntoVenta}-${c.tipoAfip}-${c.numero}`
 
           return (
-            <IonCard
+            <article
               key={rowKey}
               className={`comprobante-card ${rowHasAlerts ? 'comprobante-card--alert' : ''}`}
             >
-              <IonCardContent>
+              <div className="comprobante-card__body">
                 <div className="comprobante-card__header">
                   <div className="comprobante-date">
                     {formatAfipDate(c.fechaCbte)}
@@ -175,18 +175,11 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                 </div>
 
                 <div className="comprobante-card__meta">
-                  <div className="flex flex-col items-end gap-1 text-right">
-
-
-                  </div>
-
-                  <div className='comprobante-content'>
+                  <div className="comprobante-content">
                     <div className="comprobante-stack">
-                      <div className='cae-header'>
+                      <div className="cae-header">
                         <div className="comprobante-label">CAE</div>
-
                         <CaeStatusBadge hasCAE={hasCAE} caeValid={caeValid} />
-
                       </div>
                       <span className="comprobante-subtitle">{c.cae ?? '-'}</span>
                     </div>
@@ -194,16 +187,13 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                     <div className="comprobante-stack">
                       <p className="comprobante-label">Cliente</p>
                       <p className="comprobante-title">{docLabel}</p>
-
                     </div>
                   </div>
 
-                  <div className='comprobante-content'>
-
+                  <div className="comprobante-content">
                     <div className="comprobante-stack">
                       <p className="comprobante-label">Total</p>
                       <p className="comprobante-kpi">{formatAmount(c.impTotal)}</p>
-
                     </div>
                     <div className="comprobante-actions">
                       {metadataUnavailable ? (
@@ -220,10 +210,6 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                       )}
                     </div>
                   </div>
-
-
-
-
                 </div>
 
                 {rowHasAlerts && (
@@ -231,8 +217,8 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                 )}
 
 
-              </IonCardContent>
-            </IonCard>
+              </div>
+            </article>
           )
         })}
       </div>

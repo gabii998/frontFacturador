@@ -154,7 +154,7 @@ function PublicLayout() {
     return <Navigate to="/" replace />
   }
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-[100dvh] flex flex-col bg-slate-50">
       <div className="auth-shell flex-1">
         <div className="flex w-full max-w-6xl flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:gap-12">
           <section className="auth-hero">
@@ -169,7 +169,7 @@ function PublicLayout() {
               <li>Experiencia rapida y responsive para todo tu equipo</li>
             </ul>
           </section>
-          <IonCard>
+          <IonCard className="auth-card m-0">
             <Outlet />
           </IonCard>
         </div>

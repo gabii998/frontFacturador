@@ -88,7 +88,7 @@ const ComprobantesPage = () => {
   }, [])
 
   return (
-    <div className="space-y-6">
+    <div className="comprobantes-page">
       <SectionHeader
         icon={<IconInfoCircle />}
         title="Comprobantes"
@@ -96,7 +96,7 @@ const ComprobantesPage = () => {
         rightContent={<ComprobanteHeaderInfo filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} />}
       />
 
-      <section className="space-y-6">
+      <section className="comprobantes-content">
         {filtersOpen && (
           <FiltrosComprobantes
             loading={loading}

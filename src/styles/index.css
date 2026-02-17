@@ -389,6 +389,7 @@
   }
   .comprobante-date {
     @apply flex flex-wrap items-center gap-2 text-[14px] font-semibold;
+    line-height: 1.3;
   }
 
   .comprobante-serial {
@@ -401,9 +402,11 @@
   }
 
   .comprobante-label {
-    margin-bottom: 0px!important;
+    margin-bottom: 2px;
     color: var(--app-muted);
-    line-height: 1;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+    font-size: 11px;
   }
 
   .cae-header {
@@ -422,8 +425,32 @@
     color: var(--app-muted);
   }
 
+  .comprobantes-page {
+    @apply flex flex-col gap-6;
+    min-height: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .comprobantes-content {
+    @apply flex flex-col gap-6 flex-1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .comprobantes-grid {
     @apply grid gap-5;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+    scroll-behavior: smooth;
+  }
+
+  .comprobantes-table {
+    @apply flex flex-col gap-4 flex-1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   @media (min-width: 768px) {
@@ -448,27 +475,40 @@
   }
 
   .comprobante-card__meta {
-    @apply mt-4 grid gap-3;
+    @apply mt-4;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
   }
 
   .comprobante-actions {
-    @apply mt-5;
+    @apply mt-1;
+    justify-self: end;
+  }
+
+  .comprobante-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    align-items: start;
   }
 
   .comprobante-title {
     @apply text-sm font-semibold;
     color: var(--app-text);
-    line-height: 1;
+    line-height: 1.3;
   }
 
   .comprobante-subtitle {
     @apply text-xs;
     color: var(--app-muted);
+    line-height: 1.35;
   }
 
   .comprobante-kpi {
     @apply text-base font-semibold;
     color: var(--app-text);
+    line-height: 1.2;
   }
 
   .comprobante-kpi-sub {
@@ -478,6 +518,16 @@
 
   .comprobante-stack {
     @apply grid gap-1;
+    row-gap: 4px;
+  }
+
+  .comprobante-card__body {
+    @apply flex flex-col gap-4;
+    padding: 18px;
+  }
+
+  .comprobante-card__header {
+    margin-bottom: 2px;
   }
 }
 
@@ -669,15 +719,20 @@ ion-button[fill="clear"] {
 
 @media (max-width: 767px) {
   .comprobante-card__meta {
-    margin-top: 0px;
+    margin-top: 6px;
+    gap: 10px;
   }
   .comprobante-content {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
   .comprobante-stack {
-    gap: 0px;
+    gap: 2px;
+  }
+  .comprobante-actions {
+    margin-top: 2px;
+    width: 100%;
+    justify-self: stretch;
   }
   .text-inactive {
       display: none
