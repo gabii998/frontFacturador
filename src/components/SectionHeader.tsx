@@ -1,10 +1,18 @@
-import { IonCard, IonCardContent } from '@ionic/react'
-import SectionHeaderProps from '../props/SectionHeaderProps'
+import { IconChevronDown } from "@tabler/icons-react"
+import { useState } from "react"
+import SectionHeaderProps from "../props/SectionHeaderProps"
 
-const SectionHeader = (props: SectionHeaderProps) => {
-  return (
-    <IonCard className="card surface-card">
-      <IonCardContent className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+const SectionHeader = (props:SectionHeaderProps) => {
+  const [mobileCollapsed, setMobileCollapsed] = useState(true)
+  const enableCollapse = Boolean(props.collapsible && props.bottomContent)
+  const effectiveCollapsed = enableCollapse ? mobileCollapsed : false
+  const bottomContent = typeof props.bottomContent === 'function'
+    ? props.bottomContent(effectiveCollapsed)
+    : props.bottomContent
+
+  return(
+    <section className="card border border-slate-200 bg-white">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
             <div className="flex h-5 w-5 items-center justify-center">{props.icon}</div>
@@ -29,25 +37,19 @@ const SectionHeader = (props: SectionHeaderProps) => {
                 </button>
               )}
             </div>
-          )}
-          <div className="flex-1 space-y-1">
-            <h1 className="text-lg font-semibold text-slate-900">{props.title}</h1>
-            {props.subtitle && <p className="body-copy-muted">{props.subtitle}</p>}
+            <h1 className="text-xl font-semibold text-slate-900">{props.title}</h1>
+            <p className="text-sm text-slate-500">{props.subtitle}</p>
           </div>
         </div>
         {props.rightContent && (
-          <div className="body-copy flex flex-wrap gap-2 md:justify-end">
+          <div className="flex flex-wrap gap-2 text-sm text-slate-600 md:justify-end">
             {props.rightContent}
           </div>
         )}
-      </IonCardContent>
-      {props.bottomContent && (
-        <div className="mt-3">
-          {typeof props.bottomContent === 'function' ? props.bottomContent(false) : props.bottomContent}
-        </div>
-      )}
-    </IonCard>
+      </div>
+      {bottomContent && <div className="mt-3">{bottomContent}</div>}
+    </section>
   )
 }
 
-export default SectionHeader
+export default SectionHeader;
