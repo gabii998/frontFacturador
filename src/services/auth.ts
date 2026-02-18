@@ -5,6 +5,8 @@ export interface AuthUser {
   email: string
   name?: string
   cuit?: string
+  phone?: string
+  role: 'USER' | 'SUPERUSER'
 }
 
 export interface AuthResponse {

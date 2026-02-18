@@ -15,6 +15,11 @@ import {
   IonToolbar
 } from '@ionic/react'
 import { NavLink, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+
+import AdminUsersPage from './pages/AdminUsersPage'
+import AdminOpsPage from './pages/AdminOpsPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import { useAuth } from './contexts/AuthContext'
 import SiteFooter from './components/SiteFooter'
 
@@ -51,6 +56,45 @@ function Navbar() {
   const { user, logout } = useAuth()
   const link = 'rounded-xl px-3 py-2 hover:bg-gray-100'
   const active = 'bg-blue-50 text-blue-700'
+
+  const links = [
+    { to: '/', label: 'Dashboard', end: true },
+    { to: '/puntos-venta', label: 'Puntos de venta' },
+    { to: '/comprobantes', label: 'Comprobantes' },
+    { to: '/emitir', label: 'Emitir' },
+    { to: '/configuracion', label: 'Configuración' },
+    ...(user?.role === 'SUPERUSER'
+      ? [
+          { to: '/admin/ops', label: 'Ops' },
+          { to: '/admin/usuarios', label: 'Superusuario' }
+        ]
+      : [])
+  ]
+
+  useEffect(() => () => {
+    if (closeTimeout.current) clearTimeout(closeTimeout.current)
+  }, [])
+
+  const openMobileMenu = () => {
+    if (closeTimeout.current) {
+      clearTimeout(closeTimeout.current)
+      closeTimeout.current = null
+    }
+    setMobileVisible(true)
+    requestAnimationFrame(() => setMobileOpen(true))
+  }
+
+  const closeMobileMenu = () => {
+    setMobileOpen(false)
+    closeTimeout.current = setTimeout(() => {
+      setMobileVisible(false)
+    }, 250)
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    closeMobileMenu()
+  }
 
   return (
     <IonHeader className="fixed left-0 right-0 top-0 z-40 border-b border-slate-200 bg-white md:static md:top-auto">
@@ -148,6 +192,14 @@ function PrivateLayout() {
   )
 }
 
+function SuperuserOnlyRoute() {
+  const { user } = useAuth()
+  if (user?.role !== 'SUPERUSER') {
+    return <Navigate to="/" replace />
+  }
+  return <Outlet />
+}
+
 function PublicLayout() {
   const { isAuthenticated } = useAuth()
   if (isAuthenticated) {
@@ -181,28 +233,30 @@ function PublicLayout() {
 
 export default function App() {
   return (
-    <Suspense fallback={<div className="container-max body-copy-muted py-8">Cargando...</div>}>
-      <Routes>
-        <Route element={<PublicLayout />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/registrarse" element={<RegisterPage />} />
-          <Route path="/recuperar-clave" element={<ForgotPasswordPage />} />
+    <Routes>
+      <Route element={<PublicLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/registrarse" element={<RegisterPage />} />
+        <Route path="/recuperar-clave" element={<ForgotPasswordPage />} />
+      </Route>
+      <Route element={<PrivateLayout />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/puntos-venta" element={<PuntosVentaPage />} />
+        <Route path="/comprobantes" element={<ComprobantesPage />} />
+        <Route path="/comprobantes/carga-masiva" element={<ComprobantesCargaMasivaPage />} />
+        <Route path="/emitir" element={<EmitirPage />} />
+        <Route path="/configuracion" element={<ProfilePage />} />
+        <Route path="/configuracion/planes" element={<PlanesPage />} />
+        <Route element={<SuperuserOnlyRoute />}>
+          <Route path="/admin/ops" element={<AdminOpsPage />} />
+          <Route path="/admin/usuarios" element={<AdminUsersPage />} />
         </Route>
-        <Route element={<PrivateLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/puntos-venta" element={<PuntosVentaPage />} />
-          <Route path="/comprobantes" element={<ComprobantesPage />} />
-          <Route path="/comprobantes/carga-masiva" element={<ComprobantesCargaMasivaPage />} />
-          <Route path="/emitir" element={<EmitirPage />} />
-          <Route path="/configuracion" element={<ProfilePage />} />
-          <Route path="/configuracion/planes" element={<PlanesPage />} />
-        </Route>
-        <Route path="/politica-privacidad" element={<PrivacyPolicyPage />} />
-        <Route path="/terminos-condiciones" element={<TermsConditionsPage />} />
-        <Route path="/ayuda" element={<HelpPage />} />
-        <Route path="/eliminar-datos" element={<DataDeletionPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+      </Route>
+      <Route path="/politica-privacidad" element={<PrivacyPolicyPage />} />
+      <Route path="/terminos-condiciones" element={<TermsConditionsPage />} />
+      <Route path="/ayuda" element={<HelpPage />} />
+      <Route path="/eliminar-datos" element={<DataDeletionPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }

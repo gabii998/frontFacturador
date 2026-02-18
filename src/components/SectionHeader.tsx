@@ -6,9 +6,28 @@ const SectionHeader = (props: SectionHeaderProps) => {
     <IonCard className="card surface-card">
       <IonCardContent className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
-          {props.icon && (
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/80 text-slate-600">
-              <div className="flex h-5 w-5 items-center justify-center">{props.icon}</div>
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
+            <div className="flex h-5 w-5 items-center justify-center">{props.icon}</div>
+          </div>
+          <div className="flex-1 space-y-1">
+            <div className="flex items-center gap-2">
+              {props.section && (
+                <span className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-500">
+                  {props.section}
+                </span>
+              )}
+      
+              {enableCollapse && (
+                <button
+                  type="button"
+                  aria-label={effectiveCollapsed ? 'Mostrar métricas' : 'Ocultar métricas'}
+                  aria-expanded={!effectiveCollapsed}
+                  className="md:hidden inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 text-slate-600"
+                  onClick={() => setMobileCollapsed(prev => !prev)}
+                >
+                  <IconChevronDown className={`h-4 w-4 transition-transform ${effectiveCollapsed ? '' : 'rotate-180'}`} />
+                </button>
+              )}
             </div>
           )}
           <div className="flex-1 space-y-1">
