@@ -19,6 +19,11 @@ const SectionHeader = (props:SectionHeaderProps) => {
           </div>
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2">
+              {props.section && (
+                <span className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-500">
+                  {props.section}
+                </span>
+              )}
       
               {enableCollapse && (
                 <button

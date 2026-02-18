@@ -7,6 +7,8 @@ import ComprobantesCargaMasivaPage from './pages/ComprobantesCargaMasivaPage'
 import EmitirPage from './pages/EmitirPage'
 import ProfilePage from './pages/ProfilePage'
 import PlanesPage from './pages/PlanesPage'
+import AdminUsersPage from './pages/AdminUsersPage'
+import AdminOpsPage from './pages/AdminOpsPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -30,7 +32,13 @@ function Navbar() {
     { to: '/puntos-venta', label: 'Puntos de venta' },
     { to: '/comprobantes', label: 'Comprobantes' },
     { to: '/emitir', label: 'Emitir' },
-    { to: '/configuracion', label: 'Configuración' }
+    { to: '/configuracion', label: 'Configuración' },
+    ...(user?.role === 'SUPERUSER'
+      ? [
+          { to: '/admin/ops', label: 'Ops' },
+          { to: '/admin/usuarios', label: 'Superusuario' }
+        ]
+      : [])
   ]
 
   useEffect(() => () => {
@@ -190,6 +198,14 @@ function PrivateLayout() {
   )
 }
 
+function SuperuserOnlyRoute() {
+  const { user } = useAuth()
+  if (user?.role !== 'SUPERUSER') {
+    return <Navigate to="/" replace />
+  }
+  return <Outlet />
+}
+
 function PublicLayout() {
   const { isAuthenticated } = useAuth()
   if (isAuthenticated) {
@@ -236,7 +252,11 @@ export default function App() {
         <Route path="/comprobantes/carga-masiva" element={<ComprobantesCargaMasivaPage />} />
         <Route path="/emitir" element={<EmitirPage />} />
         <Route path="/configuracion" element={<ProfilePage />} />
-      <Route path="/configuracion/planes" element={<PlanesPage />} />
+        <Route path="/configuracion/planes" element={<PlanesPage />} />
+        <Route element={<SuperuserOnlyRoute />}>
+          <Route path="/admin/ops" element={<AdminOpsPage />} />
+          <Route path="/admin/usuarios" element={<AdminUsersPage />} />
+        </Route>
       </Route>
       <Route path="/politica-privacidad" element={<PrivacyPolicyPage />} />
       <Route path="/terminos-condiciones" element={<TermsConditionsPage />} />
