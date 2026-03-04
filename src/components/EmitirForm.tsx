@@ -34,8 +34,9 @@ import {
 } from './emitir/EmitirConfigFields'
 import { CondicionReceptorField, DocumentoFields } from './emitir/EmitirReceiverFields'
 import { ItemCard, TotalSummary } from './emitir/EmitirItems'
+import { describeAfipRejection, getTodayIsoDate, validateAfipDates } from '../utils/afipValidation'
 
-const today = new Date().toISOString().slice(0, 10)
+const today = getTodayIsoDate()
 
 const DEFAULT_PUNTO_VENTA = 2
 const DEFAULT_DOC_TIPO: DocumentoTipo = 'DNI'
@@ -150,7 +151,7 @@ export default function EmitirForm() {
     emitRequest.setError(null)
     setResult(null)
     try {
-      const validationError = validateAfipDates({ requiresServicePeriod, fechaEmision, servicioDesde, servicioHasta, vencimientoPago })
+      const validationError = validateAfipDates({ concepto, fechaEmision, servicioDesde, servicioHasta, vencimientoPago })
       if (validationError) {
         emitRequest.setError(new Error(validationError))
         return
@@ -251,6 +252,13 @@ export default function EmitirForm() {
           )}
 
         <ErrorBox error={emitRequest.error} />
+        {result == null && emitRequest.error != null && (
+          <div className="flex justify-center">
+            <IonButton type="button" onClick={emitirNuevoComprobante}>
+              Reiniciar formulario
+            </IonButton>
+          </div>
+        )}
       </IonCardContent>
       </IonCard>
 
@@ -386,60 +394,4 @@ const HeaderFormulario = () => (
   <header className="space-y-1">
     <span className="text-[1.5rem] text-slate-900  ">Nueva factura</span>
   </header>
-)
-
-const describeAfipRejection = (resp: FacturaRespuesta): string => {
-  const reasons = [...(resp.errores ?? []), ...(resp.observaciones ?? [])]
-    .map(item => item?.trim())
-    .filter((item): item is string => Boolean(item && item.length > 0))
-  const detail = reasons.length ? reasons.join(' - ') : 'Verifica la fecha, numeracion y los datos informados.'
-  return `AFIP rechazo la solicitud (${resp.resultado}). ${detail}`
-}
-
-type DateValidationInput = {
-  requiresServicePeriod: boolean
-  fechaEmision?: string
-  servicioDesde?: string
-  servicioHasta?: string
-  vencimientoPago?: string
-}
-
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
-
-const validateAfipDates = (input: DateValidationInput): string | null => {
-  if (!isIsoDate(input.fechaEmision)) {
-    return 'Ingresa una fecha de comprobante valida.'
-  }
-  if (!input.requiresServicePeriod) {
-    return null
-  }
-  if (!isIsoDate(input.servicioDesde) || !isIsoDate(input.servicioHasta)) {
-    return 'Completa las fechas Desde y Hasta del servicio.'
-  }
-  if (compareIsoDates(input.servicioHasta, input.servicioDesde) < 0) {
-    return 'La fecha Hasta no puede ser anterior a Desde.'
-  }
-  if (compareIsoDates(input.servicioHasta, input.fechaEmision) > 0) {
-    return 'La fecha Hasta no puede ser posterior a la fecha del comprobante.'
-  }
-  if (!isIsoDate(input.vencimientoPago)) {
-    return 'Ingresa un vencimiento de pago valido.'
-  }
-  const latestReference = maxIsoDate(input.servicioHasta, input.fechaEmision)
-  if (compareIsoDates(input.vencimientoPago, latestReference) < 0) {
-    return 'El vencimiento debe ser igual o posterior al fin del servicio y a la fecha del comprobante.'
-  }
-  return null
-}
-
-const isIsoDate = (value?: string | null): value is string => (
-  Boolean(value && ISO_DATE_REGEX.test(value))
-)
-
-const compareIsoDates = (a: string, b: string): number => (
-  a.localeCompare(b)
-)
-
-const maxIsoDate = (a: string, b: string): string => (
-  compareIsoDates(a, b) >= 0 ? a : b
 )

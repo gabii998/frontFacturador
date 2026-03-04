@@ -5,6 +5,7 @@ import { cloudUploadOutline, refreshOutline } from 'ionicons/icons'
 import { AfipService } from '../services/afip'
 import type { Concepto, CondicionImpositiva, DocumentoTipo, FacturaRespuesta, FacturaSolicitud } from '../models/afip'
 import { ExcelHelper } from '../utils/excel'
+import { describeAfipRejection, getTodayIsoDate, validateAfipDates } from '../utils/afipValidation'
 import ActionButtonsGroup from './ActionButtonsGroup'
 
 type EmisorTipo = 'MONOTRIBUTO' | 'RESPONSABLE_INSCRIPTO'
@@ -158,8 +159,9 @@ const parseConcepto = (value: unknown, rowLabel: string, warnings: string[]): Co
   }
   const normalized = normalizeEnumValue(str)
   if (normalized === 'SERVICIOS' || normalized === 'SERVICIO') return 'SERVICIOS'
+  if (normalized === 'AMBOS' || normalized === 'PRODUCTOS_Y_SERVICIOS' || normalized === 'PRODUCTOS_SERVICIOS') return 'AMBOS'
   if (normalized === 'PRODUCTOS' || normalized === 'PRODUCTO') return 'PRODUCTOS'
-  warnings.push(`${rowLabel}: concepto "${str}" no reconocido, solo se permite "Productos" o "Servicios". Se usara PRODUCTOS.`)
+  warnings.push(`${rowLabel}: concepto "${str}" no reconocido, solo se permite "Productos", "Servicios" o "Productos y servicios". Se usara PRODUCTOS.`)
   return 'PRODUCTOS'
 }
 
@@ -339,7 +341,7 @@ export default function ComprobantesExcelUpload(){
 
       const warnings: string[] = []
       const parsed: ParsedRow[] = []
-      const today = new Date().toISOString().slice(0, 10)
+      const today = getTodayIsoDate()
 
       entries.forEach(({ record, rowNumber }) => {
         const rowLabel = `Fila ${rowNumber}`
@@ -485,7 +487,7 @@ export default function ComprobantesExcelUpload(){
           normalized.fechavencimiento
         )
 
-        if (concepto === 'SERVICIOS') {
+        if (concepto !== 'PRODUCTOS') {
           if (!servicioDesde) {
             servicioDesde = fechaEmision
             warnings.push(`${rowLabel}: sin Servicio Desde, se usara la fecha de emision.`)
@@ -585,10 +587,23 @@ export default function ComprobantesExcelUpload(){
         ...target.payload.solicitud,
         externalId: generateId()
       }
+      const validationError = validateAfipDates({
+        concepto: solicitud.concepto,
+        fechaEmision: solicitud.fechaEmision,
+        servicioDesde: solicitud.servicioDesde,
+        servicioHasta: solicitud.servicioHasta,
+        vencimientoPago: solicitud.vencimientoPago
+      })
+      if (validationError) {
+        throw new Error(validationError)
+      }
       const response = await AfipService.emitir({
         emisor: target.payload.emisor,
         solicitud
       })
+      if (response.resultado !== 'A') {
+        throw new Error(describeAfipRejection(response))
+      }
       const messageParts: string[] = []
       if (response.cae) messageParts.push(`CAE ${response.cae}`)
       const caeVto = formatAfipDate(response.caeVencimiento)

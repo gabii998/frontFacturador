@@ -1,8 +1,9 @@
 import { IonInput, IonSelect, IonSelectOption, IonText } from '@ionic/react'
 import type { Concepto, PuntoVenta } from '../../models/afip'
 import FormItemField from '../FormItemField'
+import { getTodayIsoDate } from '../../utils/afipValidation'
 
-const today = new Date().toISOString().slice(0, 10)
+const today = getTodayIsoDate()
 
 export const PuntoVentaField = ({
   puntosVenta,
