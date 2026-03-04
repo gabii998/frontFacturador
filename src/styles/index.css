@@ -427,21 +427,25 @@
 
   .comprobantes-page {
     @apply flex flex-col gap-6;
-    min-height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .comprobantes-content {
     @apply flex flex-col gap-6 flex-1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
   }
 
   .comprobantes-grid {
     @apply grid gap-5;
-    padding-right: 4px;
     scroll-behavior: smooth;
   }
 
   .comprobantes-table {
-    @apply flex flex-col gap-4 flex-1;
+    @apply flex flex-col gap-4;
   }
 
   @media (min-width: 768px) {

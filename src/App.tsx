@@ -190,7 +190,7 @@ function PrivateLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="container-max flex-1 pb-6 pt-20 md:py-6">
+      <main className="container-max flex min-h-0 flex-1 flex-col pb-6 pt-20 md:py-6">
         <Outlet />
       </main>
       <SiteFooter />
