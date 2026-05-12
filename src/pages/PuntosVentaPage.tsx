@@ -3,8 +3,7 @@ import { AfipService } from '../services/afip'
 import type { PuntoVenta } from '../models/afip'
 import ErrorBox from '../components/ErrorBox'
 import PuntosVentaTable from '../components/PuntosVentaTable'
-import SectionHeader from '../components/SectionHeader'
-import { IconBuildingStore, IconExclamationCircle } from '@tabler/icons-react'
+import { IconExclamationCircle } from '@tabler/icons-react'
 import EmptyContent from '../components/EmptyContent'
 import LoadingContent from '../components/LoadingContent'
 
@@ -26,12 +25,6 @@ const PuntosVentaPage = () => {
 
   return (
     <div className="space-y-6">
-      <SectionHeader
-        icon={<IconBuildingStore />}
-        title='Puntos de venta'
-        subtitle='Consultá los puntos de venta autorizados, verificá bloqueos o bajas y mantené visible qué sucursales pueden emitir comprobantes.'
-      />
-
       <section className="space-y-6">
         {loading && <LoadingContent />}
         <ErrorBox error={error} />

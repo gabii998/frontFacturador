@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { IconActivityHeartbeat } from '@tabler/icons-react'
-import SectionHeader from '../components/SectionHeader'
 import ErrorBox from '../components/ErrorBox'
 import {
   OpsService,
@@ -186,13 +184,6 @@ export default function AdminOpsPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader
-        section="Superusuario"
-        icon={<IconActivityHeartbeat />}
-        title="Dashboard operativo"
-        subtitle="Métricas en tiempo real de outbox, webhooks e integraciones."
-      />
-
       <div className="card space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-600">

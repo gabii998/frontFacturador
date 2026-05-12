@@ -4,9 +4,19 @@ import { AfipService } from '../services/afip'
 import { CONSUMIDOR_FINAL_IDENTIFICATION_THRESHOLD } from '../config/afip'
 import ErrorBox from './ErrorBox'
 import { FooterProps, PrimerPasoProps, SegundoPasoProps, StepEmitir, TercerPasoProps } from '../props/EmitirProps'
-import { Step } from '../props/Step'
-import Steper from './Steper'
-import { SuccessLite } from './Sucess'
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconCalendar,
+  IconCheck,
+  IconClock,
+  IconDeviceFloppy,
+  IconFileInvoice,
+  IconPlus,
+  IconReceipt,
+  IconTrash,
+  IconUser,
+} from '@tabler/icons-react'
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -21,7 +31,6 @@ export default function EmitirForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<unknown>(undefined)
   const [result, setResult] = useState<FacturaRespuesta | null>(null)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
   const [pv, setPv] = useState<number>(2)
   const [puntosVenta, setPuntosVenta] = useState<PuntoVenta[]>([])
@@ -33,7 +42,7 @@ export default function EmitirForm() {
   const [concepto, setConcepto] = useState<Concepto>('PRODUCTOS')
   const [fechaEmision, setFechaEmision] = useState(today)
   const [items, setItems] = useState<FacturaItem[]>([
-    { descripcion: 'Producto de prueba', cantidad: 1, precioUnitario: 1000, iva: 'IVA_0' }
+    { descripcion: '', cantidad: 1, precioUnitario: 0, iva: 'IVA_0' }
   ])
   const [servicioDesde, setServicioDesde] = useState(today)
   const [servicioHasta, setServicioHasta] = useState(today)
@@ -98,7 +107,6 @@ export default function EmitirForm() {
   // }, [result?.pdfBase64])
 
   const volverAtras = () => {
-    console.log("volver atras")
     setCurrentStep(prev =>
       prev > StepEmitir.CONFIGURACION ? (prev - 1) as StepEmitir : prev
     );
@@ -109,7 +117,6 @@ export default function EmitirForm() {
     setLoading(false)
     setError(undefined)
     setResult(null)
-    setPdfUrl(null)
     setPv(2)
     setPuntosVentaError(null)
     setDocTipo('DNI')
@@ -117,7 +124,7 @@ export default function EmitirForm() {
     setCond('CONSUMIDOR_FINAL')
     setConcepto('PRODUCTOS')
     setFechaEmision(today)
-    setItems([{ descripcion: 'Producto de prueba', cantidad: 1, precioUnitario: 1000, iva: 'IVA_0' }])
+    setItems([{ descripcion: '', cantidad: 1, precioUnitario: 0, iva: 'IVA_0' }])
     setServicioDesde(today)
     setServicioHasta(today)
     setVencimientoPago(today)
@@ -162,7 +169,7 @@ export default function EmitirForm() {
         }
         const payload = { emisor: 'MONOTRIBUTO' as const, solicitud }
         const r = await AfipService.emitir(payload)
-        if (r.resultado !== 'A') {
+        if (r.resultado !== 'A' && r.resultado !== 'QUEUED') {
           const rejectionMessage = describeAfipRejection(r)
           setResult(null)
           setError(new Error(rejectionMessage))
@@ -176,71 +183,100 @@ export default function EmitirForm() {
       }
     } else {
       setCurrentStep(prev => {
-      // si no es el último, incremento
-      const value = prev < StepEmitir.RESULTADO ? (prev + 1) as StepEmitir : prev;
-      console.log(prev)
-      console.log(value)
-      return value;
-    });
+        return prev < StepEmitir.RESULTADO ? (prev + 1) as StepEmitir : prev;
+      });
     }
   }
 
   return (
-    <div className="card space-y-6">
-      {result == null ? <Fragment>
-        <HeaderFormulario />
-      <Header currentStep={currentStep} />
+    <div className="invoice-flow">
+      {result == null ? (
+        <Fragment>
+          <HeaderFormulario />
+          <Header currentStep={currentStep} />
 
-      {error == null && <form onSubmit={onSubmit} className="space-y-6">
-        {currentStep == StepEmitir.CONFIGURACION &&
-          <PrimerPaso {...{ puntosVenta, pv, setPv, puntosVentaError, concepto, setConcepto, fechaEmision, setFechaEmision, requiresServicePeriod, servicioDesde, setServicioDesde, servicioHasta, setServicioHasta, vencimientoPago, setVencimientoPago }} />
-        }
+          {error == null && (
+            <form onSubmit={onSubmit} className="invoice-flow__layout">
+              <div className="invoice-flow__main">
+                {currentStep == StepEmitir.CONFIGURACION &&
+                  <PrimerPaso {...{ puntosVenta, pv, setPv, puntosVentaError, concepto, setConcepto, fechaEmision, setFechaEmision, requiresServicePeriod, servicioDesde, setServicioDesde, servicioHasta, setServicioHasta, vencimientoPago, setVencimientoPago }} />
+                }
 
-        {currentStep == StepEmitir.DATOS_RECEPTOR &&
-          <SegundoPaso {...{ cond, setCond, requiresCustomerIdentification, docTipo, setDocTipo, docNro, setDocNro }} />
-        }
+                {currentStep == StepEmitir.DATOS_RECEPTOR &&
+                  <SegundoPaso {...{ cond, setCond, requiresCustomerIdentification, docTipo, setDocTipo, docNro, setDocNro }} />
+                }
 
-        {currentStep == StepEmitir.ITEMS &&
-          <TercerPaso {...{ items, setItems, totalAmount }} />
-        }
+                {currentStep == StepEmitir.ITEMS &&
+                  <TercerPaso {...{ items, setItems, totalAmount }} />
+                }
+              </div>
 
-        <Footer {...{ loading, currentStep, volverAtras }} />
-      </form>}
+              <aside className="invoice-flow__summary">
+                <div>
+                  <span>Estado</span>
+                  <strong>{loading ? 'Emitiendo' : 'Borrador'}</strong>
+                </div>
+                <div>
+                  <span>Punto de venta</span>
+                  <strong>PV {pv}</strong>
+                </div>
+                <div>
+                  <span>Concepto</span>
+                  <strong>{conceptoLabel(concepto)}</strong>
+                </div>
+                <div>
+                  <span>Total estimado</span>
+                  <strong>{currencyFormatter.format(totalAmount)}</strong>
+                </div>
+                <p>Al confirmar se inicia la emisión. El CAE puede demorar unos instantes y luego aparece en Comprobantes.</p>
+              </aside>
 
-      
-        </Fragment> : (
-          <div className="flex flex-col items-center gap-4">
-            <SuccessLite title='Factura creada correctamente' subtitle={`CAE # ${result?.cae}`}/>
-            <button type="button" className="btn btn-primary" onClick={emitirNuevoComprobante}>
-              Emitir nuevo comprobante
-            </button>
-          </div>
-        )}
-      
+              <Footer {...{ loading, currentStep, volverAtras }} />
+            </form>
+          )}
+        </Fragment>
+      ) : (
+        <ResultPanel result={result} onReset={emitirNuevoComprobante} />
+      )}
 
       <ErrorBox error={error} />
-      
     </div>
   )
 }
 
 const Header = ({ currentStep }: { currentStep: StepEmitir }) => {
-  const steps: Step[] = [
-    { title: "Datos del comprobante", subtitle: "Seleccioná el punto de venta habilitado y definí el concepto del comprobante.", isActive: currentStep == StepEmitir.CONFIGURACION },
-    { title: "Datos del Receptor", subtitle: "Completá la condicion impositiva del receptor.", isActive: currentStep == StepEmitir.DATOS_RECEPTOR },
-    { title: "Items", subtitle: "Agregá los items al comprobante.", isActive: currentStep == StepEmitir.ITEMS }
+  const steps = [
+    { title: "Comprobante", icon: IconReceipt },
+    { title: "Receptor", icon: IconUser },
+    { title: "Ítems", icon: IconFileInvoice }
   ]
 
-  return (<div className='pb-6'>
-    <Steper steps={steps} />
-  </div>)
+  return (
+    <ol className="invoice-progress">
+      {steps.map((step, index) => {
+        const Icon = step.icon
+        const active = currentStep === index
+        const complete = currentStep > index
+        return (
+          <li key={step.title} className={active ? 'is-active' : complete ? 'is-complete' : undefined}>
+            <span>{complete ? <IconCheck /> : <Icon />}</span>
+            <strong>{step.title}</strong>
+          </li>
+        )
+      })}
+    </ol>
+  )
 }
 
 const PrimerPaso = (props: PrimerPasoProps) => {
-  return (<section className="space-y-4">
+  return (<section className="invoice-section">
+    <SectionTitle
+      title="Datos del comprobante"
+      subtitle="Definí la base fiscal de la solicitud antes de cargar receptor e ítems."
+    />
 
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <div>
+    <div className="invoice-fields invoice-fields--three">
+      <div className="invoice-field">
         <label className="label">Punto de venta</label>
         {props.puntosVenta.length > 0 ? (
           <select
@@ -267,7 +303,7 @@ const PrimerPaso = (props: PrimerPasoProps) => {
           <p className="mt-1 text-xs text-amber-600">{props.puntosVentaError}.</p>
         )}
       </div>
-      <div>
+      <div className="invoice-field">
         <label className="label">Concepto</label>
         <select className="input" value={props.concepto} onChange={e => props.setConcepto(e.target.value as Concepto)}>
           <option value="PRODUCTOS">Productos</option>
@@ -275,7 +311,7 @@ const PrimerPaso = (props: PrimerPasoProps) => {
           <option value="AMBOS">Productos y Servicios</option>
         </select>
       </div>
-      <div>
+      <div className="invoice-field">
         <label className="label">Fecha del comprobante</label>
         <input
           className="input"
@@ -283,18 +319,17 @@ const PrimerPaso = (props: PrimerPasoProps) => {
           value={props.fechaEmision}
           onChange={e => props.setFechaEmision(e.target.value)}
         />
-        <p className="mt-1 text-xs text-slate-500">AFIP exige que la fecha sea mayor o igual al período informado.</p>
+        <p className="invoice-help"><IconCalendar /> ARCA exige que la fecha respete el período informado.</p>
       </div>
     </div>
     {props.requiresServicePeriod && (
-      <section className="space-y-4">
+      <section className="invoice-subsection">
         <div>
-          <h3 className="mt-1 text-base font-semibold text-slate-800">Período del servicio</h3>
-          <p className="text-xs text-slate-500">Informá las fechas de prestación y el vencimiento de pago para comprobantes de servicios o mixtos.</p>
-         
+          <h3>Período del servicio</h3>
+          <p>Informá prestación y vencimiento de pago para comprobantes de servicios o mixtos.</p>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          <div>
+        <div className="invoice-fields invoice-fields--three">
+          <div className="invoice-field">
             <span className="text-xs text-slate-500">Desde</span>
             <input
               className="input"
@@ -303,7 +338,7 @@ const PrimerPaso = (props: PrimerPasoProps) => {
               onChange={e => props.setServicioDesde(e.target.value)}
             />
           </div>
-          <div>
+          <div className="invoice-field">
             <span className="text-xs text-slate-500">Hasta</span>
             <input
               className="input"
@@ -312,7 +347,7 @@ const PrimerPaso = (props: PrimerPasoProps) => {
               onChange={e => props.setServicioHasta(e.target.value)}
             />
           </div>
-          <div>
+          <div className="invoice-field">
             <span className="text-xs text-slate-500">Vencimiento de pago</span>
             <input
               className="input"
@@ -328,9 +363,13 @@ const PrimerPaso = (props: PrimerPasoProps) => {
 }
 
 const SegundoPaso = ({ cond, setCond, requiresCustomerIdentification, docTipo, setDocTipo, docNro, setDocNro }: SegundoPasoProps) => {
-  return (<section className="space-y-4">
-    <div className="grid gap-4 md:grid-cols-2">
-      <div>
+  return (<section className="invoice-section">
+    <SectionTitle
+      title="Datos del receptor"
+      subtitle="Identificá al cliente solo cuando la condición o el importe lo requieren."
+    />
+    <div className="invoice-fields invoice-fields--two">
+      <div className="invoice-field">
         <label className="label">Condición IVA receptor</label>
         <select
           className="input"
@@ -346,9 +385,9 @@ const SegundoPaso = ({ cond, setCond, requiresCustomerIdentification, docTipo, s
         </select>
       </div>
       {requiresCustomerIdentification && (
-        <div className="space-y-2">
+        <div className="invoice-field">
           <label className="label">Documento</label>
-          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+          <div className="invoice-document-field">
             <select className="input md:w-40" value={docTipo} onChange={e => setDocTipo(e.target.value as DocumentoTipo)}>
               <option value="DNI">DNI</option>
               <option value="CUIT">CUIT</option>
@@ -358,43 +397,54 @@ const SegundoPaso = ({ cond, setCond, requiresCustomerIdentification, docTipo, s
           </div>
         </div>
       )}
+      {!requiresCustomerIdentification && (
+        <div className="invoice-inline-note">
+          <IconUser />
+          <span>No se solicitará documento para consumidor final bajo el umbral configurado.</span>
+        </div>
+      )}
     </div>
   </section>)
 }
 
 const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
-  return (<section className="space-y-4">
-    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-
+  return (<section className="invoice-section">
+    <div className="invoice-section__head">
+      <SectionTitle
+        title="Ítems del comprobante"
+        subtitle="Cargá conceptos, cantidades e importes. El total se recalcula automáticamente."
+      />
       <button
         type="button"
-        className="btn px-3 py-1.5 text-sm"
+        className="btn invoice-add-item"
         onClick={() => setItems(prev => ([
           ...prev,
           { descripcion: '', cantidad: 1, precioUnitario: 0, iva: 'IVA_0' }
         ]))}
       >
+        <IconPlus />
         Agregar ítem
       </button>
     </div>
-    <div className="space-y-3">
+    <div className="invoice-items">
       {items.map((item, index) => (
-        <div key={index} className="rounded-xl border border-slate-200/80 bg-white/80 p-3 shadow-sm shadow-slate-100">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Ítem #{index + 1}</span>
-            <span className="text-[11px] font-medium text-slate-500">Alícuota: IVA 0% (Factura C)</span>
+        <div key={index} className="invoice-item">
+          <div className="invoice-item__meta">
+            <span>Ítem {index + 1}</span>
+            <small>IVA 0% para factura C</small>
             {items.length > 1 && (
               <button
                 type="button"
-                className="text-rose-600 hover:text-rose-500"
+                className="invoice-item__remove"
                 onClick={() => setItems(prev => prev.filter((_, idx) => idx !== index))}
+                aria-label={`Quitar ítem ${index + 1}`}
               >
-                Quitar
+                <IconTrash />
               </button>
             )}
           </div>
-          <div className="mt-2 grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2">
-            <div>
+          <div className="invoice-item__fields">
+            <div className="invoice-field">
               <label className="label">Descripción</label>
               <input
                 className="input py-2 text-sm"
@@ -405,7 +455,7 @@ const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
                 }}
               />
             </div>
-            <div>
+            <div className="invoice-field">
               <label className="label">Cantidad</label>
               <input
                 className="input py-2 text-sm"
@@ -419,7 +469,7 @@ const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
                 }}
               />
             </div>
-            <div>
+            <div className="invoice-field">
               <label className="label">Precio unitario</label>
               <input
                 className="input py-2 text-sm"
@@ -437,9 +487,9 @@ const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
         </div>
       ))}
     </div>
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 md:flex-row md:items-center md:justify-between">
+    <div className="invoice-total">
       <span>Total estimado</span>
-      <span className="text-base font-semibold text-slate-900">{currencyFormatter.format(totalAmount)}</span>
+      <strong>{currencyFormatter.format(totalAmount)}</strong>
     </div>
   </section>)
 }
@@ -452,24 +502,64 @@ const Footer = ({ loading, currentStep, volverAtras }: FooterProps) => {
         ? "Siguiente paso"
         : "Emitir comprobante";
 
-  return (<div className="flex flex-col-reverse gap-3 md:flex-row md:items-center md:justify-end pt-5">
-    <p className="text-xs text-slate-500">Se genera un identificador externo automático para seguir la solicitud enviada a AFIP.</p>
-    <div className='flex-1' />
-    <button className="btn md:w-auto" type='button' onClick={volverAtras} disabled={loading}>
+  return (<div className="invoice-footer">
+    <p />
+    <button className="btn md:w-auto" type='button' onClick={volverAtras} disabled={loading || currentStep === StepEmitir.CONFIGURACION}>
+      <IconArrowLeft />
       Volver
     </button>
     <button className="btn btn-primary md:w-auto" type="submit" disabled={loading}>
       {buttonText}
+      {currentStep !== StepEmitir.ITEMS ? <IconArrowRight /> : <IconDeviceFloppy />}
     </button>
   </div>)
 }
 
 const HeaderFormulario = () => {
-  return (<header className="space-y-1">
-    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Nueva Factura</span>
-    {/* <h2 className="text-xl font-semibold text-slate-900">Datos del comprobante</h2>
-    <p className="text-sm text-slate-600">Completá la información necesaria para emitir el comprobante y enviar la solicitud al servicio de AFIP.</p> */}
+  return (<header className="invoice-flow__header">
+    <div>
+      <span>Nueva solicitud</span>
+      <h1>Emitir factura</h1>
+      <p>Completá los datos mínimos y dejá que el proceso de emisión resuelva el CAE en segundo plano.</p>
+    </div>
   </header>)
+}
+
+const SectionTitle = ({ title, subtitle }: { title: string; subtitle: string }) => (
+  <div className="invoice-section-title">
+    <h2>{title}</h2>
+    <p>{subtitle}</p>
+  </div>
+)
+
+const ResultPanel = ({ result, onReset }: { result: FacturaRespuesta; onReset: () => void }) => {
+  const queued = result.resultado === 'QUEUED'
+  return (
+    <div className="invoice-result">
+      <div className="invoice-result__icon">
+        {queued ? <IconClock /> : <IconCheck />}
+      </div>
+      <span>{queued ? 'Emisión iniciada' : 'Comprobante emitido'}</span>
+      <h2>{queued ? 'Factura en proceso de emisión' : 'Factura creada correctamente'}</h2>
+      <p>
+        {queued
+          ? 'Estamos procesando la emisión. Vas a poder ver el estado y los intentos en Comprobantes.'
+          : `CAE # ${result.cae}`}
+      </p>
+      {result.externalId && (
+        <code>{result.externalId}</code>
+      )}
+      <button type="button" className="btn btn-primary" onClick={onReset}>
+        Emitir otra factura
+      </button>
+    </div>
+  )
+}
+
+const conceptoLabel = (concepto: Concepto) => {
+  if (concepto === 'SERVICIOS') return 'Servicios'
+  if (concepto === 'AMBOS') return 'Productos y servicios'
+  return 'Productos'
 }
 
 const describeAfipRejection = (resp: FacturaRespuesta): string => {

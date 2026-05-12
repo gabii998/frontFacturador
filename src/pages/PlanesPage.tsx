@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import SectionHeader from '../components/SectionHeader'
 import HeaderPill from '../components/HeaderPill'
 import ErrorBox from '../components/ErrorBox'
-import PlanesIcon from '../icon/PlanesIcon'
 import {
   PLAN_COLORS,
   PLAN_COLORS_BY_CODE,
@@ -16,6 +14,7 @@ import { ensureMercadoPago, MercadoPagoInstance } from '../lib/mercadopago'
 import { PaymentsService } from '../services/payments'
 import { PlansService, type PlanStatusResponse } from '../services/plans'
 import { useAuth } from '../contexts/AuthContext'
+import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
 
 const PlanesPage = () => {
   const { user } = useAuth()
@@ -161,16 +160,15 @@ const PlanesPage = () => {
     ? 'bg-amber-500'
     : PLAN_COLORS_BY_CODE[planActivoCode]
 
+  const topbarActions = useMemo(
+    () => <HeaderPill label={headerLabel} dotColor={headerDotColor} />,
+    [headerDotColor, headerLabel]
+  )
+
+  usePrivateTopbarActions(topbarActions)
+
   return (
     <div className="space-y-6">
-      <SectionHeader
-        section="Planes"
-        icon={<PlanesIcon />}
-        title="Compará y elegí el plan ideal"
-        subtitle="Encontrá la opción que mejor se adapta a tu negocio y escalá tu facturación sin obstáculos."
-        rightContent={<HeaderPill label={headerLabel} dotColor={headerDotColor} />}
-      />
-
       {planStatus?.status === 'EXPIRED' && planStatus.previousPlan && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Tu plan {PLAN_CODE_TO_NAME[planStatus.previousPlan]} expiró. Pasaste nuevamente al plan Gratuito.

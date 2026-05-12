@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import SectionHeader from '../components/SectionHeader'
 import ErrorBox from '../components/ErrorBox'
 import { AdminService, type AdminUserSummary, type AdminUsersPageResponse } from '../services/admin'
-import { IconShieldCog } from '@tabler/icons-react'
 import { PLAN_DETAILS, PLAN_CODE_TO_NAME, type PlanCode } from '../constants/planes'
 
 const PAGE_SIZE = 25
@@ -119,13 +117,6 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader
-        section="Superusuario"
-        icon={<IconShieldCog />}
-        title="Administración de usuarios"
-        subtitle="Gestioná roles y planes de los clientes desde un único panel."
-      />
-
       <div className="card space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-600">

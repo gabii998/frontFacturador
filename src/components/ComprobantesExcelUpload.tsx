@@ -37,7 +37,7 @@ const STATUS_META: Record<UploadStatus, StatusMeta> = {
     badge: 'bg-sky-50 text-sky-700 border border-sky-200'
   },
   success: {
-    label: 'Emitido',
+    label: 'En proceso',
     badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200'
   },
   error: {
@@ -240,6 +240,14 @@ const getReadableError = (error: unknown) => {
     return (error as any).message
   }
   return 'Error inesperado al emitir comprobante'
+}
+
+const describeAfipRejection = (resp: FacturaRespuesta): string => {
+  const reasons = [...(resp.errores ?? []), ...(resp.observaciones ?? [])]
+    .map(item => item?.trim())
+    .filter((item): item is string => Boolean(item && item.length > 0))
+  const detail = reasons.length ? reasons.join(' · ') : 'Verificá la fecha, numeración y los datos informados.'
+  return `ARCA rechazó la solicitud (${resp.resultado}). ${detail}`
 }
 
 const padNumber = (value: number, size: number) => value.toString().padStart(size, '0')
@@ -587,11 +595,19 @@ export default function ComprobantesExcelUpload(){
         solicitud
       })
       const messageParts: string[] = []
-      if (response.cae) messageParts.push(`CAE ${response.cae}`)
-      const caeVto = formatAfipDate(response.caeVencimiento)
-      if (caeVto) messageParts.push(`Vence ${caeVto}`)
-      if (typeof response.numero === 'number') messageParts.push(`Nro ${padNumber(response.numero, 8)}`)
-      if (!messageParts.length) messageParts.push('Emitido correctamente')
+      if (response.resultado !== 'A' && response.resultado !== 'QUEUED') {
+        throw new Error(describeAfipRejection(response))
+      }
+      if (response.resultado === 'QUEUED') {
+        messageParts.push('Emisión iniciada')
+        if (response.status) messageParts.push(response.status)
+      } else {
+        if (response.cae) messageParts.push(`CAE ${response.cae}`)
+        const caeVto = formatAfipDate(response.caeVencimiento)
+        if (caeVto) messageParts.push(`Vence ${caeVto}`)
+        if (typeof response.numero === 'number') messageParts.push(`Nro ${padNumber(response.numero, 8)}`)
+        if (!messageParts.length) messageParts.push('Emitido correctamente')
+      }
       setRows(prev => prev.map(row => (
         row.id === target.id
           ? { ...row, status: 'success', message: messageParts.join(' · '), response }
@@ -712,7 +728,7 @@ export default function ComprobantesExcelUpload(){
                 <span className="font-semibold text-sky-600">{stats.processing}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">Emitidos</span>
+                <span className="text-slate-500">En proceso</span>
                 <span className="font-semibold text-emerald-600">{stats.success}</span>
               </div>
               <div className="flex items-center justify-between">
@@ -746,7 +762,7 @@ export default function ComprobantesExcelUpload(){
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <p className="text-sm font-semibold text-slate-800">Resultado de la emisión</p>
-              <p className="text-xs text-slate-500">Emití los comprobantes cargados. El proceso se ejecuta de manera secuencial.</p>
+              <p className="text-xs text-slate-500">Emití los comprobantes cargados. El CAE puede demorar unos instantes.</p>
             </div>
             <button
               type="button"
@@ -762,7 +778,7 @@ export default function ComprobantesExcelUpload(){
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-slate-800">Listado de futuros comprobantes</p>
-                <p className="text-xs text-slate-500">Revisá los datos que se enviarán a AFIP y monitoreá el resultado de cada emisión.</p>
+                <p className="text-xs text-slate-500">Revisá los datos que se enviarán a ARCA y monitoreá el estado de cada solicitud.</p>
               </div>
               <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                 {rows.length} comprobantes
@@ -816,7 +832,7 @@ export default function ComprobantesExcelUpload(){
                         onClick={() => handleEmitSingle(row)}
                         disabled={processing || row.status === 'processing' || row.status === 'success'}
                       >
-                        {row.status === 'success' ? 'Emitido' : 'Emitir'}
+                        {row.status === 'success' ? 'En proceso' : 'Emitir'}
                       </button>
                     </div>
                   </div>

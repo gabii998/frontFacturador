@@ -1,14 +1,12 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AfipService } from '../services/afip'
 import type { PuntoVenta } from '../models/afip'
 import ErrorBox from '../components/ErrorBox'
 import { useAuth } from '../contexts/AuthContext'
 import DashboardCard from '../components/DashboardCard'
-import PuntoventaIcon from '../icon/PuntoVentaIcon'
-import EmitirIcon from '../icon/EmitirIcon'
-import ComprobanteIcon from '../icon/ComprobanteIcon'
 import DashboardHeaderPill from '../components/DashboardHeaderPill'
 import LoadingContent from '../components/LoadingContent'
+import { IconBuildingStore, IconCashRegister, IconFileInvoice } from '@tabler/icons-react'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -31,33 +29,6 @@ export default function DashboardPage() {
     if (user?.email) return `Hola, ${user.email}`
     return 'Resumen de tu operación fiscal'
   }, [user?.name, user?.email])
-
-  const insights = useMemo(() => {
-    const items: Array<{ key: string, tone: 'ok' | 'info' | 'warn', title: string, description: string }> = []
-    if (loading) {
-      items.push({
-        key: 'syncing',
-        tone: 'info',
-        title: 'Sincronizando datos',
-        description: 'Consultando AFIP para obtener información actualizada.'
-      })
-    } else if (error) {
-      items.push({
-        key: 'error',
-        tone: 'warn',
-        title: 'Atención requerida',
-        description: 'No pudimos recuperar la información. Intenta nuevamente más tarde.'
-      })
-    } else {
-      items.push({
-        key: 'pvs',
-        tone: 'ok',
-        title: `${pvs.length} puntos de venta visibles`,
-        description: 'Listos para emitir comprobantes o consultar movimientos.'
-      })
-    }
-    return items
-  }, [loading, error, pvs.length, syncedAt])
 
   const afipServices = useMemo(
     () => {
@@ -84,78 +55,68 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-layout">
-      {(!loading && error != null) && 
-      <div className="mt-4">
+      {error && !loading ? (
         <ErrorBox error={error} />
-      </div>
-      }
-      
-      {!error && <Fragment>
-        <section className="dashboard-hero">
-          <div className="space-y-4">
-            <div>
-              <h1 className="dashboard-hero__title">{displayName}</h1>
-              <p className="dashboard-hero__subtitle">
-                Seguimiento centralizado de puntos de venta, emisión y monitoreo de operaciones. Todo en un mismo lugar para tu equipo.
-              </p>
-            </div>
-            <div className="dashboard-hero__meta">
+      ) : (
+        <>
+          <section className="dashboard-summary">
+            <div className="dashboard-summary__content">
               <div>
-                <span className="meta-label">Panel activo</span>
-                <span className="meta-value">{user?.email ?? 'Usuario sin email'}</span>
+                <h2 className="dashboard-summary__title">{displayName}</h2>
+                <p className="dashboard-summary__subtitle">
+                  Estado general de tu operación, accesos principales y sincronización con servicios fiscales.
+                </p>
               </div>
-              <div>
-                <span className="meta-label">Última sincronización</span>
-                <span className="meta-value">
-                  {syncedAt ? syncedAt.toLocaleString() : loading ? 'Sincronizando...' : 'Sin datos'}
-                </span>
-              </div>
+              <dl className="dashboard-summary__meta">
+                <div>
+                  <dt>Panel activo</dt>
+                  <dd>{user?.email ?? 'Usuario sin email'}</dd>
+                </div>
+                <div>
+                  <dt>Última sincronización</dt>
+                  <dd>{syncedAt ? syncedAt.toLocaleString() : loading ? 'Sincronizando...' : 'Sin datos'}</dd>
+                </div>
+              </dl>
             </div>
-            <div className="dashboard-hero__services">
+            <div className="dashboard-summary__services">
               {afipServices.map((service) => (
-                <DashboardHeaderPill service={service} />
+                <DashboardHeaderPill key={service.key} service={service} />
               ))}
             </div>
-          </div>
-        </section>
+          </section>
 
-        {loading && <LoadingContent />}
+          {loading ? <LoadingContent /> : (
+            <section className="dashboard-metrics">
+              <DashboardCard
+                icon={<IconBuildingStore />}
+                section='Puntos de venta visibles'
+                title={pvs.length.toString()}
+                content='Gestioná las altas, bajas y estados desde el módulo de Puntos de venta.'
+                buttonLabel='Revisar listado'
+                buttonDestination='puntos-venta'
+              />
 
-        {!loading && <Fragment>
-          <section className="dashboard-metrics">
-          <DashboardCard
-            icon={<PuntoventaIcon />}
-            section='Puntos de venta visibles'
-            title={loading ? '...' : pvs.length.toString()}
-            content='Gestioná las altas, bajas y estados desde el módulo de Puntos de venta.'
-            buttonLabel='Revisar listado'
-            buttonDestination='puntos-venta'
-          />
+              <DashboardCard
+                icon={<IconCashRegister />}
+                section='Emisión rápida'
+                title='AFIP WSFE v1'
+                content='Ingresá los datos de tu comprobante y emití en segundos con validaciones automáticas.'
+                buttonDestination='emitir'
+                buttonLabel='Ir a emitir'
+              />
 
-          <DashboardCard
-            icon={<EmitirIcon />}
-            section='Emisión rápida'
-            title='AFIP WSFE v1'
-            content='Ingresá los datos de tu comprobante y emití en segundos con validaciones automáticas.'
-            buttonDestination='emitir'
-            buttonLabel='Ir a emitir'
-          />
-
-          <DashboardCard
-            icon={<ComprobanteIcon />}
-            section='Validaciones & trazabilidad'
-            title='En curso'
-            content='Consultá comprobantes emitidos, filtros por fecha y descarga en un solo clic.'
-            buttonDestination='comprobantes'
-            buttonLabel='Ver comprobantes'
-          />
-        </section>
-          </Fragment>}
-      
-      </Fragment>}
-
-
-
+              <DashboardCard
+                icon={<IconFileInvoice />}
+                section='Validaciones & trazabilidad'
+                title='En curso'
+                content='Consultá comprobantes emitidos, filtros por fecha y descarga en un solo clic.'
+                buttonDestination='comprobantes'
+                buttonLabel='Ver comprobantes'
+              />
+            </section>
+          )}
+        </>
+      )}
     </div>
   )
 }

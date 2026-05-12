@@ -1,14 +1,14 @@
-﻿import { Fragment, useEffect, useState } from 'react'
+﻿import { Fragment, useEffect, useMemo, useState } from 'react'
 import { AfipService } from '../services/afip'
 import type { ComprobanteEmitido } from '../models/afip'
 import ErrorBox from '../components/ErrorBox'
 import { useNavigate } from 'react-router-dom'
 import ComprobantesTable from '../components/ComprobantesTable'
 import { ComprobanteHeaderInfoProps, FiltrosProps } from '../props/ComprobantesProps'
-import SectionHeader from '../components/SectionHeader'
-import { IconFileTypeXls, IconFilter, IconInfoCircle, IconInvoice, IconLoader, IconRestore, IconSearch } from '@tabler/icons-react'
+import { IconFileTypeXls, IconFilter, IconInfoCircle, IconLoader, IconRestore, IconSearch } from '@tabler/icons-react'
 import EmptyContent from '../components/EmptyContent'
 import LoadingContent from '../components/LoadingContent'
+import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
 
 const DEFAULT_PV = 2
 const DEFAULT_TIPO = 11
@@ -37,15 +37,15 @@ const ComprobantesPage = () => {
 
   useEffect(() => { void fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE) }, [])
 
+  const topbarActions = useMemo(
+    () => <ComprobanteHeaderInfo filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} />,
+    [filtersOpen]
+  )
+
+  usePrivateTopbarActions(topbarActions)
+
   return (
     <div className="space-y-6">
-      <SectionHeader
-        icon={<IconInvoice />}
-        title='Comprobantes'
-        subtitle='Consultá y auditá tus últimas emisiones agrupadas por punto de venta y tipo AFIP.'
-        rightContent={<ComprobanteHeaderInfo filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} />}
-      />
-
       <section className="space-y-6">
 
 
@@ -61,7 +61,7 @@ const ComprobantesPage = () => {
           ) : (
             <EmptyContent
               title='No hay comprobantes para mostrar'
-              subtitle='Ajustá los filtros o verificá que AFIP haya emitido comprobantes para este punto de venta y tipo.'
+              subtitle='Ajustá los filtros o verificá que existan comprobantes emitidos o en proceso para este punto de venta y tipo.'
               icon={ <IconInfoCircle/> } />
           )
         )}

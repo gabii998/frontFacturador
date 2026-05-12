@@ -1,4 +1,4 @@
-import { DashboardCardProps, DashboardService } from "../props/DashboardProps";
+import { DashboardService } from "../props/DashboardProps";
 
 const DashboardHeaderPill = ({service}: {service:DashboardService}) => {
     return (

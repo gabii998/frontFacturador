@@ -135,10 +135,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await AuthService.logout().catch(() => undefined)
     } finally {
-      clearState()
+      clearState(false)
+      navigate('/', { replace: true })
       logoutInFlight.current = false
     }
-  }, [clearState])
+  }, [clearState, navigate])
 
   const login = useCallback(async (credentials: LoginPayload) => {
     const response = await AuthService.login(credentials)

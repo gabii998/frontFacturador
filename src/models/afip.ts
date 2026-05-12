@@ -4,10 +4,18 @@ export interface PuntoVenta {
   bloqueado: boolean
   fchBaja?: string | null
 }
+export interface ComprobanteIntento {
+  attemptNumber: number
+  status: string
+  resultado?: string | null
+  createdAt: string
+  errorMessage?: string | null
+}
+
 export interface ComprobanteEmitido {
   tipoAfip: number
   puntoVenta: number
-  numero: number
+  numero?: number | null
   fechaCbte?: string | null
   concepto?: number | null
   docTipo?: number | null
@@ -19,6 +27,11 @@ export interface ComprobanteEmitido {
   caeVto?: string | null
   observaciones: string[]
   errores: string[]
+  status?: 'EMITTED' | 'QUEUED' | 'PROCESSING' | 'FAILED' | string
+  queueId?: string | null
+  externalId?: string | null
+  queuedAt?: string | null
+  attempts?: ComprobanteIntento[]
 }
 export type Concepto = 'PRODUCTOS'|'SERVICIOS'|'AMBOS'
 export type CondicionImpositiva =
@@ -64,14 +77,17 @@ export interface FacturaSolicitud {
   }
 }
 export interface FacturaRespuesta {
+  id?: string
+  externalId?: string
   cae?: string | null
   caeVencimiento?: string | null
-  tipo: any
-  puntoVenta: number
-  numero: number
+  tipo?: any
+  puntoVenta?: number
+  numero?: number | null
   resultado: string
-  observaciones: string[]
-  errores: string[]
+  status?: string
+  observaciones?: string[]
+  errores?: string[]
 }
 
 export interface PadronInfo {

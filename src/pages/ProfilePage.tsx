@@ -1,7 +1,7 @@
-﻿import { FormEvent, Fragment, useEffect, useMemo, useState } from 'react'
+﻿import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import ErrorBox from '../components/ErrorBox'
-import SectionHeader from '../components/SectionHeader'
 import HeaderPill from '../components/HeaderPill'
 import { useAuth } from '../contexts/AuthContext'
 import { changePassword } from '../services/profile'
@@ -10,7 +10,6 @@ import { AuthUser } from '../services/auth'
 import { PLAN_COLORS_BY_CODE, PLAN_CODE_TO_NAME, type PlanCode } from '../constants/planes'
 import { PlansService, type PlanStatusResponse } from '../services/plans'
 import type { PadronInfo } from '../models/afip'
-import { IconUser } from '@tabler/icons-react'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -23,13 +22,10 @@ export default function ProfilePage() {
   const [padronInfo, setPadronInfo] = useState<PadronInfo | null>(null)
   const [padronError, setPadronError] = useState<string | null>(null)
   const [loadingPadron, setLoadingPadron] = useState(false)
-
-  if (!user) {
-    return null
-  }
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
 
   useEffect(() => {
-    if (!user.cuit) {
+    if (!user?.cuit) {
       setPadronInfo(null)
       setPadronError(null)
       return
@@ -62,10 +58,11 @@ export default function ProfilePage() {
     return () => {
       canceled = true
     }
-  }, [user.cuit])
+  }, [user?.cuit])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!user) return
     setError(null)
     setSuccess(null)
 
@@ -90,6 +87,21 @@ export default function ProfilePage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const openPasswordModal = () => {
+    setError(null)
+    setSuccess(null)
+    setPasswordModalOpen(true)
+  }
+
+  const closePasswordModal = () => {
+    setPasswordModalOpen(false)
+    setError(null)
+    setSuccess(null)
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
   }
 
   const inicioActividadesLabel = useMemo(() => {
@@ -122,72 +134,117 @@ export default function ProfilePage() {
     return full.length > 0 ? `${full}` : null
   }, [padronInfo?.domicilio, loadingPadron])
 
+  if (!user) {
+    return null
+  }
+
   return (
     <div className="space-y-6">
-      <SectionHeader
-        section='Tu perfil'
-        icon={<IconUser/>}
-        title='Información de la cuenta'
-        subtitle='Estos datos se muestran según la información que cargaste al registrarte.'
-        rightContent={<ProfileHeaderInfo user={user} />}
+      <ProfileAccountCard
+        user={user}
+        cuit={user.cuit}
+        inicioActividades={inicioActividadesLabel}
+        domicilio={domicilioLabel}
+        padronError={padronError}
+        onChangePassword={openPasswordModal}
       />
 
-      <section className="card space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">Cambiar contraseña</h2>
-          <p className="text-sm text-slate-500">Ingresá tu contraseña actual y definí una nueva de al menos 8 caracteres.</p>
-        </div>
-        <ErrorBox error={error} />
-        {success && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {success}
+      {passwordModalOpen && createPortal(
+        <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
+          <button
+            type="button"
+            className="auth-modal__backdrop"
+            aria-label="Cerrar modal"
+            onClick={closePasswordModal}
+          />
+          <div className="auth-modal__panel" onClick={(event) => event.stopPropagation()}>
+            <div className="auth-modal__header">
+              <h1 id="password-modal-title" className="auth-modal__title">Cambiar contraseña</h1>
+              <button
+                type="button"
+                className="auth-modal__close"
+                aria-label="Cerrar modal"
+                onClick={closePasswordModal}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M6 6l12 12" />
+                  <path d="M18 6l-12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-slate-500">
+                Ingresá tu contraseña actual y definí una nueva de al menos 8 caracteres.
+              </p>
+              <ErrorBox error={error} />
+              {success && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  {success}
+                </div>
+              )}
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="auth-field__label">Contraseña actual</span>
+                  <input
+                    type="password"
+                    className="input"
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    required
+                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="auth-field__label">Nueva contraseña</span>
+                  <input
+                    type="password"
+                    className="input"
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    required
+                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="auth-field__label">Repetir nueva contraseña</span>
+                  <input
+                    type="password"
+                    className="input"
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    required
+                  />
+                </label>
+                <div className="flex justify-end">
+                  <button type="submit" className="btn-primary" disabled={loading}>
+                    {loading ? 'Actualizando...' : 'Guardar nueva contraseña'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        )}
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="flex flex-col gap-2 text-sm">
-            <span className="auth-field__label">Contraseña actual</span>
-            <input
-              type="password"
-              className="input"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-2 text-sm">
-            <span className="auth-field__label">Nueva contraseña</span>
-            <input
-              type="password"
-              className="input"
-              minLength={8}
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-2 text-sm">
-            <span className="auth-field__label">Repetir nueva contraseña</span>
-            <input
-              type="password"
-              className="input"
-              minLength={8}
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              required
-            />
-          </label>
-          <div className="flex justify-end">
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Actualizando...' : 'Guardar nueva contraseña'}
-            </button>
-          </div>
-        </form>
-      </section>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
 
-const ProfileHeaderInfo = ({ user }: { user: AuthUser }) => {
+const ProfileAccountCard = ({
+  user,
+  cuit,
+  inicioActividades,
+  domicilio,
+  padronError,
+  onChangePassword
+}: {
+  user: AuthUser
+  cuit?: string | null
+  inicioActividades: string | null
+  domicilio: string | null
+  padronError: string | null
+  onChangePassword: () => void
+}) => {
   const navigate = useNavigate()
   const [planStatus, setPlanStatus] = useState<PlanStatusResponse | null>(null)
   const [loadingPlan, setLoadingPlan] = useState(false)
@@ -264,37 +321,61 @@ const ProfileHeaderInfo = ({ user }: { user: AuthUser }) => {
     navigate('/configuracion/planes')
   }
 
-  
-
   return (
-    <Fragment>
-      <HeaderPill label={user.name ?? 'Sin datos'} dotColor="bg-indigo-500" />
-      <HeaderPill label={user.email} dotColor="bg-indigo-500" />
-      <div className="flex items-center gap-3">
-        <HeaderPill
-          label={planLabel}
-          dotColor={planDotColor}
-        />
-        <button
-          type="button"
-          className="btn"
-          onClick={irAComparativaPlanes}
-        >
-          Cambiar plan
-        </button>
+    <section className="card space-y-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-slate-900">Datos de la cuenta</h2>
+          <p className="text-sm text-slate-500">Información principal del usuario, plan y datos fiscales vinculados.</p>
+        </div>
+        <div className="flex flex-wrap gap-2 md:justify-end">
+          <button type="button" className="btn" onClick={onChangePassword}>
+            Cambiar contraseña
+          </button>
+          <button type="button" className="btn" onClick={irAComparativaPlanes}>
+            Cambiar plan
+          </button>
+        </div>
       </div>
-      {estadoPlan === 'PENDING' && paymentStatusLabel && (
-        <HeaderPill
-          label={`Estado de pago: ${paymentStatusLabel}`}
-          dotColor="bg-amber-500"
-        />
+
+      <div className="flex flex-wrap gap-2">
+        <HeaderPill label={user.name ?? 'Sin datos'} dotColor="bg-indigo-500" />
+        <HeaderPill label={user.email} dotColor="bg-indigo-500" />
+        <HeaderPill label={planLabel} dotColor={planDotColor} />
+        {estadoPlan === 'PENDING' && paymentStatusLabel && (
+          <HeaderPill
+            label={`Estado de pago: ${paymentStatusLabel}`}
+            dotColor="bg-amber-500"
+          />
+        )}
+        {formattedExpiration && (
+          <HeaderPill
+            label={`Vence: ${formattedExpiration}`}
+            dotColor="bg-slate-400"
+          />
+        )}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <AccountDetail label="CUIT" value={cuit ?? 'Sin datos'} />
+        <AccountDetail label="Inicio de actividades" value={inicioActividades ?? 'Sin datos'} />
+        <AccountDetail label="Domicilio fiscal" value={domicilio ?? 'Sin datos'} />
+      </div>
+
+      {padronError && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {padronError}
+        </div>
       )}
-      {formattedExpiration && (
-        <HeaderPill
-          label={`Vence: ${formattedExpiration}`}
-          dotColor="bg-slate-400"
-        />
-      )}
-    </Fragment>
+    </section>
+  )
+}
+
+const AccountDetail = ({ label, value }: { label: string; value: string }) => {
+  return (
+    <div className="rounded-xl bg-slate-50 p-4">
+      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-medium text-slate-900">{value}</p>
+    </div>
   )
 }

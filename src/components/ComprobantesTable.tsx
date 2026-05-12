@@ -1,4 +1,15 @@
-﻿import { useState } from 'react'
+﻿import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
+import {
+  IconAlertCircle,
+  IconCircleCheck,
+  IconClockExclamation,
+  IconDownload,
+  IconLoader2,
+  IconReceipt,
+  IconUser
+} from '@tabler/icons-react'
+import type { ReactNode } from 'react'
 import type { ComprobanteEmitido } from '../models/afip'
 import { AfipService } from '../services/afip'
 import { ApiError } from '../services/api'
@@ -37,7 +48,7 @@ const docTypeMap: Record<number, string> = {
 }
 
 const formatAfipDate = (value?: string | null) => {
-  if (!value) return '—'
+  if (!value) return '-'
   if (value.includes('-')) {
     const parsed = new Date(value)
     return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('es-AR')
@@ -50,6 +61,19 @@ const formatAfipDate = (value?: string | null) => {
     return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('es-AR')
   }
   return value
+}
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return '-'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return formatAfipDate(value)
+  return parsed.toLocaleString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 const parseAfipDate = (value?: string | null) => {
@@ -73,12 +97,12 @@ const parseAfipDate = (value?: string | null) => {
 }
 
 const formatAmount = (value?: number | null) => {
-  if (typeof value !== 'number') return '—'
+  if (typeof value !== 'number') return '-'
   return currencyFormatter.format(value)
 }
 
 const formatDoc = (docTipo?: number | null, docNro?: number | null) => {
-  if (!docTipo && !docNro) return '—'
+  if (!docTipo && !docNro) return '-'
   const typeLabel = docTipo ? docTypeMap[docTipo] ?? `Doc ${docTipo}` : 'Documento'
   if (!docNro) return typeLabel
   return `${typeLabel} ${docNro.toLocaleString('es-AR')}`
@@ -86,20 +110,85 @@ const formatDoc = (docTipo?: number | null, docNro?: number | null) => {
 
 const padNumber = (value: number, size: number) => value.toString().padStart(size, '0')
 
+const getComprobanteId = (comprobante: ComprobanteEmitido) =>
+  comprobante.queueId
+    ?? comprobante.externalId
+    ?? `${comprobante.puntoVenta}-${comprobante.tipoAfip}-${comprobante.numero ?? 'pending'}`
+
+const getNumeroLabel = (comprobante: ComprobanteEmitido) =>
+  typeof comprobante.numero === 'number' && comprobante.numero > 0
+    ? `#${padNumber(comprobante.numero, 8)}`
+    : 'Pendiente'
+
+const getStatus = (comprobante: ComprobanteEmitido) => comprobante.status ?? 'EMITTED'
+
+const humanizeStatus = (status?: string | null) => {
+  switch (status) {
+    case 'EMITTED':
+      return 'Emitido'
+    case 'QUEUED':
+      return 'Emitiendo'
+    case 'PROCESSING':
+      return 'Procesando'
+    case 'FAILED':
+      return 'Falló'
+    default:
+      return status ?? '-'
+  }
+}
+
+const humanizeResultado = (resultado?: string | null) => {
+  switch (resultado) {
+    case 'A':
+      return 'Aprobado'
+    case 'R':
+      return 'Rechazado'
+    case 'QUEUED':
+      return 'En proceso'
+    default:
+      return resultado ?? '-'
+  }
+}
+
+const canDownloadComprobante = (comprobante: ComprobanteEmitido) =>
+  getStatus(comprobante) === 'EMITTED'
+  && typeof comprobante.numero === 'number'
+  && comprobante.numero > 0
+  && Boolean(comprobante.cae)
+
 const METADATA_ERROR_MESSAGE = 'No es posible descargar el comprobante hasta completar los datos del emisor en la configuración.'
 
-function CaeStatusBadge({ hasCAE, caeValid }: { hasCAE: boolean, caeValid: boolean }) {
-  const baseClasses = 'inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-xs font-semibold'
-  const stateClasses = !hasCAE
-    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+function CaeStatusBadge({ comprobante, hasCAE, caeValid }: { comprobante: ComprobanteEmitido, hasCAE: boolean, caeValid: boolean }) {
+  const status = getStatus(comprobante)
+  if (status === 'QUEUED' || status === 'PROCESSING') {
+    return (
+      <span className="comprobante-card__status comprobante-card__status--queue">
+        <IconLoader2 />
+        {status === 'PROCESSING' ? 'Procesando' : 'Emitiendo'}
+      </span>
+    )
+  }
+  if (status === 'FAILED') {
+    return (
+      <span className="comprobante-card__status comprobante-card__status--error">
+        <IconAlertCircle />
+        Falló
+      </span>
+    )
+  }
+
+  const stateClass = !hasCAE
+    ? 'comprobante-card__status--warn'
     : caeValid
-      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-      : 'bg-rose-50 text-rose-700 border border-rose-200'
+      ? 'comprobante-card__status--ok'
+      : 'comprobante-card__status--error'
 
   const label = !hasCAE ? 'Sin CAE' : caeValid ? 'CAE vigente' : 'CAE vencido'
+  const icon = !hasCAE ? <IconClockExclamation /> : caeValid ? <IconCircleCheck /> : <IconAlertCircle />
 
   return (
-    <span className={`${baseClasses} ${stateClasses}`}>
+    <span className={`comprobante-card__status ${stateClass}`}>
+      {icon}
       {label}
     </span>
   )
@@ -116,23 +205,47 @@ function extractErrorCode(error: ApiError): string | undefined {
   return undefined
 }
 
-export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[] }){
+export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[] }) {
   const today = new Date()
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [metadataUnavailable, setMetadataUnavailable] = useState(false)
+  const [selectedComprobante, setSelectedComprobante] = useState<ComprobanteEmitido | null>(null)
+
+  const summary = useMemo(() => {
+    return data.reduce(
+      (acc, comprobante) => {
+        const hasCAE = Boolean(comprobante.cae)
+        const caeExpiry = parseAfipDate(comprobante.caeVto)
+        const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
+        const status = getStatus(comprobante)
+        acc.total += 1
+        acc.importe += typeof comprobante.impTotal === 'number' ? comprobante.impTotal : 0
+        if (status === 'QUEUED' || status === 'PROCESSING') acc.enProceso += 1
+        if (hasCAE && caeValid) acc.vigentes += 1
+        if (!hasCAE) acc.sinCae += 1
+        if (hasCAE && !caeValid) acc.vencidos += 1
+        if (comprobante.errores.length > 0 || comprobante.observaciones.length > 0) acc.observados += 1
+        return acc
+      },
+      { total: 0, importe: 0, vigentes: 0, sinCae: 0, vencidos: 0, observados: 0, enProceso: 0 }
+    )
+  }, [data, today])
 
   async function handleDownload(comprobante: ComprobanteEmitido) {
-    const id = `${comprobante.puntoVenta}-${comprobante.tipoAfip}-${comprobante.numero}`
+    if (!canDownloadComprobante(comprobante)) return
+    const numero = comprobante.numero
+    if (typeof numero !== 'number') return
+    const id = `${comprobante.puntoVenta}-${comprobante.tipoAfip}-${numero}`
     setDownloadingId(id)
     setDownloadError(null)
     try {
-      const buffer = await AfipService.descargarComprobantePdf(comprobante.puntoVenta, comprobante.tipoAfip, comprobante.numero)
+      const buffer = await AfipService.descargarComprobantePdf(comprobante.puntoVenta, comprobante.tipoAfip, numero)
       const blob = new Blob([buffer], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       const pv = padNumber(comprobante.puntoVenta, 4)
-      const nro = padNumber(comprobante.numero, 8)
+      const nro = padNumber(numero, 8)
       link.href = url
       link.download = `comprobante-${pv}-${nro}.pdf`
       document.body.appendChild(link)
@@ -158,190 +271,262 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
   }
 
   return (
-    <div className="space-y-4">
-      <div className="card w-full border border-slate-200 bg-white/95 shadow-sm p-0 hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="table min-w-full md:min-w-[60rem]">
-          <thead>
-            <tr>
-              <th className="th rounded-tl-2xl">Comprobante</th>
-              <th className="th">Emisión</th>
-              <th className="th">Importes</th>
-              <th className="th">Cliente</th>
-              <th className="th">CAE</th>
-              <th className="th rounded-tr-2xl">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map(c => {
-              const caeExpiry = parseAfipDate(c.caeVto)
-              const hasCAE = Boolean(c.cae)
-              const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
-              const rowHasAlerts = c.errores.length > 0
-              const docLabel = formatDoc(c.docTipo, c.docNro)
+    <section className="comprobantes-list">
+      <header className="comprobantes-list__header">
+        <div>
+          <h2 className="comprobantes-list__title">Comprobantes</h2>
+          <p className="comprobantes-list__subtitle">
+            Últimas emisiones y comprobantes en proceso para los filtros seleccionados.
+          </p>
+        </div>
+        <div className="comprobantes-list__summary">
+          <SummaryItem label="Total" value={summary.total.toString()} />
+          <SummaryItem label="En proceso" value={summary.enProceso.toString()} tone="queue" />
+          <SummaryItem label="CAE vigente" value={summary.vigentes.toString()} tone="ok" />
+          <SummaryItem label="Observados" value={summary.observados.toString()} tone="warn" />
+          <SummaryItem label="Importe" value={currencyFormatter.format(summary.importe)} />
+        </div>
+      </header>
 
-              return (
-                <tr
-                  key={`${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
-                  className={`border-b border-l-4 transition-colors ${
-                    rowHasAlerts
-                      ? 'bg-rose-50/80 border-rose-100 border-l-rose-300 hover:bg-rose-100/70'
-                      : 'border-slate-100 border-l-transparent hover:bg-slate-50/80'
-                  }`}
-                >
-                  <td className="td">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                          {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`}
-                        </span>
-                        <span className="text-xs font-mono text-slate-500">#{padNumber(c.numero, 8)}</span>
+      <div className="comprobantes-list__grid">
+        {data.map((comprobante) => {
+          const caeExpiry = parseAfipDate(comprobante.caeVto)
+          const hasCAE = Boolean(comprobante.cae)
+          const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
+          const hasAlerts = comprobante.errores.length > 0 || comprobante.observaciones.length > 0
+          const id = getComprobanteId(comprobante)
+          const docLabel = formatDoc(comprobante.docTipo, comprobante.docNro)
+          const downloadable = canDownloadComprobante(comprobante)
+
+          return (
+            <article
+              key={id}
+              className={`comprobante-card ${hasAlerts ? 'comprobante-card--alert' : ''}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelectedComprobante(comprobante)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  setSelectedComprobante(comprobante)
+                }
+              }}
+            >
+              <div className="comprobante-card__body">
+                <div className="comprobante-card__content">
+                  <div className="comprobante-card__details">
+                    <div className="comprobante-card__identity">
+                      <strong className="comprobante-card__number">{getNumeroLabel(comprobante)}</strong>
+                      <div className="comprobante-card__pills">
+                        <span className="comprobante-card__pill comprobante-card__pill--type">{tipoMap[comprobante.tipoAfip] ?? `Tipo ${comprobante.tipoAfip}`}</span>
+                        <span className="comprobante-card__pill comprobante-card__pill--concept">{typeof comprobante.concepto === 'number' ? conceptoMap[comprobante.concepto] ?? `Concepto ${comprobante.concepto}` : 'Concepto sin informar'}</span>
                       </div>
-                      <span className="text-xs text-slate-500">PV {padNumber(c.puntoVenta, 4)}</span>
                     </div>
-                  </td>
-                  <td className="td">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-slate-800">{formatAfipDate(c.fechaCbte)}</span>
-                      {c.caeVto && (
-                        <span className="text-xs text-slate-500">CAE vence {formatAfipDate(c.caeVto)}</span>
-                      )}
+                    <div className="comprobante-card__meta">
+                      <span><IconReceipt /> {formatAfipDate(comprobante.fechaCbte ?? comprobante.queuedAt)}</span>
+                      <span><IconUser /> {docLabel}</span>
                     </div>
-                  </td>
-                  <td className="td">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-semibold text-slate-800">{formatAmount(c.impTotal)}</span>
-                      <span className="text-xs text-slate-500">
-                        Neto {formatAmount(c.impNeto)} · IVA {formatAmount(c.impIva)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="td">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-slate-800">{docLabel}</span>
-                      {typeof c.concepto === 'number' && (
-                        <span className="text-xs text-slate-500">
-                          {conceptoMap[c.concepto] ?? `Concepto ${c.concepto}`}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="td">
-                    <div className="flex flex-col gap-2">
-                      <CaeStatusBadge hasCAE={hasCAE} caeValid={caeValid} />
-                      <span className="font-mono text-xs text-slate-500">{c.cae ?? '—'}</span>
-                    </div>
-                  </td>
-            
-                  <td className="td">
+                  </div>
+                  <div className="comprobante-card__amount">
+                    <CaeStatusBadge comprobante={comprobante} hasCAE={hasCAE} caeValid={caeValid} />
                     {metadataUnavailable ? (
-                      <span className="text-xs font-medium text-slate-400">
+                      <span className="comprobante-card__metadata-error">
                         {METADATA_ERROR_MESSAGE}
                       </span>
                     ) : (
                       <button
                         type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleDownload(c)}
-                        disabled={downloadingId === `${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
+                        className="btn comprobante-card__action"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleDownload(comprobante)
+                        }}
+                        disabled={!downloadable || downloadingId === id}
+                        aria-label={downloadable ? 'Descargar PDF' : 'PDF disponible cuando se emita'}
+                        title={downloadable ? 'Descargar PDF' : 'PDF disponible cuando se emita'}
                       >
-                        {downloadingId === `${c.puntoVenta}-${c.tipoAfip}-${c.numero}` ? 'Descargando…' : 'Descargar PDF'}
+                        <IconDownload />
+                        <span>{downloadingId === id ? 'Descargando' : 'Descargar'}</span>
                       </button>
                     )}
-                  </td>
-                </tr>
-              )
-            })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div className="flex flex-col gap-4 md:hidden">
-        {data.map(c => {
-          const caeExpiry = parseAfipDate(c.caeVto)
-          const hasCAE = Boolean(c.cae)
-          const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
-          const rowHasAlerts = c.errores.length > 0
-          const docLabel = formatDoc(c.docTipo, c.docNro)
-
-          return (
-            <div
-              key={`mobile-${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
-              className={`rounded-2xl border border-l-4 p-4 shadow-sm transition-colors ${
-                rowHasAlerts ? 'border-rose-200 border-l-rose-300 bg-rose-50/80' : 'border-slate-200 border-l-slate-200 bg-white'
-              }`}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                      {tipoMap[c.tipoAfip] ?? `Tipo ${c.tipoAfip}`}
-                    </span>
-                    <span className="text-xs font-mono text-slate-500">#{padNumber(c.numero, 8)}</span>
                   </div>
-                  <span className="text-xs text-slate-500">PV {padNumber(c.puntoVenta, 4)}</span>
+                  <span className="comprobante-card__separator" aria-hidden />
+                  <div className="comprobante-card__total">
+                    <span>Total</span>
+                    <strong>{formatAmount(comprobante.impTotal)}</strong>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1 text-right">
-                  <CaeStatusBadge hasCAE={hasCAE} caeValid={caeValid} />
-                  <span className="font-mono text-xs text-slate-500">{c.cae ?? '—'}</span>
-                </div>
-              </div>
 
-              <div className="mt-4 space-y-3 text-sm text-slate-700">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Emisión</p>
-                  <p className="font-medium">{formatAfipDate(c.fechaCbte)}</p>
-                  {c.caeVto && (
-                    <p className="text-xs text-slate-500">CAE vence {formatAfipDate(c.caeVto)}</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Importes</p>
-                  <p className="font-semibold">{formatAmount(c.impTotal)}</p>
-                  <p className="text-xs text-slate-500">
-                    Neto {formatAmount(c.impNeto)} · IVA {formatAmount(c.impIva)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Cliente</p>
-                  <p className="font-medium">{docLabel}</p>
-                  {typeof c.concepto === 'number' && (
-                    <p className="text-xs text-slate-500">
-                      {conceptoMap[c.concepto] ?? `Concepto ${c.concepto}`}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {rowHasAlerts && (
-                <p className="mt-3 text-xs font-semibold text-rose-700">Este comprobante tiene observaciones.</p>
-              )}
-
-              <div className="mt-4">
-                {metadataUnavailable ? (
-                  <span className="text-xs font-medium text-slate-400">
-                    {METADATA_ERROR_MESSAGE}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm w-full justify-center"
-                    onClick={() => handleDownload(c)}
-                    disabled={downloadingId === `${c.puntoVenta}-${c.tipoAfip}-${c.numero}`}
-                  >
-                    {downloadingId === `${c.puntoVenta}-${c.tipoAfip}-${c.numero}` ? 'Descargando…' : 'Descargar PDF'}
-                  </button>
+                {hasAlerts && (
+                  <div className="comprobante-card__alert">
+                    <IconAlertCircle />
+                    <span>Este comprobante tiene observaciones o errores informados.</span>
+                  </div>
                 )}
               </div>
-            </div>
+            </article>
           )
         })}
       </div>
+
+      {selectedComprobante && createPortal(
+        <ComprobanteDetailModal
+          comprobante={selectedComprobante}
+          today={today}
+          downloading={downloadingId === `${selectedComprobante.puntoVenta}-${selectedComprobante.tipoAfip}-${selectedComprobante.numero}`}
+          metadataUnavailable={metadataUnavailable}
+          onClose={() => setSelectedComprobante(null)}
+          onDownload={() => handleDownload(selectedComprobante)}
+        />,
+        document.body
+      )}
+
       {downloadError && (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="comprobantes-list__error">
           {downloadError}
         </div>
       )}
+    </section>
+  )
+}
+
+const ComprobanteDetailModal = ({
+  comprobante,
+  today,
+  downloading,
+  metadataUnavailable,
+  onClose,
+  onDownload
+}: {
+  comprobante: ComprobanteEmitido
+  today: Date
+  downloading: boolean
+  metadataUnavailable: boolean
+  onClose: () => void
+  onDownload: () => void
+}) => {
+  const caeExpiry = parseAfipDate(comprobante.caeVto)
+  const hasCAE = Boolean(comprobante.cae)
+  const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
+  const hasAlerts = comprobante.errores.length > 0 || comprobante.observaciones.length > 0
+  const downloadable = canDownloadComprobante(comprobante)
+  const attempts = comprobante.attempts ?? []
+
+  return (
+    <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="comprobante-modal-title">
+      <button
+        type="button"
+        className="auth-modal__backdrop"
+        aria-label="Cerrar modal"
+        onClick={onClose}
+      />
+      <div className="auth-modal__panel comprobante-detail-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="auth-modal__header">
+          <div>
+            <h1 id="comprobante-modal-title" className="auth-modal__title">
+              {tipoMap[comprobante.tipoAfip] ?? `Tipo ${comprobante.tipoAfip}`}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              PV {padNumber(comprobante.puntoVenta, 4)} · {getNumeroLabel(comprobante)}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="auth-modal__close"
+            aria-label="Cerrar modal"
+            onClick={onClose}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M6 6l12 12" />
+              <path d="M18 6l-12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CaeStatusBadge comprobante={comprobante} hasCAE={hasCAE} caeValid={caeValid} />
+            {metadataUnavailable ? (
+              <span className="comprobante-card__metadata-error">{METADATA_ERROR_MESSAGE}</span>
+            ) : (
+              <button type="button" className="btn comprobante-card__action" onClick={onDownload} disabled={!downloadable || downloading}>
+                <IconDownload />
+                <span>{downloadable ? (downloading ? 'Descargando' : 'Descargar') : 'PDF pendiente'}</span>
+              </button>
+            )}
+          </div>
+
+          <div className="comprobante-detail-grid">
+            <DetailItem label="Fecha de emisión" value={formatAfipDate(comprobante.fechaCbte)} />
+            <DetailItem label="Concepto" value={typeof comprobante.concepto === 'number' ? conceptoMap[comprobante.concepto] ?? `Concepto ${comprobante.concepto}` : '-'} />
+            <DetailItem label="Cliente" value={formatDoc(comprobante.docTipo, comprobante.docNro)} />
+            <DetailItem label="CAE" value={comprobante.cae ?? '-'} />
+            <DetailItem label="Vencimiento CAE" value={formatAfipDate(comprobante.caeVto)} />
+            <DetailItem label="Total" value={formatAmount(comprobante.impTotal)} emphasis />
+            <DetailItem label="Neto" value={formatAmount(comprobante.impNeto)} />
+            <DetailItem label="IVA" value={formatAmount(comprobante.impIva)} />
+            <DetailItem label="Estado" value={humanizeStatus(getStatus(comprobante))} />
+            <DetailItem label="Inicio de emisión" value={formatDateTime(comprobante.queuedAt)} />
+          </div>
+
+          <div className="comprobante-attempts">
+            <div className="comprobante-attempts__header">
+              <h2>Intentos de emisión</h2>
+              <span>{attempts.length}</span>
+            </div>
+            {attempts.length > 0 ? (
+              <div className="comprobante-attempts__list">
+                {attempts.map((attempt) => (
+                  <div key={`${attempt.attemptNumber}-${attempt.createdAt}`} className="comprobante-attempt">
+                    <div>
+                      <strong>Intento {attempt.attemptNumber}</strong>
+                      <span>{formatDateTime(attempt.createdAt)}</span>
+                    </div>
+                    <div className="comprobante-attempt__result">
+                      <span>{humanizeStatus(attempt.status)}</span>
+                      <b>{humanizeResultado(attempt.resultado)}</b>
+                    </div>
+                    {attempt.errorMessage && (
+                      <p>{attempt.errorMessage}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="comprobante-attempts__empty">Todavía no hay intentos registrados para esta solicitud.</p>
+            )}
+          </div>
+
+          {hasAlerts && (
+            <div className="comprobante-detail-alerts">
+              {[...comprobante.observaciones, ...comprobante.errores].map((message, index) => (
+                <div key={`${message}-${index}`}>
+                  <IconAlertCircle />
+                  <span>{message}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const SummaryItem = ({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'neutral' | 'ok' | 'warn' | 'queue' }) => {
+  return (
+    <div className={`comprobantes-summary comprobantes-summary--${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
+const DetailItem = ({ label, value, emphasis = false }: { label: string; value: ReactNode; emphasis?: boolean }) => {
+  return (
+    <div className="comprobante-detail-item">
+      <span>{label}</span>
+      <strong className={emphasis ? 'comprobante-detail-item__value--emphasis' : undefined}>{value}</strong>
     </div>
   )
 }

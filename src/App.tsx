@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import DashboardPage from './pages/DashboardPage'
 import PuntosVentaPage from './pages/PuntosVentaPage'
@@ -20,6 +20,7 @@ import { useAuth } from './contexts/AuthContext'
 import SiteFooter from './components/SiteFooter'
 import { PLAN_DETAILS } from './constants/planes'
 import { Brand } from './components/Brand'
+import { PrivateTopbarActionsProvider } from './contexts/PrivateTopbarContext'
 
 function Navbar() {
   const { user, logout } = useAuth()
@@ -181,18 +182,94 @@ function Navbar() {
 
 function PrivateLayout() {
   const { isAuthenticated } = useAuth()
+  const location = useLocation()
+  const [topbarActions, setTopbarActions] = useState<ReactNode | null>(null)
+
+  useEffect(() => {
+    setTopbarActions(null)
+  }, [location.pathname])
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 px-4 pb-6 pt-20 md:ml-72 md:px-8 md:py-8">
-        <div className="mx-auto max-w-6xl">
-          <Outlet />
-        </div>
+      <main className="flex-1 px-4 pb-6 pt-20 md:ml-72 md:px-8 md:pb-8 md:pt-0">
+        <PrivateTopbarActionsProvider setActions={setTopbarActions}>
+          <PrivateTopbar pathname={location.pathname} actions={topbarActions} />
+          <div className="mx-auto max-w-6xl">
+            <Outlet />
+          </div>
+        </PrivateTopbarActionsProvider>
       </main>
     </div>
+  )
+}
+
+function PrivateTopbar({ pathname, actions }: { pathname: string; actions: ReactNode | null }) {
+  const sections = [
+    {
+      match: (path: string) => path === '/dashboard',
+      title: 'Dashboard',
+      subtitle: 'Resumen operativo y estado general de tu facturación.'
+    },
+    {
+      match: (path: string) => path.startsWith('/puntos-venta'),
+      title: 'Puntos de venta',
+      subtitle: 'Consultá y administrá los puntos habilitados para emitir.'
+    },
+    {
+      match: (path: string) => path.startsWith('/comprobantes/carga-masiva'),
+      title: 'Carga masiva',
+      subtitle: 'Importá comprobantes desde archivos y revisá el resultado.'
+    },
+    {
+      match: (path: string) => path.startsWith('/comprobantes'),
+      title: 'Comprobantes',
+      subtitle: 'Buscá, revisá y descargá comprobantes emitidos.'
+    },
+    {
+      match: (path: string) => path.startsWith('/emitir'),
+      title: 'Emitir',
+      subtitle: 'Generá comprobantes y prepará la documentación asociada.'
+    },
+    {
+      match: (path: string) => path.startsWith('/configuracion/planes'),
+      title: 'Planes',
+      subtitle: 'Gestioná tu suscripción y el alcance de tu cuenta.'
+    },
+    {
+      match: (path: string) => path.startsWith('/configuracion'),
+      title: 'Configuración',
+      subtitle: 'Administrá datos de cuenta, emisor y seguridad.'
+    },
+    {
+      match: (path: string) => path.startsWith('/admin/ops'),
+      title: 'Ops',
+      subtitle: 'Monitoreo técnico, colas y métricas operativas.'
+    },
+    {
+      match: (path: string) => path.startsWith('/admin/usuarios'),
+      title: 'Superusuario',
+      subtitle: 'Gestión de usuarios, roles y permisos.'
+    }
+  ]
+
+  const section = sections.find(({ match }) => match(pathname)) ?? sections[0]
+
+  return (
+    <header className="private-topbar">
+      <div>
+        <h1 className="private-topbar__title">{section.title}</h1>
+        <p className="private-topbar__subtitle">{section.subtitle}</p>
+      </div>
+      {actions && (
+        <div className="private-topbar__actions">
+          {actions}
+        </div>
+      )}
+    </header>
   )
 }
 
@@ -208,6 +285,8 @@ function PublicPage() {
   const { isAuthenticated } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const landingPageRef = useRef<HTMLDivElement | null>(null)
+  const [showToolbarBrand, setShowToolbarBrand] = useState(false)
 
   const authView =
     location.pathname === '/login'
@@ -244,6 +323,12 @@ function PublicPage() {
     return <Navigate to="/dashboard" replace />
   }
 
+  const handleLandingScroll = () => {
+    const target = landingPageRef.current
+    if (!target) return
+    setShowToolbarBrand(target.scrollTop >= target.clientHeight - 120)
+  }
+
   const closeModal = () => {
     navigate('/', { replace: true })
   }
@@ -262,24 +347,33 @@ function PublicPage() {
   }
 
   return (
-    <div className="landing-page min-h-screen flex flex-col bg-white text-slate-900">
+    <div
+      ref={landingPageRef}
+      onScroll={handleLandingScroll}
+      className="landing-page min-h-screen flex flex-col bg-white text-slate-900"
+    >
+      <header className={`landing-toolbar ${showToolbarBrand ? 'landing-toolbar--brand-visible' : ''}`}>
+        <div className="landing-toolbar__brand-slot">
+          <Brand/>
+        </div>
+        <nav className="landing-toolbar__nav" aria-label="Secciones principales">
+          <a href="#funciones" className="landing-toolbar__link">Funciones</a>
+          <a href="#precio" className="landing-toolbar__link">Precio</a>
+          <a href="#contacto" className="landing-toolbar__link">Contacto</a>
+        </nav>
+        <div className="landing-toolbar__actions">
+          <Link to="/login" className="landing-toolbar__login">
+            Iniciar sesión
+          </Link>
+        </div>
+      </header>
       <main className="landing-shell flex-1">
         <section className="landing-snap-section landing-first-section">
-          <header className="landing-toolbar">
-            <Brand/>
-            <nav className="landing-toolbar__nav" aria-label="Secciones principales">
-              <a href="#funciones" className="landing-toolbar__link">Funciones</a>
-              <a href="#precio" className="landing-toolbar__link">Precio</a>
-              <a href="#contacto" className="landing-toolbar__link">Contacto</a>
-            </nav>
-            <div className="landing-toolbar__actions">
-              <Link to="/login" className="landing-toolbar__login">
-                Iniciar sesión
-              </Link>
-            </div>
-          </header>
           <div className="landing-hero landing-hero--centered">
             <div className="landing-hero__content landing-hero__content--centered">
+              <div className="landing-hero__brand">
+                <Brand />
+              </div>
               <h1 className="landing-hero__title">Facturación clara, directa y en un solo lugar.</h1>
               <p className="landing-hero__subtitle">
                 Centralizá emisión, consulta de comprobantes y seguimiento operativo sin depender de una pantalla recargada.
