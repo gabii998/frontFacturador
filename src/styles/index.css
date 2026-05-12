@@ -1,3 +1,6 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,6 +9,10 @@
   --color-primary: #F97316;
   --color-primary-dark: #EA580C;
   --color-primary-soft: #FFEDD5;
+}
+
+body {
+    font-family: "Google Sans Flex", sans-serif;
 }
 
 /* Prevent iOS Safari from auto-zooming form controls */
@@ -18,16 +25,24 @@
   }
 }
 
+button,
+a,
+[role="button"] {
+  transition-property: color, background-color, border-color, opacity, transform;
+  transition-duration: 0.5s;
+  transition-timing-function: ease;
+}
+
 @layer components {
   .container-max { @apply max-w-6xl mx-auto px-4 w-full; }
   .card { @apply w-full bg-white rounded-2xl p-6; }
 
   .btn {
-    @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-gray-300 hover:bg-gray-100 transition-colors duration-150;
+    @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-gray-300 hover:bg-gray-100 transition-colors duration-500;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-500;
     background: var(--color-primary);
     --tw-ring-color: var(--color-primary);
   }
@@ -38,8 +53,7 @@
 
 
   .input {
-    @apply border border-slate-200 rounded-xl px-3 py-2.5 w-full bg-white/90 focus:outline-none focus:ring-4 transition;
-    --tw-ring-color: rgba(249, 115, 22, 0.16);
+    @apply border border-slate-200 rounded-xl px-3 py-2.5 w-full bg-white/90 focus:outline-none transition-colors duration-500;
   }
 
   .input:focus {
@@ -70,12 +84,31 @@
   .landing-toolbar {
     @apply container-max mb-12 grid items-center gap-4 py-4 lg:grid-cols-[1fr_auto_1fr];
   }
-  .landing-toolbar__brand { @apply text-sm font-semibold uppercase text-slate-600; letter-spacing: 0.28em; }
+  .branding {
+    display: flex;
+    gap: 10px;
+    vertical-align: middle;
+    align-content: center;
+    align-items: center;
+  }
+  .brand-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 20px!important;
+    vertical-align: middle;
+    align-content: center;
+    background: var(--color-primary);
+    @apply font-semibold uppercase text-white; 
+    
+  }
+  .landing-toolbar__brand { @apply text-sm font-semibold uppercase text-slate-600; }
   .landing-toolbar__nav { @apply flex items-center justify-center gap-8 text-sm font-semibold text-slate-600; }
   .landing-toolbar__link { @apply transition-colors hover:text-slate-900; }
   .landing-toolbar__actions { @apply flex items-center justify-end gap-3; }
   .landing-toolbar__login {
-    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900;
+    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors duration-500 hover:bg-slate-100 hover:text-slate-900;
     background: transparent;
   }
 
@@ -152,7 +185,7 @@
   }
   .landing-plan__action { @apply mt-auto w-full justify-center; }
   .landing-plan__action--secondary {
-    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 font-semibold text-slate-800 transition-colors hover:bg-slate-100;
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 font-semibold text-slate-800 transition-colors duration-500 hover:bg-slate-100;
   }
 
   .auth-modal {
@@ -161,12 +194,22 @@
 
   .auth-modal__backdrop {
     @apply absolute inset-0 bg-slate-900/45;
+    animation: auth-backdrop-in 0.18s ease-out both;
   }
 
   .auth-modal__panel {
     @apply relative z-10 w-full max-w-xl overflow-y-auto border border-slate-200 bg-white px-5 py-6 sm:px-8 sm:py-8;
     max-height: calc(100vh - 3rem);
     border-radius: 8px;
+    animation: auth-panel-in 0.18s ease-out both;
+  }
+
+  .auth-modal--closing .auth-modal__backdrop {
+    animation: auth-backdrop-out 0.18s ease-in both;
+  }
+
+  .auth-modal--closing .auth-modal__panel {
+    animation: auth-panel-out 0.18s ease-in both;
   }
 
   .auth-modal__header { @apply sticky top-0 z-10 mb-6 flex items-center justify-between gap-4 bg-white pb-4; }
@@ -349,6 +392,38 @@
 @keyframes auth-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes auth-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes auth-backdrop-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes auth-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes auth-panel-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
   }
 }
 

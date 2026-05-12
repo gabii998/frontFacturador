@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['pwa-icon-192.png', 'pwa-icon-512.png'],
       manifest: {
-        name: 'Facturador',
-        short_name: 'Facturador',
+        name: 'AS Facturas',
+        short_name: 'AS Facturas',
         description: 'Panel para emitir y monitorear comprobantes AFIP',
         theme_color: '#0f172a',
         background_color: '#f8fafc',

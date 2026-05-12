@@ -19,6 +19,7 @@ import HelpPage from './pages/HelpPage'
 import { useAuth } from './contexts/AuthContext'
 import SiteFooter from './components/SiteFooter'
 import { PLAN_DETAILS } from './constants/planes'
+import { Brand } from './components/Brand'
 
 function Navbar() {
   const { user, logout } = useAuth()
@@ -83,7 +84,7 @@ function Navbar() {
               <path d="M4 18h16" />
             </svg>
           </button>
-          <span className="font-bold text-lg">Facturador</span>
+          <Brand/>
           <nav className="hidden md:flex gap-1">
             {links.map(({ to, label, end }) => (
               <NavLink
@@ -212,10 +213,6 @@ function PublicPage() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
-  }
-
   const authView =
     location.pathname === '/login'
       ? 'login'
@@ -224,13 +221,39 @@ function PublicPage() {
         : location.pathname === '/recuperar-clave'
           ? 'forgot-password'
           : null
+  const [renderedAuthView, setRenderedAuthView] = useState<typeof authView>(authView)
+  const [authModalClosing, setAuthModalClosing] = useState(false)
+
+  useEffect(() => {
+    if (authView) {
+      setRenderedAuthView(authView)
+      setAuthModalClosing(false)
+      return undefined
+    }
+
+    if (!renderedAuthView) {
+      return undefined
+    }
+
+    setAuthModalClosing(true)
+    const timeout = window.setTimeout(() => {
+      setRenderedAuthView(null)
+      setAuthModalClosing(false)
+    }, 180)
+
+    return () => window.clearTimeout(timeout)
+  }, [authView, renderedAuthView])
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   const closeModal = () => {
     navigate('/', { replace: true })
   }
 
   const renderAuthContent = () => {
-    switch (authView) {
+    switch (renderedAuthView) {
       case 'login':
         return <LoginPage />
       case 'register':
@@ -247,7 +270,7 @@ function PublicPage() {
       <main className="landing-shell flex-1">
         <section className="landing-snap-section landing-first-section">
           <header className="landing-toolbar">
-            <div className="landing-toolbar__brand">Facturador</div>
+            <Brand/>
             <nav className="landing-toolbar__nav" aria-label="Secciones principales">
               <a href="#funciones" className="landing-toolbar__link">Funciones</a>
               <a href="#precio" className="landing-toolbar__link">Precio</a>
@@ -381,8 +404,13 @@ function PublicPage() {
         </section>
       </main>
       <SiteFooter />
-      {authView && (
-        <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+      {renderedAuthView && (
+        <div
+          className={`auth-modal ${authModalClosing ? 'auth-modal--closing' : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="auth-modal-title"
+        >
           <button
             type="button"
             className="auth-modal__backdrop"
@@ -392,9 +420,9 @@ function PublicPage() {
           <div className="auth-modal__panel" onClick={(event) => event.stopPropagation()}>
             <div className="auth-modal__header">
               <h1 className="auth-modal__title">
-                {authView === 'login'
+                {renderedAuthView === 'login'
                   ? 'Ingresá a tu cuenta'
-                  : authView === 'register'
+                  : renderedAuthView === 'register'
                     ? 'Crear cuenta'
                     : 'Recuperar contraseña'}
               </h1>
@@ -411,9 +439,9 @@ function PublicPage() {
               </button>
             </div>
             <div id="auth-modal-title" className="sr-only">
-              {authView === 'login'
+              {renderedAuthView === 'login'
                 ? 'Ingresar'
-                : authView === 'register'
+                : renderedAuthView === 'register'
                   ? 'Crear cuenta'
                   : 'Recuperar contraseña'}
             </div>
