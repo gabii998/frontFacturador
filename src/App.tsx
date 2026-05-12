@@ -26,7 +26,7 @@ function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileVisible, setMobileVisible] = useState(false)
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const link = 'px-3 py-2 rounded-xl hover:bg-gray-100'
+  const link = 'rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-orange-50 hover:text-orange-700'
   const active = 'bg-orange-50 text-orange-700'
 
   const links = [
@@ -68,10 +68,44 @@ function Navbar() {
     closeMobileMenu()
   }
 
+  const renderNav = (closeOnClick = false) => (
+    <nav className="flex flex-col gap-1">
+      {links.map(({ to, label, end }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={({ isActive }) => `${link} ${isActive ? active : ''}`}
+          onClick={closeOnClick ? closeMobileMenu : undefined}
+        >
+          {label}
+        </NavLink>
+      ))}
+    </nav>
+  )
+
   return (
-    <header className="bg-white border-b fixed top-0 left-0 right-0 z-40 md:static md:top-auto">
-      <div className="container-max flex items-center justify-between py-3">
-        <div className="flex items-center gap-3">
+    <>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-slate-200 bg-white px-5 py-6 md:flex">
+        <div className="mb-8">
+          <Brand />
+        </div>
+        {renderNav()}
+        <div className="mt-auto space-y-4 border-t border-slate-200 pt-5 text-sm">
+          {user && (
+            <div className="text-slate-600">
+              <div className="font-medium text-slate-900">{user.name ?? user.email}</div>
+              <div className="mt-1 break-all text-xs">{user.email}</div>
+            </div>
+          )}
+          <button onClick={handleLogout} className="btn w-full justify-center text-sm">
+            Cerrar sesión
+          </button>
+        </div>
+      </aside>
+
+      <header className="fixed left-0 right-0 top-0 z-40 border-b border-slate-200 bg-white md:hidden">
+        <div className="flex items-center justify-between px-4 py-3">
           <button
             type="button"
             className="md:hidden inline-flex items-center justify-center rounded-xl border border-gray-200 p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -85,33 +119,10 @@ function Navbar() {
             </svg>
           </button>
           <Brand/>
-          <nav className="hidden md:flex gap-1">
-            {links.map(({ to, label, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) => `${link} ${isActive ? active : ''}`}
-              >
-                {label}
-              </NavLink>
-            ))}
-          </nav>
+          <span className="h-10 w-10" aria-hidden="true" />
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          <div className="hidden md:flex items-center gap-3">
-            {user && (
-              <div className="text-gray-600 text-right">
-                <div className="font-medium text-gray-800">{user.name ?? user.email}</div>
-                <div className="text-xs">{user.email}</div>
-              </div>
-            )}
-            <button onClick={handleLogout} className="btn text-sm">
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
-      </div>
+      </header>
+
       {mobileVisible && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
@@ -146,25 +157,9 @@ function Navbar() {
                 )}
               </div>
             </div>
-            <nav className="flex flex-col gap-2 px-5 py-6 text-sm text-slate-700">
-              {links.map(({ to, label, end }) => (
-                <NavLink
-                  key={`mobile-${to}`}
-                  to={to}
-                  end={end}
-                  className={({ isActive }) =>
-                    `rounded-2xl border px-3 py-3 transition-colors ${
-                      isActive
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                    }`
-                  }
-                  onClick={closeMobileMenu}
-                >
-                  {label}
-                </NavLink>
-              ))}
-            </nav>
+            <div className="flex flex-col gap-2 px-5 py-6 text-sm text-slate-700">
+              {renderNav(true)}
+            </div>
             {user && (
               <div className="mt-auto space-y-3 px-5 pb-6 text-sm text-slate-600">
                 <button
@@ -180,7 +175,7 @@ function Navbar() {
           </div>
         </div>
       )}
-    </header>
+    </>
   )
 }
 
@@ -192,10 +187,11 @@ function PrivateLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="container-max flex-1 pb-6 pt-20 md:py-6">
-        <Outlet />
+      <main className="flex-1 px-4 pb-6 pt-20 md:ml-72 md:px-8 md:py-8">
+        <div className="mx-auto max-w-6xl">
+          <Outlet />
+        </div>
       </main>
-      <SiteFooter />
     </div>
   )
 }
