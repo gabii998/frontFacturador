@@ -429,7 +429,7 @@ function PublicPage() {
               </p>
               <div className="landing-hero__illustration" aria-hidden="true">
                 <img
-                  src="/illustrations/landing-invoicing-hero.png"
+                  src="/illustrations/landing-invoicing-hero-v2.png"
                   alt=""
                   className="landing-hero__image"
                 />
