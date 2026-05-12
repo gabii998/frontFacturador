@@ -20,6 +20,7 @@ import { useAuth } from './contexts/AuthContext'
 import SiteFooter from './components/SiteFooter'
 import { PLAN_DETAILS } from './constants/planes'
 import { Brand } from './components/Brand'
+import HeroProcessIllustration from './components/HeroProcessIllustration'
 import { PrivateTopbarActionsProvider } from './contexts/PrivateTopbarContext'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 
@@ -428,11 +429,7 @@ function PublicPage() {
                 Centralizá emisión, consulta de comprobantes y seguimiento operativo sin depender de una pantalla recargada.
               </p>
               <div className="landing-hero__illustration" aria-hidden="true">
-                <img
-                  src="/illustrations/landing-invoicing-hero-v2.png"
-                  alt=""
-                  className="landing-hero__image"
-                />
+                <HeroProcessIllustration />
               </div>
             </div>
           </div>
