@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #F97316;
+  --color-primary-dark: #EA580C;
+  --color-primary-soft: #FFEDD5;
+}
+
 /* Prevent iOS Safari from auto-zooming form controls */
 @media (max-width: 600px) {
   input,
@@ -14,50 +20,177 @@
 
 @layer components {
   .container-max { @apply max-w-6xl mx-auto px-4 w-full; }
-  .card { @apply w-full bg-white rounded-2xl shadow p-6; }
+  .card { @apply w-full bg-white rounded-2xl p-6; }
 
   .btn {
     @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-gray-300 hover:bg-gray-100 transition-colors duration-150;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-semibold text-white shadow-lg shadow-blue-500/20 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:via-indigo-500 hover:to-blue-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200;
+    background: var(--color-primary);
+    --tw-ring-color: var(--color-primary);
+  }
+
+  .btn-primary:hover {
+    background: var(--color-primary-dark);
   }
 
 
   .input {
-    @apply border border-slate-200 rounded-xl px-3 py-2.5 w-full bg-white/90 shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition;
+    @apply border border-slate-200 rounded-xl px-3 py-2.5 w-full bg-white/90 focus:outline-none focus:ring-4 transition;
+    --tw-ring-color: rgba(249, 115, 22, 0.16);
+  }
+
+  .input:focus {
+    border-color: var(--color-primary);
   }
 
   .label { @apply text-sm text-gray-600; }
 
-  .auth-shell {
-    @apply w-full px-6 py-12 flex items-center justify-center text-white;
-    background: radial-gradient(120% 120% at 0% 0%, rgba(56, 189, 248, 0.45) 0%, rgba(56, 189, 248, 0) 55%),
-      radial-gradient(80% 120% at 100% 100%, rgba(129, 140, 248, 0.4) 0%, rgba(15, 23, 42, 0) 65%),
-      linear-gradient(140deg, #0f172a 0%, #111827 40%, #1e293b 100%);
+  .landing-page {
+    height: 100vh;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+  }
+  .landing-shell { @apply w-full px-6 pt-0 pb-12 md:pb-16; }
+  .landing-snap-section {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  .landing-footer {
+    scroll-snap-align: end;
+    scroll-snap-stop: always;
+  }
+  .landing-first-section {
+    @apply flex flex-col;
+    min-height: 100vh;
+  }
+  .landing-toolbar {
+    @apply container-max mb-12 grid items-center gap-4 py-4 lg:grid-cols-[1fr_auto_1fr];
+  }
+  .landing-toolbar__brand { @apply text-sm font-semibold uppercase text-slate-600; letter-spacing: 0.28em; }
+  .landing-toolbar__nav { @apply flex items-center justify-center gap-8 text-sm font-semibold text-slate-600; }
+  .landing-toolbar__link { @apply transition-colors hover:text-slate-900; }
+  .landing-toolbar__actions { @apply flex items-center justify-end gap-3; }
+  .landing-toolbar__login {
+    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900;
+    background: transparent;
   }
 
-  .auth-hero { @apply space-y-6 text-indigo-100; }
+  .landing-hero { @apply container-max grid gap-10; }
+  .landing-hero--centered {
+    flex: 1;
+  }
+  .landing-hero__content { @apply flex flex-col gap-6; }
+  .landing-hero__content--centered { @apply mx-auto max-w-4xl items-center justify-center text-center; }
 
-  .auth-hero__badge {
-    @apply inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase bg-white/10 text-white backdrop-blur;
-    letter-spacing: 0.35em;
+  .landing-hero__eyebrow {
+    @apply text-xs font-semibold uppercase text-slate-500;
+    letter-spacing: 0.32em;
   }
 
-  .auth-hero__title { @apply text-4xl font-semibold text-white leading-tight; }
-  .auth-hero__subtitle { @apply text-base text-indigo-100/90 max-w-xl; }
+  .landing-hero__title { @apply max-w-3xl text-4xl font-semibold leading-tight text-slate-900 md:text-5xl; }
+  .landing-hero__subtitle { @apply max-w-2xl text-base leading-7 text-slate-600; }
+  .landing-hero__illustration {
+    @apply mt-4 w-full max-w-2xl overflow-hidden border border-slate-200 bg-white;
+    border-radius: 8px;
+  }
+  .landing-hero__image { @apply block h-auto w-full; }
+  .landing-features {
+    @apply mt-6 flex flex-col items-center justify-center gap-8 px-4 py-10;
+    background: var(--color-primary);
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    min-height: 100vh;
+  }
+  .landing-features__header { @apply mx-auto max-w-3xl text-center; }
+  .landing-features__title { @apply text-3xl font-semibold leading-tight text-white md:text-4xl; }
+  .landing-features__subtitle { @apply mt-4 text-sm leading-6 text-white/85 md:text-base; }
+  .landing-feature-list { @apply mx-auto flex w-full max-w-4xl flex-col gap-4; }
+  .landing-feature-item {
+    @apply grid items-center gap-3 p-5 md:grid-cols-[200px_minmax(0,1fr)];
+    border-radius: 8px;
+  }
+  .landing-feature-item__content { @apply min-w-0; }
+  .landing-feature-item__title { @apply text-xl font-semibold text-white; }
+  .landing-feature-item__text { @apply mt-3 max-w-2xl text-sm leading-6 text-white/85; }
+  .landing-feature-item__media {
+    @apply w-full overflow-hidden border border-slate-200 bg-slate-50;
+    border-radius: 8px;
+  }
+  .landing-feature-item__image { @apply block h-auto w-full; }
 
-  .auth-card {
-    @apply w-full max-w-md rounded-3xl border border-white/10 bg-white/95 backdrop-blur-xl px-8 py-10 text-gray-900 shadow-2xl;
-    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+  .landing-stat__label {
+    @apply block text-[11px] font-semibold uppercase text-slate-400;
+    letter-spacing: 0.24em;
+  }
+
+  .landing-pricing {
+    @apply container-max flex min-h-screen flex-col justify-center gap-8 py-12;
+  }
+  .landing-pricing__header { @apply mx-auto max-w-3xl text-center; }
+  .landing-pricing__title { @apply text-3xl font-semibold leading-tight text-slate-900 md:text-4xl; }
+  .landing-pricing__subtitle { @apply mt-4 text-sm leading-6 text-slate-600 md:text-base; }
+  .landing-pricing__grid { @apply grid gap-4 md:grid-cols-3; }
+  .landing-plan {
+    @apply flex min-h-[420px] flex-col border border-slate-200 bg-white p-5;
+    border-radius: 8px;
+  }
+  .landing-plan--highlighted { @apply border-orange-500; }
+  .landing-plan__header { @apply min-h-20; }
+  .landing-plan__name { @apply text-xl font-semibold text-slate-900; }
+  .landing-plan__headline { @apply mt-2 text-sm text-slate-500; }
+  .landing-plan__price { @apply mt-5 text-3xl font-semibold text-slate-900; }
+  .landing-plan__description { @apply mt-4 text-sm leading-6 text-slate-600; }
+  .landing-plan__features { @apply mt-5 flex flex-col gap-3 text-sm text-slate-700; }
+  .landing-plan__features li { @apply flex gap-2; }
+  .landing-plan__features li::before {
+    content: '';
+    @apply mt-2 h-1.5 w-1.5 flex-none rounded-full bg-orange-500;
+  }
+  .landing-plan__action { @apply mt-auto w-full justify-center; }
+  .landing-plan__action--secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 font-semibold text-slate-800 transition-colors hover:bg-slate-100;
+  }
+
+  .auth-modal {
+    @apply fixed inset-0 z-50 flex items-start justify-center px-4 py-6 sm:items-center sm:px-6;
+  }
+
+  .auth-modal__backdrop {
+    @apply absolute inset-0 bg-slate-900/45;
+  }
+
+  .auth-modal__panel {
+    @apply relative z-10 w-full max-w-xl overflow-y-auto border border-slate-200 bg-white px-5 py-6 sm:px-8 sm:py-8;
+    max-height: calc(100vh - 3rem);
+    border-radius: 8px;
+  }
+
+  .auth-modal__header { @apply sticky top-0 z-10 mb-6 flex items-center justify-between gap-4 bg-white pb-4; }
+  .auth-modal__title { @apply text-2xl font-semibold leading-tight text-slate-900; }
+
+  .auth-modal__close {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700;
   }
 
   .auth-form { @apply space-y-7; }
   .auth-form__header { @apply space-y-3; }
+  .auth-register { @apply space-y-0; }
+  .auth-register__body { @apply pb-6; }
+  .auth-register__footer {
+    @apply sticky bottom-0 z-10 -mx-5 border-t border-slate-200 bg-white px-5 py-4 text-center sm:-mx-8 sm:px-8;
+  }
+  .auth-login { @apply space-y-6; }
+  .auth-login__intro {
+    @apply pb-1;
+  }
 
   .auth-eyebrow {
-    @apply text-xs font-semibold uppercase text-blue-500;
+    @apply text-xs font-semibold uppercase;
+    color: var(--color-primary);
     letter-spacing: 0.32em;
   }
 
@@ -67,21 +200,46 @@
   .auth-form__body { @apply space-y-5; }
 
   .auth-field { @apply flex flex-col gap-2 text-sm; }
+  .auth-field__row { @apply flex items-center justify-between gap-3; }
   .auth-field__label { @apply font-medium text-slate-700; }
 
   .auth-form__footer { @apply space-y-3 text-sm text-slate-500; }
-  .auth-link { @apply font-semibold text-blue-600 hover:text-blue-500 hover:underline; }
+  .auth-link {
+    @apply font-semibold hover:underline;
+    color: var(--color-primary-dark);
+  }
+
+  .auth-link:hover {
+    color: var(--color-primary);
+  }
+  .auth-link--muted { @apply text-xs; }
+  .auth-login__footer { @apply text-center; }
+  .auth-login__legal { @apply text-xs leading-5 text-slate-500; }
+  .auth-login__loading {
+    @apply flex min-h-72 flex-col items-center justify-center gap-4 text-sm font-medium text-orange-700;
+  }
+  .auth-login__alert {
+    @apply flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-left;
+  }
+  .auth-login__alert-icon {
+    @apply mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-red-600 text-xs font-semibold text-white;
+  }
+  .auth-login__alert-title { @apply text-sm font-semibold text-red-800; }
+  .auth-login__alert-text { @apply mt-1 text-sm leading-5 text-red-700; }
+  .auth-modal-spinner {
+    @apply h-10 w-10 rounded-full border-4 border-orange-100 border-t-orange-600;
+    animation: auth-spin 0.7s linear infinite;
+  }
 
   .auth-form__success {
     @apply rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700;
-    box-shadow: 0 10px 30px rgba(34, 197, 94, 0.15);
   }
 
 
   .dashboard-layout { @apply flex flex-col gap-8 w-full; }
 
   .dashboard-hero {
-    @apply relative overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-600 via-indigo-600 to-slate-900 px-8 py-10 text-white shadow-2xl;
+    @apply relative overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-600 via-indigo-600 to-slate-900 px-8 py-10 text-white;
   }
 
   .dashboard-hero__badge {
@@ -105,7 +263,6 @@
 
   .service-chip__dot {
     @apply h-2.5 w-2.5 rounded-full;
-    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.15);
   }
 
   .service-chip__label { @apply block text-xs font-semibold uppercase tracking-[0.3em] opacity-80; }
@@ -125,7 +282,7 @@
   }
 
   .metric-card {
-    @apply flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-lg shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-xl;
+    @apply flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/95 p-6 transition;
   }
 
   .metric-card__icon {
@@ -151,7 +308,7 @@
   }
 
   .dashboard-card {
-    @apply flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-lg;
+    @apply flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white/95 p-6;
   }
 
   .dashboard-card__header { @apply flex items-start justify-between gap-4; }
@@ -162,15 +319,15 @@
   .insight-item { @apply flex items-start gap-4 rounded-2xl border border-slate-200 p-4 bg-white/80; }
 
   .insight-dot { @apply mt-1 h-3 w-3 rounded-full; }
-  .insight-dot--ok { @apply bg-emerald-500 shadow-[0_0_0_4px] shadow-emerald-100; }
-  .insight-dot--info { @apply bg-blue-400 shadow-[0_0_0_4px] shadow-blue-100; }
-  .insight-dot--warn { @apply bg-amber-400 shadow-[0_0_0_4px] shadow-amber-100; }
+  .insight-dot--ok { @apply bg-emerald-500; }
+  .insight-dot--info { @apply bg-blue-400; }
+  .insight-dot--warn { @apply bg-amber-400; }
 
   .insight-item h3 { @apply text-sm font-semibold text-slate-900; }
   .insight-item p { @apply text-xs text-slate-500; }
 
   .dashboard-alert {
-    @apply flex flex-col gap-4 rounded-3xl border border-blue-200 bg-blue-50 px-6 py-5 text-blue-900 shadow;
+    @apply flex flex-col gap-4 rounded-3xl border border-blue-200 bg-blue-50 px-6 py-5 text-blue-900;
   }
 
   .dashboard-alert h3 { @apply text-lg font-semibold; }
@@ -189,93 +346,58 @@
   }
 }
 
-.auth-hero__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.auth-hero__list li {
-  position: relative;
-  padding-left: 1.75rem;
-  font-size: 0.95rem;
-  line-height: 1.45;
-  color: rgba(224, 231, 255, 0.92);
-}
-
-.auth-hero__list li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.45rem;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 1023px) {
-  .auth-shell {
-    @apply px-6 py-10 items-center;
-    background: linear-gradient(175deg, #0f172a 0%, #0b1220 40%, #111827 100%);
-  }
+  .landing-shell { @apply px-6 pt-0 pb-10; }
+  .landing-toolbar { @apply gap-5; }
+  .landing-toolbar__nav { @apply order-3 justify-start gap-6 overflow-x-auto pb-1; }
+  .landing-toolbar__actions { @apply justify-start; }
+  .landing-hero { @apply gap-8; }
+  .landing-hero--centered { min-height: auto; }
+  .landing-hero__title { @apply text-3xl; }
+  .landing-hero__subtitle { @apply max-w-xl text-sm leading-6; }
+  .landing-hero__illustration { @apply max-w-2xl; }
+  .landing-feature-item { @apply grid-cols-[180px_minmax(0,1fr)] gap-3; }
+  .auth-modal__panel { @apply max-w-lg; }
 
-  .auth-hero {
-    @apply space-y-5 text-center w-full;
-  }
-
-  .auth-hero__badge {
-    @apply mx-auto;
-    letter-spacing: 0.28em;
-  }
-
-  .auth-hero__title {
-    @apply text-3xl leading-snug;
-  }
-
-  .auth-hero__subtitle {
-    @apply text-sm max-w-sm mx-auto;
-  }
-
-  .auth-hero__list { display: none; }
-
-  .auth-card {
-    @apply max-w-xl w-full px-6 py-8 mt-2;
-    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.45);
-  }
-
-  .auth-form { @apply space-y-6 text-center; }
+  .auth-form { @apply space-y-6; }
   .auth-form__title { @apply text-2xl; }
-  .auth-form__subtitle { @apply text-sm mx-auto max-w-md; }
-  .auth-form__body { @apply text-left; }
+  .auth-form__subtitle { @apply text-sm max-w-md; }
 }
 
 @media (max-width: 640px) {
-  .auth-shell {
-    @apply px-4 py-6;
+  .landing-shell { @apply px-4 pt-0 pb-6; }
+  .landing-toolbar { @apply mb-8 grid-cols-[1fr_auto] gap-3; }
+  .landing-toolbar__nav { @apply hidden; }
+  .landing-toolbar__actions { @apply items-center justify-end; }
+  .landing-hero { @apply gap-6; }
+  .landing-hero--centered { min-height: auto; }
+  .landing-hero__title { @apply text-2xl; }
+  .landing-hero__illustration { @apply mt-2; }
+  .landing-features {
+    margin-left: -1rem;
+    margin-right: -1rem;
   }
-
-  .auth-hero {
-    @apply space-y-4;
-  }
-
-  .auth-hero__title {
-    @apply text-2xl;
-  }
-
-  .auth-hero__list {
-    display: none;
-  }
-
-  .auth-card {
-    @apply px-5 py-7 rounded-[28px];
+  .landing-feature-item { @apply grid-cols-1 p-4; }
+  .landing-toolbar__login { @apply w-auto justify-center; }
+  .landing-hero__panel { @apply p-4; }
+  .landing-pricing { @apply py-10; }
+  .landing-pricing__grid { @apply grid-cols-1; }
+  .landing-plan { @apply min-h-0; }
+  .auth-modal { @apply items-stretch px-0 py-0; }
+  .auth-modal__panel {
+    @apply flex min-h-screen max-w-none flex-col border-0 px-5 py-6;
+    max-height: 100vh;
+    border-radius: 0;
   }
 
   .auth-form__title { @apply text-xl; }
-  .auth-form__subtitle { @apply text-xs leading-relaxed text-center; }
+  .auth-form__subtitle { @apply text-xs leading-relaxed; }
 
   .auth-field__label { @apply text-sm; }
   .input { @apply text-sm py-2; }
@@ -287,7 +409,7 @@
   .auth-form__footer { @apply text-xs; }
 
   .header-icon {
-    @apply flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-lg shadow-indigo-500/20 text-indigo-600;
+    @apply flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-indigo-600;
   }
 }
 

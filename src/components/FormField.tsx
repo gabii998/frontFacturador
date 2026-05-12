@@ -23,6 +23,9 @@ const FormField = (props:FormFielProps) => {
           onChange={props.onChange}
           required={props.required}
           minLength={props.minLength}
+          maxLength={props.maxLength}
+          inputMode={props.inputMode}
+          placeholder={props.placeholder}
         />
       )}
     </label>

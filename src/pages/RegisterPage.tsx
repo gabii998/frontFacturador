@@ -5,6 +5,13 @@ import { useAuth } from '../contexts/AuthContext'
 import { RegisterForm } from '../models/RegisterForms'
 import FormField from '../components/FormField'
 
+function formatCuit(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 10) return `${digits.slice(0, 2)}-${digits.slice(2)}`
+  return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`
+}
+
 export default function RegisterPage() {
   const navigate = useNavigate()
   const { register } = useAuth()
@@ -24,7 +31,10 @@ export default function RegisterPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
+    setForm(prev => ({
+      ...prev,
+      [name]: name === 'cuit' ? formatCuit(value) : value
+    }))
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -63,16 +73,9 @@ export default function RegisterPage() {
     ) && !loading
 
   return (
-    <div className="auth-form">
-      <div className="auth-form__header">
-        <span className="auth-eyebrow">Nueva cuenta</span>
-        <h1 className="auth-form__title">Registrate para comenzar</h1>
-        <p className="auth-form__subtitle">
-          Generá tu acceso para emitir y consultar comprobantes AFIP desde un mismo panel de control.
-        </p>
-      </div>
+    <div className="auth-form auth-register">
       <ErrorBox error={error} />
-      <form className="auth-form__body" onSubmit={handleSubmit}>
+      <form id="register-form" className="auth-form__body auth-register__body" onSubmit={handleSubmit}>
         <FormField
           label="Nombre completo"
           name="name"
@@ -104,6 +107,9 @@ export default function RegisterPage() {
           name="cuit"
           value={form.cuit}
           onChange={handleChange}
+          inputMode="numeric"
+          maxLength={13}
+          placeholder="xx-xxxxxxxx-x"
           required
         />
 
@@ -138,16 +144,16 @@ export default function RegisterPage() {
           required
           minLength={8}
         />
-
+      </form>
+      <div className="auth-form__footer auth-register__footer">
         <button
           type="submit"
+          form="register-form"
           disabled={!canSubmit}
           className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? 'Creando mi cuenta...' : 'Crear mi cuenta'}
         </button>
-      </form>
-      <div className="auth-form__footer">
         <p>
           ¿Ya tenés usuario?{' '}
           <Link to="/login" className="auth-link">Ingresá</Link>.
