@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import PublicContentLayout from '../components/PublicContentLayout'
 
 const sections = [
   {
@@ -77,40 +78,33 @@ const sections = [
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-0">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-wide text-blue-600">Politica de privacidad</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Tu informacion, tratada con responsabilidad</h1>
-            <p className="mt-3 max-w-2xl text-sm text-slate-600">
-              Esta politica describe como manejamos los datos personales y operativos que ingresas en Facturador.
-              Buscamos ser claros para que sepas en todo momento como cuidamos tu informacion.
-            </p>
-          </div>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          >
-            Volver al panel
-          </Link>
-        </header>
-
-        <div className="mt-10 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200 space-y-10">
+    <PublicContentLayout
+      eyebrow="Política de privacidad"
+      title="Tu información, tratada con responsabilidad"
+      subtitle="Esta política describe cómo manejamos los datos personales y operativos que ingresás en Facturador, con criterios claros de seguridad y confidencialidad."
+      action={(
+        <Link to="/eliminar-datos" className="btn btn-primary">
+          Solicitar eliminación de datos
+        </Link>
+      )}
+    >
+      <div className="public-document">
+        <p className="public-document-meta">Última actualización: Octubre 2025</p>
+        <div className="public-article-list">
           {sections.map((section) => (
-            <section key={section.title} className="space-y-3">
-              <h2 className="text-xl font-semibold text-slate-800">{section.title}</h2>
+            <section key={section.title} className="public-article">
+              <h2>{section.title}</h2>
+              <div>
               {section.paragraphs.map((paragraph) => (
-                <p key={paragraph} className="text-sm leading-relaxed text-slate-600">
-                  {paragraph}
+                <p key={paragraph}>
+                  {paragraph.startsWith('- ') ? `• ${paragraph.slice(2)}` : paragraph}
                 </p>
               ))}
+              </div>
             </section>
           ))}
         </div>
-
-        <p className="mt-8 text-xs text-slate-500">Ultima actualizacion: Octubre 2025</p>
       </div>
-    </div>
+    </PublicContentLayout>
   )
 }

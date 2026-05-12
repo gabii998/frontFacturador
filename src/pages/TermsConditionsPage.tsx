@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import PublicContentLayout from '../components/PublicContentLayout'
 
 const sections = [
   {
@@ -88,38 +89,28 @@ const sections = [
 
 export default function TermsConditionsPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-0">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-wide text-blue-600">Términos y Condiciones de Uso</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Condiciones para operar con Facturador</h1>
-            <p className="mt-3 max-w-2xl text-sm text-slate-600">
-              Leé atentamente estas condiciones. Al continuar utilizando la aplicación aceptás cada uno de los puntos detallados más abajo.
-            </p>
-          </div>
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          >
-            Ir al inicio de sesión
-          </Link>
-        </header>
-
-        <div className="mt-10 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-          <p className="text-xs uppercase tracking-wide text-slate-400">Última actualización</p>
-          <p className="mt-1 text-sm text-slate-600">15 de octubre de 2025</p>
-
-          <ol className="mt-8 space-y-8">
+    <PublicContentLayout
+      eyebrow="Términos y condiciones"
+      title="Condiciones para operar con Facturador"
+      subtitle="Leé atentamente estas condiciones. Al continuar utilizando la aplicación aceptás cada uno de los puntos detallados más abajo."
+      action={(
+        <Link to="/" className="btn btn-primary">
+          Volver al inicio
+        </Link>
+      )}
+    >
+      <div className="public-document">
+        <p className="public-document-meta">Última actualización: 15 de octubre de 2025</p>
+        <ol className="public-article-list">
             {sections.map(({ title, paragraphs = [], bullets, closing = [], link }) => (
-              <li key={title} className="space-y-3">
-                <h2 className="text-xl font-semibold text-slate-800">{title}</h2>
-                <div className="space-y-2 text-sm leading-relaxed text-slate-600">
+              <li key={title} className="public-article">
+                <h2>{title}</h2>
+                <div>
                   {paragraphs.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                   {bullets && (
-                    <ul className="list-disc space-y-1 pl-5">
+                    <ul>
                       {bullets.map((item) => (
                         <li key={item}>{item}</li>
                       ))}
@@ -130,7 +121,7 @@ export default function TermsConditionsPage() {
                       href={link.href}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                      className="public-link inline-flex"
                     >
                       {link.label}
                     </a>
@@ -141,9 +132,8 @@ export default function TermsConditionsPage() {
                 </div>
               </li>
             ))}
-          </ol>
-        </div>
+        </ol>
       </div>
-    </div>
+    </PublicContentLayout>
   )
 }

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import PublicContentLayout from '../components/PublicContentLayout'
 
 const quickStart = [
   {
@@ -45,75 +46,59 @@ const helpTopics = [
 
 export default function HelpPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex max-w-4xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-0">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-wide text-blue-600">Centro de ayuda</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Respondemos las dudas frecuentes de Facturador</h1>
-            <p className="mt-3 text-sm text-slate-600">
-              Reunimos los pasos básicos para operar, guías sobre comprobantes y enlaces para que puedas contactarnos si necesitás soporte.
-            </p>
-          </div>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          >
-            Volver al panel
+    <PublicContentLayout
+      eyebrow="Centro de ayuda"
+      title="Respondemos las dudas frecuentes de Facturador"
+      subtitle="Reunimos los pasos básicos para operar, guías sobre comprobantes y enlaces para que puedas contactarnos si necesitás soporte."
+    >
+      <section className="public-section">
+        <h2 className="public-section__title">Cómo comenzar</h2>
+        <div className="public-grid">
+          {quickStart.map((step) => (
+            <article key={step.title} className="public-info-card">
+              <p>{step.title}</p>
+              <p>{step.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="public-section">
+        <h2 className="public-section__title">Temas destacados</h2>
+        <div className="public-topic-list">
+          {helpTopics.map((topic) => (
+            <article key={topic.title} className="public-topic">
+              <h3>{topic.title}</h3>
+              <ul>
+                {topic.items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="public-section public-section--soft">
+        <h2 className="public-section__title">¿Necesitás más ayuda?</h2>
+        <p className="mt-3 text-sm leading-6 text-slate-700">
+          Escribinos a <a className="public-link" href="mailto:soporte@facturador.app">soporte@facturador.app</a> para recibir asistencia personalizada.
+        </p>
+        <div className="public-links">
+          <Link to="/politica-privacidad">
+            Revisar la política de privacidad
           </Link>
-        </header>
-
-        <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Cómo comenzar</h2>
-          <div className="grid gap-6 md:grid-cols-3">
-            {quickStart.map((step) => (
-              <article key={step.title} className="space-y-2">
-                <p className="text-sm font-semibold text-blue-600">{step.title}</p>
-                <p className="text-sm text-slate-600">{step.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Temas destacados</h2>
-          <div className="space-y-6">
-            {helpTopics.map((topic) => (
-              <article key={topic.title} className="space-y-3">
-                <h3 className="text-lg font-semibold text-slate-800">{topic.title}</h3>
-                <ul className="space-y-2">
-                  {topic.items.map((item) => (
-                    <li key={item} className="text-sm text-slate-600">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50 p-8">
-          <h2 className="text-lg font-semibold text-blue-900">¿Necesitás más ayuda?</h2>
-          <p className="text-sm text-blue-900/80">
-            Escribinos a <a className="font-medium underline" href="mailto:soporte@facturador.app">soporte@facturador.app</a> para recibir asistencia personalizada.
-          </p>
-          <div className="grid gap-4 text-sm text-blue-900/80 sm:grid-cols-2">
-            <Link to="/politica-privacidad" className="hover:text-blue-800 hover:underline">
-              Revisar la política de privacidad
-            </Link>
-            <Link to="/eliminar-datos" className="hover:text-blue-800 hover:underline">
-              Solicitar eliminación de datos
-            </Link>
-            <Link to="/terminos-condiciones" className="hover:text-blue-800 hover:underline">
-              Ver términos y condiciones del servicio
-            </Link>
-            <a href="https://www.afip.gob.ar" target="_blank" rel="noreferrer" className="hover:text-blue-800 hover:underline">
-              Ir al sitio de AFIP para más recursos oficiales
-            </a>
-          </div>
-        </section>
-      </div>
-    </div>
+          <Link to="/eliminar-datos">
+            Solicitar eliminación de datos
+          </Link>
+          <Link to="/terminos-condiciones">
+            Ver términos y condiciones del servicio
+          </Link>
+          <a href="https://www.afip.gob.ar" target="_blank" rel="noreferrer">
+            Ir al sitio de AFIP para más recursos oficiales
+          </a>
+        </div>
+      </section>
+    </PublicContentLayout>
   )
 }

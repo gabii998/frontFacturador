@@ -21,6 +21,30 @@ import SiteFooter from './components/SiteFooter'
 import { PLAN_DETAILS } from './constants/planes'
 import { Brand } from './components/Brand'
 import { PrivateTopbarActionsProvider } from './contexts/PrivateTopbarContext'
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+
+const LANDING_FEATURES = [
+  {
+    title: 'Facturas por whatsapp',
+    text: 'Emisión desde conversaciones operativas, sin sacar al usuario de su flujo habitual.',
+    image: '/illustrations/features/feature-whatsapp.png'
+  },
+  {
+    title: 'Facturas cuando arca este offline',
+    text: 'La operación sigue disponible aun cuando el servicio externo no responde en tiempo real.',
+    image: '/illustrations/features/feature-offline.png'
+  },
+  {
+    title: 'Generacion de pdfs',
+    text: 'Comprobantes listos para compartir, descargar y conservar dentro del circuito administrativo.',
+    image: '/illustrations/features/feature-pdf.png'
+  },
+  {
+    title: 'Accesible desde cualquier dispositivo',
+    text: 'La operación acompaña al usuario en escritorio, tablet o móvil sin cambiar de flujo de trabajo.',
+    image: '/illustrations/features/feature-devices.png'
+  }
+] as const
 
 function Navbar() {
   const { user, logout } = useAuth()
@@ -287,6 +311,8 @@ function PublicPage() {
   const navigate = useNavigate()
   const landingPageRef = useRef<HTMLDivElement | null>(null)
   const [showToolbarBrand, setShowToolbarBrand] = useState(false)
+  const [activeFeature, setActiveFeature] = useState(0)
+  const [activePlan, setActivePlan] = useState(0)
 
   const authView =
     location.pathname === '/login'
@@ -328,6 +354,29 @@ function PublicPage() {
     if (!target) return
     setShowToolbarBrand(target.scrollTop >= target.clientHeight - 120)
   }
+
+  const showPreviousFeature = () => {
+    setActiveFeature(prev => (prev === 0 ? LANDING_FEATURES.length - 1 : prev - 1))
+  }
+
+  const showNextFeature = () => {
+    setActiveFeature(prev => (prev + 1) % LANDING_FEATURES.length)
+  }
+
+  const showPreviousPlan = () => {
+    setActivePlan(prev => (prev === 0 ? PLAN_DETAILS.length - 1 : prev - 1))
+  }
+
+  const showNextPlan = () => {
+    setActivePlan(prev => (prev + 1) % PLAN_DETAILS.length)
+  }
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveFeature(prev => (prev + 1) % LANDING_FEATURES.length)
+    }, 4200)
+    return () => window.clearInterval(interval)
+  }, [])
 
   const closeModal = () => {
     navigate('/', { replace: true })
@@ -396,66 +445,50 @@ function PublicPage() {
             </p>
           </div>
           <div className="landing-feature-list">
-            <article className="landing-feature-item">
-              <div className="landing-feature-item__media" aria-hidden="true">
-                <img
-                  src="/illustrations/features/feature-whatsapp.png"
-                  alt=""
-                  className="landing-feature-item__image"
+            <div className="landing-feature-carousel">
+              <button
+                type="button"
+                className="landing-feature-carousel__control"
+                aria-label="Función anterior"
+                onClick={showPreviousFeature}
+              >
+                <IconChevronLeft />
+              </button>
+              <article className="landing-feature-item" key={LANDING_FEATURES[activeFeature].title}>
+                <div className="landing-feature-item__media" aria-hidden="true">
+                  <img
+                    src={LANDING_FEATURES[activeFeature].image}
+                    alt=""
+                    className="landing-feature-item__image"
+                  />
+                </div>
+                <div className="landing-feature-item__content">
+                  <h2 className="landing-feature-item__title">{LANDING_FEATURES[activeFeature].title}</h2>
+                  <p className="landing-feature-item__text">
+                    {LANDING_FEATURES[activeFeature].text}
+                  </p>
+                </div>
+              </article>
+              <button
+                type="button"
+                className="landing-feature-carousel__control"
+                aria-label="Función siguiente"
+                onClick={showNextFeature}
+              >
+                <IconChevronRight />
+              </button>
+            </div>
+            <div className="landing-feature-carousel__dots" aria-label="Seleccionar función">
+              {LANDING_FEATURES.map((feature, index) => (
+                <button
+                  key={feature.title}
+                  type="button"
+                  className={index === activeFeature ? 'is-active' : undefined}
+                  aria-label={`Ver ${feature.title}`}
+                  onClick={() => setActiveFeature(index)}
                 />
-              </div>
-              <div className="landing-feature-item__content">
-                <h2 className="landing-feature-item__title">Facturas por whatsapp</h2>
-                <p className="landing-feature-item__text">
-                  Emisión desde conversaciones operativas, sin sacar al usuario de su flujo habitual.
-                </p>
-              </div>
-            </article>
-            <article className="landing-feature-item">
-              <div className="landing-feature-item__media" aria-hidden="true">
-                <img
-                  src="/illustrations/features/feature-offline.png"
-                  alt=""
-                  className="landing-feature-item__image"
-                />
-              </div>
-              <div className="landing-feature-item__content">
-                <h2 className="landing-feature-item__title">Facturas cuando arca este offline</h2>
-                <p className="landing-feature-item__text">
-                  La operación sigue disponible aun cuando el servicio externo no responde en tiempo real.
-                </p>
-              </div>
-            </article>
-            <article className="landing-feature-item">
-              <div className="landing-feature-item__media" aria-hidden="true">
-                <img
-                  src="/illustrations/features/feature-pdf.png"
-                  alt=""
-                  className="landing-feature-item__image"
-                />
-              </div>
-              <div className="landing-feature-item__content">
-                <h2 className="landing-feature-item__title">Generacion de pdfs</h2>
-                <p className="landing-feature-item__text">
-                  Comprobantes listos para compartir, descargar y conservar dentro del circuito administrativo.
-                </p>
-              </div>
-            </article>
-            <article className="landing-feature-item">
-              <div className="landing-feature-item__media" aria-hidden="true">
-                <img
-                  src="/illustrations/features/feature-devices.png"
-                  alt=""
-                  className="landing-feature-item__image"
-                />
-              </div>
-              <div className="landing-feature-item__content">
-                <h2 className="landing-feature-item__title">Accesible desde cualquier dispositivo</h2>
-                <p className="landing-feature-item__text">
-                  La operación acompaña al usuario en escritorio, tablet o móvil sin cambiar de flujo de trabajo.
-                </p>
-              </div>
-            </article>
+              ))}
+            </div>
           </div>
         </section>
         <section id="precio" className="landing-snap-section landing-pricing">
@@ -467,28 +500,37 @@ function PublicPage() {
           </div>
           <div className="landing-pricing__grid">
             {PLAN_DETAILS.map((plan) => (
-              <article
+              <PlanCard key={plan.code} plan={plan} />
+            ))}
+          </div>
+          <div className="landing-pricing-carousel">
+            <button
+              type="button"
+              className="landing-pricing-carousel__control"
+              aria-label="Plan anterior"
+              onClick={showPreviousPlan}
+            >
+              <IconChevronLeft />
+            </button>
+            <PlanCard plan={PLAN_DETAILS[activePlan]} />
+            <button
+              type="button"
+              className="landing-pricing-carousel__control"
+              aria-label="Plan siguiente"
+              onClick={showNextPlan}
+            >
+              <IconChevronRight />
+            </button>
+          </div>
+          <div className="landing-pricing-carousel__dots" aria-label="Seleccionar plan">
+            {PLAN_DETAILS.map((plan, index) => (
+              <button
                 key={plan.code}
-                className={`landing-plan ${plan.highlighted ? 'landing-plan--highlighted' : ''}`}
-              >
-                <div className="landing-plan__header">
-                  <h3 className="landing-plan__name">{plan.name}</h3>
-                  <p className="landing-plan__headline">{plan.headline}</p>
-                </div>
-                <p className="landing-plan__price">{plan.price}</p>
-                <p className="landing-plan__description">{plan.description}</p>
-                <ul className="landing-plan__features">
-                  {plan.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-                <Link
-                  to={plan.code === 'free' ? '/registrarse' : '/login'}
-                  className={plan.highlighted ? 'btn-primary landing-plan__action' : 'landing-plan__action landing-plan__action--secondary'}
-                >
-                  {plan.code === 'free' ? 'Empezar' : 'Consultar'}
-                </Link>
-              </article>
+                type="button"
+                className={index === activePlan ? 'is-active' : undefined}
+                aria-label={`Ver plan ${plan.name}`}
+                onClick={() => setActivePlan(index)}
+              />
             ))}
           </div>
         </section>
@@ -540,6 +582,30 @@ function PublicPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function PlanCard({ plan }: { plan: typeof PLAN_DETAILS[number] }) {
+  return (
+    <article className={`landing-plan ${plan.highlighted ? 'landing-plan--highlighted' : ''}`}>
+      <div className="landing-plan__header">
+        <h3 className="landing-plan__name">{plan.name}</h3>
+        <p className="landing-plan__headline">{plan.headline}</p>
+      </div>
+      <p className="landing-plan__price">{plan.price}</p>
+      <p className="landing-plan__description">{plan.description}</p>
+      <ul className="landing-plan__features">
+        {plan.features.map((feature) => (
+          <li key={feature}>{feature}</li>
+        ))}
+      </ul>
+      <Link
+        to={plan.code === 'free' ? '/registrarse' : '/login'}
+        className={plan.highlighted ? 'btn-primary landing-plan__action' : 'landing-plan__action landing-plan__action--secondary'}
+      >
+        {plan.code === 'free' ? 'Empezar' : 'Consultar'}
+      </Link>
+    </article>
   )
 }
 
