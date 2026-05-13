@@ -9,6 +9,9 @@ import ProfilePage from './pages/ProfilePage'
 import PlanesPage from './pages/PlanesPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import AdminOpsPage from './pages/AdminOpsPage'
+import AdminMailPage from './pages/AdminMailPage'
+import AdminBillingQueuePage from './pages/AdminBillingQueuePage'
+import AdminPlansPage from './pages/AdminPlansPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -87,7 +90,22 @@ function getPrivateSection(pathname: string) {
     {
       match: (path: string) => path.startsWith('/admin/ops'),
       title: 'Ops',
-      subtitle: 'Monitoreo técnico, colas y métricas operativas.'
+      subtitle: 'Monitoreo técnico y métricas operativas.'
+    },
+    {
+      match: (path: string) => path.startsWith('/admin/mail'),
+      title: 'Mail',
+      subtitle: 'Monitoreo y recuperación de la cola de emails.'
+    },
+    {
+      match: (path: string) => path.startsWith('/admin/facturacion'),
+      title: 'Facturación admin',
+      subtitle: 'Monitoreo de la cola de emisión de comprobantes.'
+    },
+    {
+      match: (path: string) => path.startsWith('/admin/planes'),
+      title: 'Planes admin',
+      subtitle: 'Alta y baja de planes disponibles.'
     },
     {
       match: (path: string) => path.startsWith('/admin/usuarios'),
@@ -116,6 +134,9 @@ function Navbar({ mobileTitle, mobileActions }: { mobileTitle: string; mobileAct
     ...(user?.role === 'SUPERUSER'
       ? [
           { to: '/admin/ops', label: 'Ops' },
+          { to: '/admin/mail', label: 'Mail' },
+          { to: '/admin/facturacion', label: 'Facturación' },
+          { to: '/admin/planes', label: 'Planes' },
           { to: '/admin/usuarios', label: 'Superusuario' }
         ]
       : [])
@@ -639,6 +660,9 @@ export default function App() {
         <Route path="/configuracion/planes" element={<PlanesPage />} />
         <Route element={<SuperuserOnlyRoute />}>
           <Route path="/admin/ops" element={<AdminOpsPage />} />
+          <Route path="/admin/mail" element={<AdminMailPage />} />
+          <Route path="/admin/facturacion" element={<AdminBillingQueuePage />} />
+          <Route path="/admin/planes" element={<AdminPlansPage />} />
           <Route path="/admin/usuarios" element={<AdminUsersPage />} />
         </Route>
       </Route>

@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import HeaderPill from '../components/HeaderPill'
+import type { ReactNode } from 'react'
 import ErrorBox from '../components/ErrorBox'
 import {
-  PLAN_COLORS,
-  PLAN_COLORS_BY_CODE,
   PLAN_CODE_TO_NAME,
   PLAN_DETAILS,
   type PlanCode,
@@ -15,6 +13,7 @@ import { PaymentsService } from '../services/payments'
 import { PlansService, type PlanStatusResponse } from '../services/plans'
 import { useAuth } from '../contexts/AuthContext'
 import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
+import { IconAlertCircle, IconCheck, IconClock, IconCreditCard, IconSparkles } from '@tabler/icons-react'
 
 const PlanesPage = () => {
   const { user } = useAuth()
@@ -156,110 +155,136 @@ const PlanesPage = () => {
     return `Plan actual: ${planActual}`
   }, [fetchingPlanStatus, estadoPlan, planPendienteCode, planActual])
 
-  const headerDotColor = estadoPlan === 'PENDING' && planPendienteCode
-    ? 'bg-amber-500'
-    : PLAN_COLORS_BY_CODE[planActivoCode]
-
   const topbarActions = useMemo(
-    () => <HeaderPill label={headerLabel} dotColor={headerDotColor} />,
-    [headerDotColor, headerLabel]
+    () => <span className="plans-topbar-status">{headerLabel}</span>,
+    [headerLabel]
   )
 
   usePrivateTopbarActions(topbarActions)
 
   return (
-    <div className="space-y-6">
+    <div className="plans-page">
       {planStatus?.status === 'EXPIRED' && planStatus.previousPlan && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Tu plan {PLAN_CODE_TO_NAME[planStatus.previousPlan]} expiró. Pasaste nuevamente al plan Gratuito.
-        </div>
+        <PlanNotice
+          tone="warn"
+          icon={<IconAlertCircle />}
+          message={`Tu plan ${PLAN_CODE_TO_NAME[planStatus.previousPlan]} expiró. Pasaste nuevamente al plan Gratuito.`}
+        />
       )}
 
       {planStatus?.status === 'PENDING' && planPendienteCode && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-          Generamos el checkout de Mercado Pago para el plan {PLAN_CODE_TO_NAME[planPendienteCode]}. Apenas el pago se apruebe, se activará automáticamente.
-        </div>
+        <PlanNotice
+          tone="info"
+          icon={<IconClock />}
+          message={`Generamos el checkout de Mercado Pago para el plan ${PLAN_CODE_TO_NAME[planPendienteCode]}. Apenas el pago se apruebe, se activará automáticamente.`}
+        />
       )}
 
       {estadoPlan === 'ACTIVE' && formattedExpiration && (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-          Renová antes del <span className="font-semibold text-slate-800">{formattedExpiration}</span> para evitar interrupciones.
-        </div>
+        <PlanNotice
+          tone="neutral"
+          icon={<IconCreditCard />}
+          message={`Renová antes del ${formattedExpiration} para evitar interrupciones.`}
+        />
       )}
 
       <ErrorBox error={error} />
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="plans-grid">
         {PLAN_DETAILS.map((plan) => {
           const esActual = estadoPlan === 'ACTIVE' && plan.code === planActivoCode
           const esPendiente = estadoPlan === 'PENDING' && planPendienteCode === plan.code
           const estaCargando = loadingPlan === plan.code
 
           return (
-            <article
+            <PlanCard
               key={plan.name}
-              className={`card flex h-full flex-col gap-5 border ${
-                plan.highlighted
-                  ? 'border-blue-200 shadow-lg shadow-blue-500/20'
-                  : 'border-slate-200 shadow-slate-900/5'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <span className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500">Plan</span>
-                  <h2 className="text-2xl font-semibold text-slate-900">{plan.name}</h2>
-                  <p className="text-sm text-slate-600">{plan.headline}</p>
-                </div>
-                <span
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold uppercase text-white ${PLAN_COLORS[plan.name]}`}
-                >
-                  {plan.name.charAt(0)}
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <div className="text-3xl font-semibold text-slate-900">{plan.price}</div>
-                <p className="text-sm text-slate-500">{plan.description}</p>
-              </div>
-
-              <ul className="space-y-3 text-sm text-slate-600">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-blue-500" aria-hidden />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-auto pt-3">
-                <button
-                  type="button"
-                  className={`${
-                    esActual
-                      ? 'btn w-full cursor-default bg-slate-100 text-slate-500'
-                    : esPendiente
-                    ? 'btn w-full cursor-default bg-amber-100 text-amber-700'
-                    : plan.highlighted
-                    ? 'btn-primary w-full'
-                    : 'btn w-full'
-                  }`}
-                  disabled={esActual || esPendiente || estaCargando}
-                  onClick={() => iniciarPago(plan)}
-                >
-                  {esActual
-                    ? 'Plan activo'
-                    : esPendiente
-                    ? 'Pago pendiente...'
-                    : estaCargando
-                    ? 'Generando pago...'
-                    : 'Elegir este plan'}
-                </button>
-              </div>
-            </article>
+              plan={plan}
+              active={esActual}
+              pending={esPendiente}
+              loading={estaCargando}
+              onSelect={() => iniciarPago(plan)}
+            />
           )
         })}
       </div>
     </div>
+  )
+}
+
+const PlanNotice = ({
+  icon,
+  message,
+  tone
+}: {
+  icon: ReactNode
+  message: string
+  tone: 'neutral' | 'info' | 'warn'
+}) => (
+  <div className={`plans-notice plans-notice--${tone}`}>
+    {icon}
+    <span>{message}</span>
+  </div>
+)
+
+const PlanCard = ({
+  plan,
+  active,
+  pending,
+  loading,
+  onSelect
+}: {
+  plan: PlanDetail
+  active: boolean
+  pending: boolean
+  loading: boolean
+  onSelect: () => void
+}) => {
+  const disabled = active || pending || loading
+  const buttonLabel = active
+    ? 'Plan activo'
+    : pending
+      ? 'Pago pendiente'
+      : loading
+        ? 'Generando pago...'
+        : 'Elegir plan'
+
+  return (
+    <article className={`plans-card ${active ? 'plans-card--active' : ''} ${pending ? 'plans-card--pending' : ''}`}>
+      <div className="plans-card__header">
+        <div>
+          <span>{plan.highlighted ? 'Recomendado' : 'Plan'}</span>
+          <h2>{plan.name}</h2>
+          <p>{plan.headline}</p>
+        </div>
+        <div className="plans-card__icon">
+          {plan.highlighted ? <IconSparkles /> : <IconCreditCard />}
+        </div>
+      </div>
+
+      <div className="plans-card__price">
+        <strong>{plan.price}</strong>
+        <p>{plan.description}</p>
+      </div>
+
+      <ul className="plans-card__features">
+        {plan.features.map((feature) => (
+          <li key={feature}>
+            <IconCheck />
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+
+      <button
+        type="button"
+        className={`plans-card__button ${active ? 'plans-card__button--active' : ''} ${pending ? 'plans-card__button--pending' : ''}`}
+        disabled={disabled}
+        onClick={onSelect}
+      >
+        {buttonLabel}
+      </button>
+    </article>
   )
 }
 

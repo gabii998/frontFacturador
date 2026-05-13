@@ -1,15 +1,16 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import ErrorBox from '../components/ErrorBox'
-import HeaderPill from '../components/HeaderPill'
 import { useAuth } from '../contexts/AuthContext'
 import { changePassword } from '../services/profile'
 import { AfipService } from '../services/afip'
 import { AuthUser } from '../services/auth'
-import { PLAN_COLORS_BY_CODE, PLAN_CODE_TO_NAME, type PlanCode } from '../constants/planes'
+import { PLAN_CODE_TO_NAME, type PlanCode } from '../constants/planes'
 import { PlansService, type PlanStatusResponse } from '../services/plans'
 import type { PadronInfo } from '../models/afip'
+import { IconCreditCard, IconMail, IconShieldLock, IconUserCircle } from '@tabler/icons-react'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -281,20 +282,6 @@ const ProfileAccountCard = ({
   const planActivoCode: PlanCode = estadoPlan === 'ACTIVE' ? planStatus?.plan ?? 'free' : 'free'
   const planPendienteCode: PlanCode | null = estadoPlan === 'PENDING' ? planStatus?.plan ?? null : null
 
-  const planLabel = useMemo(() => {
-    if (loadingPlan) {
-      return 'Plan actual: cargando...'
-    }
-    if (estadoPlan === 'PENDING' && planPendienteCode) {
-      return `Plan en proceso: ${PLAN_CODE_TO_NAME[planPendienteCode]}`
-    }
-    return `Plan actual: ${PLAN_CODE_TO_NAME[planActivoCode]}`
-  }, [loadingPlan, estadoPlan, planPendienteCode, planActivoCode])
-
-  const planDotColor = estadoPlan === 'PENDING' && planPendienteCode
-    ? 'bg-amber-500'
-    : PLAN_COLORS_BY_CODE[planActivoCode]
-
   const paymentStatusLabel = useMemo(() => {
     if (!planStatus?.paymentStatus) {
       return null
@@ -328,32 +315,42 @@ const ProfileAccountCard = ({
           <h2 className="text-xl font-semibold text-slate-900">Datos de la cuenta</h2>
           <p className="text-sm text-slate-500">Información principal del usuario, plan y datos fiscales vinculados.</p>
         </div>
-        <div className="flex flex-wrap gap-2 md:justify-end">
-          <button type="button" className="btn" onClick={onChangePassword}>
-            Cambiar contraseña
-          </button>
-          <button type="button" className="btn" onClick={irAComparativaPlanes}>
-            Cambiar plan
-          </button>
-        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <HeaderPill label={user.name ?? 'Sin datos'} dotColor="bg-indigo-500" />
-        <HeaderPill label={user.email} dotColor="bg-indigo-500" />
-        <HeaderPill label={planLabel} dotColor={planDotColor} />
-        {estadoPlan === 'PENDING' && paymentStatusLabel && (
-          <HeaderPill
-            label={`Estado de pago: ${paymentStatusLabel}`}
-            dotColor="bg-amber-500"
-          />
-        )}
-        {formattedExpiration && (
-          <HeaderPill
-            label={`Vence: ${formattedExpiration}`}
-            dotColor="bg-slate-400"
-          />
-        )}
+      <div className="profile-account-summary">
+        <ProfileSummaryCard
+          icon={<IconUserCircle />}
+          label="Nombre"
+          value={user.name ?? 'Sin datos'}
+        />
+        <ProfileSummaryCard
+          icon={<IconMail />}
+          label="Email"
+          value={user.email}
+        />
+        <ProfileSummaryCard
+          icon={<IconCreditCard />}
+          label={estadoPlan === 'PENDING' ? 'Plan en proceso' : 'Plan actual'}
+          value={loadingPlan
+            ? 'Cargando...'
+            : estadoPlan === 'PENDING' && planPendienteCode
+              ? PLAN_CODE_TO_NAME[planPendienteCode]
+              : PLAN_CODE_TO_NAME[planActivoCode]
+          }
+          detail={[
+            paymentStatusLabel ? `Pago: ${paymentStatusLabel}` : null,
+            formattedExpiration ? `Vence: ${formattedExpiration}` : null
+          ].filter(Boolean).join(' · ')}
+          actionLabel="Cambiar"
+          onAction={irAComparativaPlanes}
+        />
+        <ProfileSummaryCard
+          icon={<IconShieldLock />}
+          label="Seguridad"
+          value="Contraseña activa"
+          actionLabel="Cambiar"
+          onAction={onChangePassword}
+        />
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -376,6 +373,53 @@ const AccountDetail = ({ label, value }: { label: string; value: string }) => {
     <div className="rounded-xl bg-slate-50 p-4">
       <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
       <p className="mt-1 text-sm font-medium text-slate-900">{value}</p>
+    </div>
+  )
+}
+
+const ProfileSummaryCard = ({
+  icon,
+  label,
+  value,
+  detail,
+  actionLabel,
+  onAction
+}: {
+  icon: ReactNode
+  label: string
+  value: string
+  detail?: string
+  actionLabel?: string
+  onAction?: () => void
+}) => {
+  const interactive = Boolean(onAction)
+  const content = (
+    <>
+      <div className="profile-summary-card__icon">{icon}</div>
+      <div className="profile-summary-card__content">
+        <span>{label}</span>
+        <strong>{value}</strong>
+        {detail && <p>{detail}</p>}
+      </div>
+      {actionLabel && (
+        <span className="profile-summary-card__action">
+          {actionLabel}
+        </span>
+      )}
+    </>
+  )
+
+  if (interactive) {
+    return (
+      <button type="button" className="profile-summary-card profile-summary-card--button" onClick={onAction}>
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <div className="profile-summary-card">
+      {content}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { get, post } from './api'
+import { del, get, post } from './api'
 
 export interface DashboardSnapshot {
   generatedAt: string
@@ -101,6 +101,50 @@ export interface DeadLetterPageResponse {
   items: DeadLetterItem[]
 }
 
+export interface InvoiceQueueStats {
+  queued: number
+  processing: number
+  emitted: number
+  failed: number
+  cancelled: number
+}
+
+export interface InvoiceQueueItem {
+  id: string
+  externalId: string
+  cuit: string
+  status: string
+  emisor: string
+  puntoVenta?: number | null
+  fechaEmision?: string | null
+  concepto?: string | null
+  total?: number | null
+  attemptCount: number
+  nextAttemptAt: string
+  lastError?: string | null
+  emittedAt?: string | null
+  createdAt: string
+  updatedAt: string
+  attempts: InvoiceQueueAttempt[]
+}
+
+export interface InvoiceQueueAttempt {
+  attemptNumber: number
+  status: string
+  resultado?: string | null
+  createdAt: string
+  errorMessage?: string | null
+}
+
+export interface InvoiceQueuePageResponse {
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  stats: InvoiceQueueStats
+  items: InvoiceQueueItem[]
+}
+
 export const OpsService = {
   dashboard: () => get<DashboardSnapshot>('/api/admin/ops/dashboard'),
   timeseries: ({ metrics, from, to, stepMinutes }: TimeseriesParams = {}) => {
@@ -117,8 +161,12 @@ export const OpsService = {
   outboxStats: () => get<OutboxStatsResponse>('/api/admin/outbox/stats'),
   requeueOutboxById: (id: string) =>
     post<void>(`/api/admin/outbox/${encodeURIComponent(id)}/requeue`),
+  deleteOutboxById: (id: string) =>
+    del<void>(`/api/admin/outbox/${encodeURIComponent(id)}`),
   requeueDeadLetter: (limit = 50) =>
     post<RequeueDeadLetterResponse>(`/api/admin/outbox/requeue-dead-letter?limit=${encodeURIComponent(limit)}`),
   deadLetter: (page = 0, size = 25) =>
-    get<DeadLetterPageResponse>(`/api/admin/outbox/dead-letter?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`)
+    get<DeadLetterPageResponse>(`/api/admin/outbox/dead-letter?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`),
+  invoiceQueue: (page = 0, size = 25) =>
+    get<InvoiceQueuePageResponse>(`/api/admin/ops/invoice-queue?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`)
 }

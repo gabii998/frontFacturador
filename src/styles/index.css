@@ -831,6 +831,716 @@ a,
     @apply md:rounded-lg md:bg-white md:p-6;
   }
 
+  .profile-account-summary {
+    @apply grid gap-3 md:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .profile-summary-card {
+    @apply flex min-w-0 items-center gap-3 rounded-lg bg-slate-50 p-4 text-left;
+  }
+
+  .profile-summary-card--button {
+    @apply cursor-pointer transition-colors duration-500 hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-orange-200;
+  }
+
+  .profile-summary-card__icon {
+    @apply flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-white text-orange-600 transition-colors duration-500;
+  }
+
+  .profile-summary-card--button:hover .profile-summary-card__icon {
+    @apply bg-orange-100;
+  }
+
+  .profile-summary-card__icon svg {
+    @apply h-5 w-5;
+  }
+
+  .profile-summary-card__content {
+    @apply min-w-0 flex-1;
+  }
+
+  .profile-summary-card__content span {
+    @apply block text-xs font-semibold uppercase text-slate-500;
+  }
+
+  .profile-summary-card__content strong {
+    @apply mt-0.5 block truncate text-sm font-semibold text-slate-900;
+  }
+
+  .profile-summary-card__content p {
+    @apply mt-1 truncate text-xs font-medium text-slate-500;
+  }
+
+  .profile-summary-card__action {
+    @apply inline-flex h-8 shrink-0 items-center justify-center rounded-md bg-white px-3 text-xs font-semibold text-orange-700 transition-colors duration-500 hover:bg-orange-50;
+  }
+
+  .profile-summary-card--button:hover .profile-summary-card__action {
+    @apply bg-orange-100;
+  }
+
+  .plans-page {
+    @apply space-y-4 md:space-y-6;
+  }
+
+  .plans-topbar-status {
+    @apply inline-flex items-center justify-center rounded-lg bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-700;
+  }
+
+  .mobile-appbar__actions .plans-topbar-status {
+    @apply bg-white/15 text-white;
+  }
+
+  .plans-notice {
+    @apply flex items-start gap-2 rounded-lg px-4 py-3 text-sm font-medium;
+  }
+
+  .plans-notice svg {
+    @apply mt-0.5 h-5 w-5 flex-none;
+  }
+
+  .plans-notice--neutral {
+    @apply bg-white text-slate-600;
+  }
+
+  .plans-notice--info {
+    @apply bg-sky-50 text-sky-800;
+  }
+
+  .plans-notice--warn {
+    @apply bg-amber-50 text-amber-800;
+  }
+
+  .plans-grid {
+    @apply grid gap-3 md:grid-cols-3 md:gap-4;
+  }
+
+  .plans-card {
+    @apply flex h-full flex-col gap-5 rounded-lg bg-white p-5 md:bg-slate-50;
+  }
+
+  .plans-card--active {
+    @apply bg-orange-50 md:bg-orange-50;
+  }
+
+  .plans-card--pending {
+    @apply bg-amber-50 md:bg-amber-50;
+  }
+
+  .plans-card__header {
+    @apply flex items-start justify-between gap-4;
+  }
+
+  .plans-card__header span {
+    @apply text-xs font-semibold uppercase text-orange-600;
+  }
+
+  .plans-card__header h2 {
+    @apply mt-1 text-2xl font-semibold leading-none text-slate-900;
+  }
+
+  .plans-card__header p {
+    @apply mt-2 text-sm leading-5 text-slate-500;
+  }
+
+  .plans-card__icon {
+    @apply flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-white text-orange-600;
+  }
+
+  .plans-card__icon svg {
+    @apply h-5 w-5;
+  }
+
+  .plans-card__price strong {
+    @apply block text-3xl font-semibold text-slate-900;
+  }
+
+  .plans-card__price p {
+    @apply mt-2 text-sm leading-6 text-slate-500;
+  }
+
+  .plans-card__features {
+    @apply flex flex-1 flex-col gap-3 text-sm text-slate-600;
+  }
+
+  .plans-card__features li {
+    @apply flex items-start gap-2;
+  }
+
+  .plans-card__features svg {
+    @apply mt-0.5 h-4 w-4 flex-none text-orange-600;
+  }
+
+  .plans-card__button {
+    @apply mt-auto inline-flex h-10 w-full items-center justify-center rounded-lg bg-orange-500 px-4 text-sm font-semibold text-white transition-colors duration-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 disabled:cursor-default disabled:bg-slate-100 disabled:text-slate-500 disabled:hover:bg-slate-100;
+  }
+
+  .plans-card__button--active {
+    @apply bg-white text-orange-700 disabled:bg-white disabled:text-orange-700;
+  }
+
+  .plans-card__button--pending {
+    @apply bg-white text-amber-700 disabled:bg-white disabled:text-amber-700;
+  }
+
+  .ops-page {
+    @apply space-y-4 md:space-y-6;
+  }
+
+  .ops-panel {
+    @apply space-y-4 md:rounded-lg md:bg-white md:p-6;
+  }
+
+  .ops-panel__header {
+    @apply flex flex-wrap items-start justify-between gap-3;
+  }
+
+  .ops-panel__header h2 {
+    @apply text-xl font-semibold text-slate-900;
+  }
+
+  .ops-panel__header p {
+    @apply mt-1 text-sm text-slate-500;
+  }
+
+  .ops-panel__header--compact h3 {
+    @apply text-base font-semibold text-slate-900;
+  }
+
+  .ops-tabs {
+    @apply inline-flex w-fit rounded-lg bg-slate-50 p-1;
+  }
+
+  .ops-tabs button {
+    @apply inline-flex h-9 items-center justify-center rounded-md px-4 text-sm font-semibold text-slate-500 transition-colors duration-500 hover:bg-white hover:text-slate-900;
+  }
+
+  .ops-tabs button.is-active {
+    @apply bg-white text-orange-700;
+  }
+
+  .ops-icon-button {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-orange-50 px-3 text-sm font-semibold text-orange-700 transition-colors duration-500 hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-70;
+  }
+
+  .ops-icon-button svg {
+    @apply h-4 w-4;
+  }
+
+  .ops-metrics-grid {
+    @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .ops-metric-card {
+    @apply flex min-w-0 items-center gap-3 rounded-lg bg-slate-50 p-4;
+  }
+
+  .ops-metric-card__icon {
+    @apply flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-white text-orange-600;
+  }
+
+  .ops-metric-card__icon svg {
+    @apply h-5 w-5;
+  }
+
+  .ops-metric-card span,
+  .ops-stat-card span {
+    @apply block text-xs font-semibold uppercase text-slate-500;
+  }
+
+  .ops-metric-card strong {
+    @apply mt-0.5 block text-xl font-semibold leading-none text-slate-900;
+  }
+
+  .ops-metric-card--warn strong,
+  .ops-stat-card--warn strong {
+    @apply text-red-700;
+  }
+
+  .ops-stats-grid {
+    @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-5;
+  }
+
+  .ops-stat-card {
+    @apply rounded-lg bg-slate-50 p-4;
+  }
+
+  .ops-stat-card strong {
+    @apply mt-0.5 block text-xl font-semibold leading-none text-slate-900;
+  }
+
+  .ops-stat-card--ok strong {
+    @apply text-emerald-700;
+  }
+
+  .ops-action-message {
+    @apply rounded-lg bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700;
+  }
+
+  .ops-actions-grid {
+    @apply grid gap-3 xl:grid-cols-2;
+  }
+
+  .ops-action-card {
+    @apply space-y-3 rounded-lg bg-slate-50 p-4;
+  }
+
+  .ops-action-card p {
+    @apply text-sm font-semibold text-slate-900;
+  }
+
+  .ops-action-card__button {
+    @apply w-full justify-center;
+  }
+
+  .ops-table-section {
+    @apply space-y-3;
+  }
+
+  .ops-table-section__header {
+    @apply flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .ops-table-section__header p {
+    @apply text-sm font-semibold text-slate-900;
+  }
+
+  .ops-table-wrap {
+    @apply overflow-x-auto rounded-lg bg-slate-50;
+  }
+
+  .ops-table {
+    @apply min-w-full text-sm;
+  }
+
+  .ops-table thead {
+    @apply text-left text-xs font-semibold uppercase text-slate-500;
+  }
+
+  .ops-table th,
+  .ops-table td {
+    @apply px-3 py-2 align-top;
+  }
+
+  .ops-table tbody tr {
+    @apply border-t border-white;
+  }
+
+  .ops-table td {
+    @apply text-slate-600;
+  }
+
+  .ops-table__id {
+    @apply max-w-[220px] truncate font-mono text-xs text-slate-700;
+  }
+
+  .ops-table__empty {
+    @apply py-6 text-center text-slate-500;
+  }
+
+  .ops-row-action {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-orange-700 transition-colors duration-500 hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-70;
+  }
+
+  .ops-row-action svg {
+    @apply h-4 w-4;
+  }
+
+  .ops-status-pill {
+    @apply inline-flex w-fit rounded-md px-2 py-1 text-xs font-semibold;
+  }
+
+  .ops-status-pill--queued,
+  .ops-status-pill--processing {
+    @apply bg-sky-50 text-sky-700;
+  }
+
+  .ops-status-pill--emitted {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+
+  .ops-status-pill--failed {
+    @apply bg-red-50 text-red-700;
+  }
+
+  .ops-status-pill--cancelled {
+    @apply bg-slate-100 text-slate-600;
+  }
+
+  .ops-infinite-status {
+    @apply flex min-h-10 flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2;
+  }
+
+  .ops-infinite-status span {
+    @apply text-sm font-medium text-slate-500;
+  }
+
+  .ops-infinite-status__loading {
+    @apply inline-flex items-center gap-2 text-orange-700;
+  }
+
+  .ops-infinite-status__loading svg {
+    @apply h-4 w-4;
+  }
+
+  .mail-list-section {
+    @apply space-y-3;
+  }
+
+  .mail-list {
+    @apply grid gap-2;
+  }
+
+  .mail-card {
+    @apply grid cursor-pointer gap-3 rounded-lg bg-white p-3 transition-colors duration-500 hover:bg-orange-50/60 focus:outline-none focus:ring-2 focus:ring-orange-200 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center md:bg-slate-50;
+  }
+
+  .mail-card__icon {
+    @apply hidden h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-600 md:flex;
+  }
+
+  .mail-card__icon svg {
+    @apply h-5 w-5;
+  }
+
+  .mail-card__content {
+    @apply min-w-0 space-y-2;
+  }
+
+  .mail-card__main {
+    @apply flex min-w-0 flex-col gap-2 md:flex-row md:items-start md:justify-between;
+  }
+
+  .mail-card__title {
+    @apply min-w-0;
+  }
+
+  .mail-card__title strong {
+    @apply block truncate text-sm font-semibold text-slate-900;
+  }
+
+  .mail-card__title span {
+    @apply mt-1 block truncate font-mono text-xs text-slate-500;
+  }
+
+  .mail-card__pills {
+    @apply flex flex-wrap items-center gap-1.5 md:justify-end;
+  }
+
+  .mail-card__pill {
+    @apply inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-500 md:bg-white;
+  }
+
+  .mail-card__pill svg {
+    @apply h-3.5 w-3.5;
+  }
+
+  .mail-card__pill--attempts {
+    @apply bg-red-50 text-red-700 md:bg-red-50;
+  }
+
+  .mail-card__meta {
+    @apply min-w-0 rounded-lg bg-slate-50 px-3 py-2 md:bg-white;
+  }
+
+  .mail-card__meta span {
+    @apply block text-xs font-semibold uppercase text-slate-500;
+  }
+
+  .mail-card__meta strong {
+    @apply mt-0.5 block truncate text-sm font-medium text-slate-900;
+  }
+
+  .mail-card__action {
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-orange-50 px-3 text-sm font-semibold text-orange-700 transition-colors duration-500 hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-70 md:self-center;
+  }
+
+  .mail-card__action svg {
+    @apply h-4 w-4;
+  }
+
+  .billing-queue-card {
+    @apply md:grid-cols-[auto_minmax(0,1fr)];
+  }
+
+  .billing-queue-card__icon {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  .billing-queue-card__details {
+    @apply grid gap-2 md:grid-cols-3;
+  }
+
+  .mail-list__empty {
+    @apply rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-500;
+  }
+
+  .mail-detail-modal {
+    @apply max-w-2xl;
+  }
+
+  .mail-detail-modal__body {
+    @apply space-y-4;
+  }
+
+  .mail-detail-grid {
+    @apply grid gap-2 sm:grid-cols-2;
+  }
+
+  .mail-detail-item {
+    @apply rounded-lg bg-slate-50 px-3 py-2;
+  }
+
+  .mail-detail-item span {
+    @apply block text-xs font-semibold uppercase text-slate-500;
+  }
+
+  .mail-detail-item strong {
+    @apply mt-1 block break-words text-sm font-medium text-slate-900;
+  }
+
+  .mail-detail-error {
+    @apply rounded-lg bg-red-50 px-3 py-3 text-red-700;
+  }
+
+  .mail-detail-error div {
+    @apply flex items-center gap-2;
+  }
+
+  .mail-detail-error svg {
+    @apply h-5 w-5 flex-none;
+  }
+
+  .mail-detail-error strong {
+    @apply text-sm font-semibold;
+  }
+
+  .mail-detail-error p {
+    @apply mt-2 whitespace-pre-wrap break-words text-sm font-medium;
+  }
+
+  .billing-queue-detail__timeline {
+    @apply rounded-lg bg-blue-50 px-3 py-3 text-blue-800;
+  }
+
+  .billing-queue-detail__timeline div {
+    @apply flex items-center gap-2;
+  }
+
+  .billing-queue-detail__timeline svg {
+    @apply h-5 w-5 flex-none;
+  }
+
+  .billing-queue-detail__timeline strong {
+    @apply text-sm font-semibold;
+  }
+
+  .billing-queue-detail__timeline p {
+    @apply mt-2 text-sm font-medium;
+  }
+
+  .admin-users-stats {
+    @apply xl:grid-cols-3;
+  }
+
+  .admin-user-card {
+    @apply md:grid-cols-[auto_minmax(0,1fr)_auto];
+  }
+
+  .admin-user-card__icon {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  .admin-user-card__meta {
+    @apply grid gap-2 md:grid-cols-3;
+  }
+
+  .admin-user-card__controls {
+    @apply grid gap-2 rounded-lg bg-slate-50 p-2 md:grid-cols-[minmax(9rem,0.8fr)_minmax(10rem,1fr)_7rem] md:bg-white;
+  }
+
+  .admin-user-control {
+    @apply min-w-0;
+  }
+
+  .admin-user-control span {
+    @apply mb-1 block text-xs font-semibold uppercase text-slate-500;
+  }
+
+  .admin-user-control .input {
+    @apply h-10 w-full rounded-lg bg-white text-sm md:bg-slate-50;
+  }
+
+  .admin-user-modal {
+    @apply max-w-md;
+  }
+
+  .admin-user-modal__body {
+    @apply space-y-4;
+  }
+
+  .admin-user-modal .admin-user-control .input {
+    @apply bg-slate-50;
+  }
+
+  .admin-user-modal__actions {
+    @apply grid gap-2 sm:grid-cols-2;
+  }
+
+  .admin-user-modal__actions .btn,
+  .admin-user-modal__actions .btn-primary {
+    @apply w-full justify-center;
+  }
+
+  .admin-user-card__actions {
+    @apply grid gap-2 md:min-w-36 md:self-center;
+  }
+
+  .admin-user-card__action {
+    @apply w-full;
+  }
+
+  .admin-user-card__action--primary {
+    @apply bg-blue-50 text-blue-700 hover:bg-blue-100;
+  }
+
+  .admin-user-pill {
+    @apply inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold;
+  }
+
+  .admin-user-pill svg {
+    @apply h-3.5 w-3.5;
+  }
+
+  .admin-user-pill--user {
+    @apply bg-slate-100 text-slate-700;
+  }
+
+  .admin-user-pill--superuser {
+    @apply bg-orange-50 text-orange-700;
+  }
+
+  .admin-user-pill--plan {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  .admin-users-pagination {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .admin-users-pagination span {
+    @apply text-center text-sm font-medium text-slate-600;
+  }
+
+  .admin-plans-stats {
+    @apply xl:grid-cols-3;
+  }
+
+  .admin-plan-card {
+    @apply md:grid-cols-[auto_minmax(0,1fr)_auto];
+  }
+
+  .admin-plan-card--disabled {
+    @apply opacity-80;
+  }
+
+  .admin-plan-card__icon {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+
+  .admin-plan-card--disabled .admin-plan-card__icon {
+    @apply bg-red-50 text-red-700;
+  }
+
+  .admin-plan-card__meta {
+    @apply grid gap-2 md:grid-cols-2;
+  }
+
+  .admin-plan-pill {
+    @apply inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold;
+  }
+
+  .admin-plan-pill--enabled {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+
+  .admin-plan-pill--disabled {
+    @apply bg-red-50 text-red-700;
+  }
+
+  .admin-plan-pill--price {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  .admin-plan-card__action {
+    @apply w-full md:w-auto md:self-center;
+  }
+
+  .admin-plan-card__action--primary {
+    @apply bg-emerald-50 text-emerald-700 hover:bg-emerald-100;
+  }
+
+  .admin-plan-card__action--danger {
+    @apply bg-red-50 text-red-700 hover:bg-red-100;
+  }
+
+  .mail-detail-modal__actions {
+    @apply grid gap-2 sm:grid-cols-2;
+  }
+
+  .mail-detail-modal__action,
+  .mail-detail-modal__delete {
+    @apply w-full;
+  }
+
+  .mail-detail-modal__delete {
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-red-50 px-3 text-sm font-semibold text-red-700 transition-colors duration-500 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70;
+  }
+
+  .mail-detail-modal__delete svg {
+    @apply h-4 w-4;
+  }
+
+  .ops-empty {
+    @apply text-sm text-slate-500;
+  }
+
+  .ops-series-grid {
+    @apply grid gap-3 xl:grid-cols-2;
+  }
+
+  .ops-series-card {
+    @apply rounded-lg bg-slate-50 p-4;
+  }
+
+  .ops-series-card__header {
+    @apply flex items-start gap-3;
+  }
+
+  .ops-series-card__header svg {
+    @apply mt-0.5 h-5 w-5 flex-none text-orange-600;
+  }
+
+  .ops-series-card__header div {
+    @apply min-w-0 flex-1;
+  }
+
+  .ops-series-card__header p {
+    @apply truncate text-sm font-semibold text-slate-900;
+  }
+
+  .ops-series-card__header span {
+    @apply block truncate text-xs text-slate-500;
+  }
+
+  .ops-series-card__header strong {
+    @apply shrink-0 text-sm font-semibold text-orange-700;
+  }
+
+  .ops-series-card__chart {
+    @apply mt-3 overflow-hidden text-slate-600;
+  }
+
   .puntos-venta-list__header {
     @apply hidden flex-col gap-4 md:flex md:flex-row md:items-start md:justify-between;
   }

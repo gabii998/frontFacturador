@@ -159,3 +159,11 @@ export async function get<T = unknown>(url: string, init?: RequestOptions): Prom
 export async function post<T = unknown>(url: string, body?: any, init?: RequestOptions): Promise<T> {
   return request<T>(url, { ...(init ?? {}), method: 'POST', body })
 }
+
+export async function patch<T = unknown>(url: string, body?: any, init?: RequestOptions): Promise<T> {
+  return request<T>(url, { ...(init ?? {}), method: 'PATCH', body })
+}
+
+export async function del<T = unknown>(url: string, init?: RequestOptions): Promise<T> {
+  return request<T>(url, { ...(init ?? {}), method: 'DELETE' })
+}
