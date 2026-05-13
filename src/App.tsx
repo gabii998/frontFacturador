@@ -19,6 +19,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import TermsConditionsPage from './pages/TermsConditionsPage'
 import DataDeletionPage from './pages/DataDeletionPage'
 import HelpPage from './pages/HelpPage'
+import ArcaPermissionWizardPage from './pages/ArcaPermissionWizardPage'
 import { useAuth } from './contexts/AuthContext'
 import SiteFooter from './components/SiteFooter'
 import { PLAN_DETAILS } from './constants/planes'
@@ -26,6 +27,8 @@ import { Brand } from './components/Brand'
 import HeroProcessIllustration from './components/HeroProcessIllustration'
 import { PrivateTopbarActionsProvider } from './contexts/PrivateTopbarContext'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { ArcaPermissionService } from './services/arcaPermission'
+import type { ArcaPermissionWizardResponse } from './models/arca'
 
 const LANDING_FEATURES = [
   {
@@ -288,14 +291,47 @@ function PrivateLayout() {
   const { isAuthenticated } = useAuth()
   const location = useLocation()
   const [topbarActions, setTopbarActions] = useState<ReactNode | null>(null)
+  const [wizard, setWizard] = useState<ArcaPermissionWizardResponse | null>(null)
+  const [wizardLoading, setWizardLoading] = useState(true)
+  const [wizardError, setWizardError] = useState<unknown>(null)
   const section = getPrivateSection(location.pathname)
+
+  const loadWizard = () => {
+    setWizardLoading(true)
+    setWizardError(null)
+    ArcaPermissionService.get()
+      .then(setWizard)
+      .catch(setWizardError)
+      .finally(() => setWizardLoading(false))
+  }
 
   useEffect(() => {
     setTopbarActions(null)
   }, [location.pathname])
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setWizard(null)
+      setWizardError(null)
+      setWizardLoading(false)
+      return
+    }
+    loadWizard()
+  }, [isAuthenticated])
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+  if (wizardLoading || wizardError || !wizard?.canEmit) {
+    return (
+      <ArcaPermissionWizardPage
+        initialState={wizard}
+        loading={wizardLoading}
+        error={wizardError}
+        onStateChange={setWizard}
+        onRetry={loadWizard}
+      />
+    )
   }
   return (
     <div className="min-h-screen flex flex-col">
