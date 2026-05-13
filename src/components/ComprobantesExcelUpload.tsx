@@ -592,7 +592,8 @@ export default function ComprobantesExcelUpload(){
       }
       const response = await AfipService.emitir({
         emisor: target.payload.emisor,
-        solicitud
+        solicitud,
+        origen: 'BULK'
       })
       const messageParts: string[] = []
       if (response.resultado !== 'A' && response.resultado !== 'QUEUED') {

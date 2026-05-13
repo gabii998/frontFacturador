@@ -2,9 +2,9 @@ export const PLAN_NAMES = ['Gratuito', 'Estándar', 'Avanzado'] as const
 
 export type PlanName = (typeof PLAN_NAMES)[number]
 
-export type PlanCode = 'free' | 'standard' | 'advanced'
+export type PlanCode = string
 
-export const PLAN_CODE_TO_NAME: Record<PlanCode, PlanName> = {
+export const PLAN_CODE_TO_NAME: Record<string, PlanName> = {
   free: 'Gratuito',
   standard: 'Estándar',
   advanced: 'Avanzado'
@@ -18,7 +18,7 @@ export const PLAN_NAME_TO_CODE: Record<PlanName, PlanCode> = {
 
 export interface PlanDetail {
   code: PlanCode
-  name: PlanName
+  name: string
   headline: string
   price: string
   description: string
@@ -32,10 +32,15 @@ export const PLAN_COLORS: Record<PlanName, string> = {
   Avanzado: 'bg-amber-500'
 }
 
-export const PLAN_COLORS_BY_CODE: Record<PlanCode, string> = {
+export const PLAN_COLORS_BY_CODE: Record<string, string> = {
   free: PLAN_COLORS['Gratuito'],
   standard: PLAN_COLORS['Estándar'],
   advanced: PLAN_COLORS['Avanzado']
+}
+
+export function getPlanName(code?: PlanCode | null) {
+  if (!code) return PLAN_CODE_TO_NAME.free
+  return PLAN_CODE_TO_NAME[code] ?? code
 }
 
 export const PLAN_DETAILS: PlanDetail[] = [

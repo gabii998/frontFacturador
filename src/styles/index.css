@@ -1437,7 +1437,15 @@ a,
   }
 
   .admin-plan-card {
-    @apply md:grid-cols-[auto_minmax(0,1fr)_auto];
+    @apply gap-2 p-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-stretch hover:bg-orange-50/60 focus:outline-none focus:ring-2 focus:ring-orange-200;
+  }
+
+  .admin-plan-card .mail-card__content {
+    @apply space-y-1;
+  }
+
+  .admin-plan-card .mail-card__title small {
+    @apply mt-1 block truncate text-xs font-medium text-slate-500;
   }
 
   .admin-plan-card--disabled {
@@ -1453,11 +1461,83 @@ a,
   }
 
   .admin-plan-card__meta {
-    @apply grid gap-2 md:grid-cols-2;
+    @apply grid gap-1 md:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .admin-plan-card__meta .mail-card__meta {
+    @apply px-2.5 py-1.5;
+  }
+
+  .admin-plan-card__amount {
+    @apply flex items-center justify-between gap-3 rounded-md bg-slate-50 px-2 py-1.5 md:min-w-28 md:flex-col md:justify-center md:border-l md:border-slate-200 md:bg-transparent md:pl-4 md:text-center;
+  }
+
+  .admin-plan-card__amount span {
+    @apply text-[11px] font-semibold uppercase text-slate-500;
+  }
+
+  .admin-plan-card__amount strong {
+    @apply whitespace-nowrap text-sm font-semibold text-slate-900;
+  }
+
+  .admin-plan-metric {
+    @apply flex min-w-0 items-center justify-between gap-2 rounded-md bg-slate-50 px-2 py-1.5 text-slate-700 md:bg-white;
+  }
+
+  .admin-plan-metric span {
+    @apply inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold uppercase text-slate-500;
+  }
+
+  .admin-plan-metric strong {
+    @apply flex min-w-0 items-center gap-1 whitespace-nowrap text-sm font-semibold text-slate-900;
+  }
+
+  .admin-plan-metric b {
+    @apply font-semibold;
+  }
+
+  .admin-plan-metric span svg {
+    @apply h-4 w-4 flex-none text-orange-600;
+  }
+
+  .admin-plan-metric small {
+    @apply truncate whitespace-nowrap text-[11px] font-semibold text-slate-500;
+  }
+
+  .admin-plan-feature {
+    @apply flex min-w-0 items-center justify-between gap-2 rounded-md px-2 py-1.5;
+  }
+
+  .admin-plan-feature span {
+    @apply inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold uppercase text-slate-500;
+  }
+
+  .admin-plan-feature strong {
+    @apply flex min-w-0 items-center gap-1 whitespace-nowrap text-sm font-semibold;
+  }
+
+  .admin-plan-feature span svg {
+    @apply h-4 w-4 flex-none text-current;
+  }
+
+  .admin-plan-feature strong svg {
+    @apply h-4 w-4 flex-none;
+  }
+
+  .admin-plan-feature small {
+    @apply truncate whitespace-nowrap text-[11px] font-semibold;
+  }
+
+  .admin-plan-feature--enabled {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+
+  .admin-plan-feature--disabled {
+    @apply bg-red-50 text-red-700;
   }
 
   .admin-plan-pill {
-    @apply inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold;
   }
 
   .admin-plan-pill--enabled {
@@ -1468,12 +1548,16 @@ a,
     @apply bg-red-50 text-red-700;
   }
 
-  .admin-plan-pill--price {
-    @apply bg-blue-50 text-blue-700;
+  .admin-plan-pill--addon {
+    @apply bg-violet-50 text-violet-700;
   }
 
   .admin-plan-card__action {
     @apply w-full md:w-auto md:self-center;
+  }
+
+  .admin-plan-card__actions {
+    @apply grid gap-2 md:min-w-36 md:self-center;
   }
 
   .admin-plan-card__action--primary {
@@ -1482,6 +1566,62 @@ a,
 
   .admin-plan-card__action--danger {
     @apply bg-red-50 text-red-700 hover:bg-red-100;
+  }
+
+  .admin-plan-modal {
+    @apply max-w-lg;
+  }
+
+  .admin-plan-modal__body {
+    @apply space-y-4;
+  }
+
+  .admin-plan-toggle {
+    @apply flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700;
+  }
+
+  .admin-plan-toggle input {
+    @apply h-4 w-4 accent-orange-500;
+  }
+
+  .admin-plan-modal .admin-user-control .input {
+    @apply bg-slate-50;
+  }
+
+  .admin-plan-modal .admin-user-modal__actions {
+    @apply grid-cols-1;
+  }
+
+  .admin-plan-modal__status-action {
+    @apply inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors duration-500 disabled:cursor-not-allowed disabled:opacity-70;
+  }
+
+  .admin-plan-modal__status-action svg {
+    @apply h-4 w-4;
+  }
+
+  .admin-plan-modal__status-action--primary {
+    @apply bg-emerald-50 text-emerald-700 hover:bg-emerald-100;
+  }
+
+  .admin-plan-modal__status-action--danger {
+    @apply bg-red-50 text-red-700 hover:bg-red-100;
+  }
+
+  .admin-plans-preview {
+    @apply space-y-3;
+  }
+
+  .admin-plans-preview__grid {
+    @apply grid gap-3 xl:grid-cols-3;
+  }
+
+  .admin-plan-preview-card {
+    @apply bg-slate-50;
+  }
+
+  .admin-plan-preview-card--disabled {
+    @apply opacity-70;
   }
 
   .mail-detail-modal__actions {

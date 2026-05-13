@@ -2,15 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import ErrorBox from '../components/ErrorBox'
 import {
-  PLAN_CODE_TO_NAME,
+  getPlanName,
   PLAN_DETAILS,
   type PlanCode,
-  type PlanDetail,
-  type PlanName
+  type PlanDetail
 } from '../constants/planes'
 import { ensureMercadoPago, MercadoPagoInstance } from '../lib/mercadopago'
 import { PaymentsService } from '../services/payments'
-import { PlansService, type PlanStatusResponse } from '../services/plans'
+import { PlansService, type PlanCatalogItem, type PlanStatusResponse } from '../services/plans'
 import { useAuth } from '../contexts/AuthContext'
 import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
 import { IconAlertCircle, IconCheck, IconClock, IconCreditCard, IconSparkles } from '@tabler/icons-react'
@@ -21,6 +20,7 @@ const PlanesPage = () => {
   const [mercadoPago, setMercadoPago] = useState<MercadoPagoInstance | null>(null)
   const [loadingPlan, setLoadingPlan] = useState<PlanCode | null>(null)
   const [planStatus, setPlanStatus] = useState<PlanStatusResponse | null>(null)
+  const [plans, setPlans] = useState<PlanDetail[]>(PLAN_DETAILS)
   const [fetchingPlanStatus, setFetchingPlanStatus] = useState(false)
   const [configError, setConfigError] = useState<unknown>(null)
   const [planError, setPlanError] = useState<unknown>(null)
@@ -29,7 +29,7 @@ const PlanesPage = () => {
   const estadoPlan = planStatus?.status ?? 'ACTIVE'
   const planActivoCode: PlanCode = estadoPlan === 'ACTIVE' ? planStatus?.plan ?? 'free' : 'free'
   const planPendienteCode: PlanCode | null = estadoPlan === 'PENDING' ? planStatus?.plan ?? null : null
-  const planActual: PlanName = PLAN_CODE_TO_NAME[planActivoCode]
+  const planActual = getPlanName(planActivoCode)
 
   useEffect(() => {
     if (!publicKey) {
@@ -80,6 +80,24 @@ const PlanesPage = () => {
   useEffect(() => {
     void fetchPlanStatus()
   }, [fetchPlanStatus])
+
+  useEffect(() => {
+    let canceled = false
+    PlansService.getCatalog()
+      .then((items) => {
+        if (!canceled && items.length > 0) {
+          setPlans(items.map(mapCatalogItemToPlanDetail))
+        }
+      })
+      .catch((err) => {
+        if (!canceled) {
+          setPlanError(err)
+        }
+      })
+    return () => {
+      canceled = true
+    }
+  }, [])
 
   const obtenerMercadoPago = async () => {
     if (!publicKey) {
@@ -150,7 +168,7 @@ const PlanesPage = () => {
   const headerLabel = useMemo(() => {
     if (fetchingPlanStatus) return 'Plan actual: cargando...'
     if (estadoPlan === 'PENDING' && planPendienteCode) {
-      return `Plan en proceso: ${PLAN_CODE_TO_NAME[planPendienteCode]}`
+      return `Plan en proceso: ${getPlanName(planPendienteCode)}`
     }
     return `Plan actual: ${planActual}`
   }, [fetchingPlanStatus, estadoPlan, planPendienteCode, planActual])
@@ -168,7 +186,7 @@ const PlanesPage = () => {
         <PlanNotice
           tone="warn"
           icon={<IconAlertCircle />}
-          message={`Tu plan ${PLAN_CODE_TO_NAME[planStatus.previousPlan]} expiró. Pasaste nuevamente al plan Gratuito.`}
+          message={`Tu plan ${getPlanName(planStatus.previousPlan)} expiró. Pasaste nuevamente al plan Gratuito.`}
         />
       )}
 
@@ -176,7 +194,7 @@ const PlanesPage = () => {
         <PlanNotice
           tone="info"
           icon={<IconClock />}
-          message={`Generamos el checkout de Mercado Pago para el plan ${PLAN_CODE_TO_NAME[planPendienteCode]}. Apenas el pago se apruebe, se activará automáticamente.`}
+          message={`Generamos el checkout de Mercado Pago para el plan ${getPlanName(planPendienteCode)}. Apenas el pago se apruebe, se activará automáticamente.`}
         />
       )}
 
@@ -191,14 +209,14 @@ const PlanesPage = () => {
       <ErrorBox error={error} />
 
       <div className="plans-grid">
-        {PLAN_DETAILS.map((plan) => {
+        {plans.map((plan) => {
           const esActual = estadoPlan === 'ACTIVE' && plan.code === planActivoCode
           const esPendiente = estadoPlan === 'PENDING' && planPendienteCode === plan.code
           const estaCargando = loadingPlan === plan.code
 
           return (
             <PlanCard
-              key={plan.name}
+              key={plan.code}
               plan={plan}
               active={esActual}
               pending={esPendiente}
@@ -210,6 +228,37 @@ const PlanesPage = () => {
       </div>
     </div>
   )
+}
+
+const planCurrencyFormatter = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  maximumFractionDigits: 2
+})
+
+function mapCatalogItemToPlanDetail(plan: PlanCatalogItem): PlanDetail {
+  const features = [
+    plan.addon ? 'Complemento de comprobantes' : null,
+    plan.requiresActiveSubscription ? 'Requiere una suscripción activa' : null,
+    plan.invoiceLimit ? `Hasta ${plan.invoiceLimit} comprobantes` : 'Comprobantes ilimitados',
+    plan.indefiniteDuration ? 'Duración indefinida' : `Vigencia de ${plan.durationMonths ?? 1} mes(es)`,
+    plan.whatsappEmissionEnabled ? 'Emisión por WhatsApp' : 'Sin emisión por WhatsApp',
+    plan.bulkEmissionEnabled
+      ? plan.bulkEmissionLimit
+        ? `Emisión masiva hasta ${plan.bulkEmissionLimit} comprobantes`
+        : 'Emisión masiva'
+      : 'Sin emisión masiva'
+  ].filter(Boolean) as string[]
+
+  return {
+    code: plan.code,
+    name: plan.title,
+    headline: plan.addon ? 'Complemento para tu plan activo' : 'Plan configurable',
+    price: planCurrencyFormatter.format(plan.price),
+    description: plan.description,
+    highlighted: plan.code === 'standard',
+    features
+  }
 }
 
 const PlanNotice = ({

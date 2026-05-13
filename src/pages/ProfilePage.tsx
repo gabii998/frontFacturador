@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { changePassword } from '../services/profile'
 import { AfipService } from '../services/afip'
 import { AuthUser } from '../services/auth'
-import { PLAN_CODE_TO_NAME, type PlanCode } from '../constants/planes'
+import { getPlanName, type PlanCode } from '../constants/planes'
 import { PlansService, type PlanStatusResponse } from '../services/plans'
 import type { PadronInfo } from '../models/afip'
 import { IconCreditCard, IconMail, IconShieldLock, IconUserCircle } from '@tabler/icons-react'
@@ -334,8 +334,8 @@ const ProfileAccountCard = ({
           value={loadingPlan
             ? 'Cargando...'
             : estadoPlan === 'PENDING' && planPendienteCode
-              ? PLAN_CODE_TO_NAME[planPendienteCode]
-              : PLAN_CODE_TO_NAME[planActivoCode]
+              ? getPlanName(planPendienteCode)
+              : getPlanName(planActivoCode)
           }
           detail={[
             paymentStatusLabel ? `Pago: ${paymentStatusLabel}` : null,

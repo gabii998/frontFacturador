@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import ErrorBox from '../components/ErrorBox'
 import { AdminService, type AdminUserSummary, type AdminUsersPageResponse } from '../services/admin'
-import { PLAN_DETAILS, PLAN_CODE_TO_NAME, type PlanCode } from '../constants/planes'
+import { getPlanName, type PlanCode } from '../constants/planes'
+import { AdminPlansService, type AdminPlan } from '../services/adminPlans'
 import { IconCalendar, IconId, IconRefresh, IconShield, IconUser } from '@tabler/icons-react'
 
 const PAGE_SIZE = 25
@@ -48,6 +49,7 @@ export default function AdminUsersPage() {
   const [savingPlanId, setSavingPlanId] = useState<string | null>(null)
   const [roleModalUser, setRoleModalUser] = useState<AdminUserSummary | null>(null)
   const [planModalUser, setPlanModalUser] = useState<AdminUserSummary | null>(null)
+  const [adminPlans, setAdminPlans] = useState<AdminPlan[]>([])
   const usersSentinelRef = useRef<HTMLDivElement | null>(null)
 
   const loadUsers = useCallback(async (page = 0, mode: 'replace' | 'append' = 'replace') => {
@@ -74,6 +76,12 @@ export default function AdminUsersPage() {
   useEffect(() => {
     void loadUsers(0)
   }, [loadUsers])
+
+  useEffect(() => {
+    AdminPlansService.list()
+      .then((items) => setAdminPlans(items.filter((plan) => plan.enabled)))
+      .catch((err) => setError(err))
+  }, [])
 
   useEffect(() => {
     const sentinel = usersSentinelRef.current
@@ -205,7 +213,7 @@ export default function AdminUsersPage() {
                           {user.role === 'SUPERUSER' ? 'Superusuario' : 'Usuario'}
                         </span>
                         <span className="admin-user-pill admin-user-pill--plan">
-                          {PLAN_CODE_TO_NAME[user.currentPlan]}
+                          {adminPlans.find((plan) => plan.code === user.currentPlan)?.title ?? getPlanName(user.currentPlan)}
                         </span>
                       </div>
                     </div>
@@ -244,7 +252,7 @@ export default function AdminUsersPage() {
                       type="button"
                       className="mail-card__action admin-user-card__action admin-user-card__action--primary"
                       onClick={() => {
-                        updateDraft(user.id, { plan: user.currentPlan, durationMonths: '1' })
+                        updateDraft(user.id, { plan: user.currentPlan, durationMonths: '' })
                         setPlanModalUser(user)
                       }}
                       disabled={savingPlan || savingRole}
@@ -298,6 +306,7 @@ export default function AdminUsersPage() {
         <PlanModal
           user={planModalUser}
           draft={drafts[planModalUser.id]}
+          plans={adminPlans}
           saving={savingPlanId === planModalUser.id}
           onPlanChange={(plan) => updateDraft(planModalUser.id, { plan })}
           onDurationChange={(durationMonths) => updateDraft(planModalUser.id, { durationMonths })}
@@ -367,6 +376,7 @@ const RoleModal = ({
 const PlanModal = ({
   user,
   draft,
+  plans,
   saving,
   onPlanChange,
   onDurationChange,
@@ -375,6 +385,7 @@ const PlanModal = ({
 }: {
   user: AdminUserSummary
   draft?: DraftState
+  plans: AdminPlan[]
   saving: boolean
   onPlanChange: (plan: PlanCode) => void
   onDurationChange: (durationMonths: string) => void
@@ -382,7 +393,7 @@ const PlanModal = ({
   onSave: () => void
 }) => {
   const plan = draft?.plan ?? user.currentPlan
-  const durationMonths = draft?.durationMonths ?? '1'
+  const durationMonths = draft?.durationMonths ?? ''
   return (
     <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="admin-plan-modal-title">
       <button type="button" className="auth-modal__backdrop" aria-label="Cerrar modal" onClick={onClose} />
@@ -404,9 +415,12 @@ const PlanModal = ({
           <label className="admin-user-control">
             <span>Plan</span>
             <select className="input" value={plan} onChange={(event) => onPlanChange(event.target.value as PlanCode)}>
-              {PLAN_DETAILS.map((planItem) => (
+              {!plans.some((planItem) => planItem.code === plan) && (
+                <option value={plan}>{getPlanName(plan)}</option>
+              )}
+              {plans.map((planItem) => (
                 <option key={planItem.code} value={planItem.code}>
-                  {PLAN_CODE_TO_NAME[planItem.code]}
+                  {planItem.title || getPlanName(planItem.code)}
                 </option>
               ))}
             </select>
@@ -417,6 +431,7 @@ const PlanModal = ({
               type="number"
               min={1}
               className="input"
+              placeholder="Duración del plan"
               value={durationMonths}
               onChange={(event) => onDurationChange(event.target.value)}
             />

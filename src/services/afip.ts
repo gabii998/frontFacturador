@@ -13,7 +13,7 @@ export const AfipService = {
     if (params.limite) q.set('limite', String(params.limite))
     return get<ComprobanteEmitido[]>(`/api/afip/comprobantes?${q.toString()}`)
   },
-  emitir: (payload: { emisor: 'MONOTRIBUTO'|'RESPONSABLE_INSCRIPTO', solicitud: FacturaSolicitud, nota?: { tipo: 'NC'|'ND' } }) =>
+  emitir: (payload: { emisor: 'MONOTRIBUTO'|'RESPONSABLE_INSCRIPTO', solicitud: FacturaSolicitud, nota?: { tipo: 'NC'|'ND' }, origen?: 'BULK' }) =>
     post<FacturaRespuesta>('/api/ventas/emitir', payload),
   descargarComprobantePdf: (pv: number, tipo: number, numero: number) =>
     get<ArrayBuffer>(`/api/afip/comprobantes/pdf?pv=${pv}&tipo=${tipo}&numero=${numero}`, {
