@@ -27,7 +27,7 @@ export interface ComprobanteEmitido {
   caeVto?: string | null
   observaciones: string[]
   errores: string[]
-  status?: 'EMITTED' | 'QUEUED' | 'PROCESSING' | 'FAILED' | string
+  status?: 'EMITTED' | 'QUEUED' | 'PROCESSING' | 'FAILED' | 'CANCELLED' | string
   queueId?: string | null
   externalId?: string | null
   queuedAt?: string | null

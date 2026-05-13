@@ -19,5 +19,7 @@ export const AfipService = {
     get<ArrayBuffer>(`/api/afip/comprobantes/pdf?pv=${pv}&tipo=${tipo}&numero=${numero}`, {
       headers: { Accept: 'application/pdf' }
     }),
+  cancelarReintentosComprobanteFallido: (queueId: string) =>
+    post<ArrayBuffer>(`/api/afip/comprobantes/cola/${encodeURIComponent(queueId)}/cancelar-reintentos`),
   padron: (cuit: string) => get<PadronInfo>(`/api/afip/padron?cuit=${encodeURIComponent(cuit)}`)
 }

@@ -32,6 +32,8 @@ export interface TercerPasoProps {
     items:FacturaItem[];
     setItems:React.Dispatch<React.SetStateAction<FacturaItem[]>>;
     totalAmount:number;
+    onAddItem:() => void;
+    onEditItem:(item: FacturaItem, index: number) => void;
 }
 
 export interface FooterProps {

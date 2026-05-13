@@ -1,22 +1,23 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { FacturaSolicitud, CondicionImpositiva, DocumentoTipo, PuntoVenta, FacturaItem, Concepto, FacturaRespuesta } from '../models/afip'
 import { AfipService } from '../services/afip'
 import { CONSUMIDOR_FINAL_IDENTIFICATION_THRESHOLD } from '../config/afip'
 import ErrorBox from './ErrorBox'
 import { FooterProps, PrimerPasoProps, SegundoPasoProps, StepEmitir, TercerPasoProps } from '../props/EmitirProps'
 import {
-  IconArrowLeft,
-  IconArrowRight,
   IconCalendar,
   IconCheck,
   IconClock,
-  IconDeviceFloppy,
   IconFileInvoice,
+  IconPencil,
   IconPlus,
   IconReceipt,
   IconTrash,
   IconUser,
+  IconX,
 } from '@tabler/icons-react'
+import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -26,11 +27,18 @@ const currencyFormatter = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2
 })
 
+const INVOICE_STEPS = [
+  { title: "Comprobante", icon: IconReceipt },
+  { title: "Receptor", icon: IconUser },
+  { title: "Ítems", icon: IconFileInvoice }
+] as const
+
 export default function EmitirForm() {
   const [currentStep, setCurrentStep] = useState<StepEmitir>(StepEmitir.CONFIGURACION);
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<unknown>(undefined)
   const [result, setResult] = useState<FacturaRespuesta | null>(null)
+  const [itemModal, setItemModal] = useState<{ index: number | null; item: FacturaItem } | null>(null)
 
   const [pv, setPv] = useState<number>(2)
   const [puntosVenta, setPuntosVenta] = useState<PuntoVenta[]>([])
@@ -41,9 +49,7 @@ export default function EmitirForm() {
   const [cond, setCond] = useState<CondicionImpositiva>('CONSUMIDOR_FINAL')
   const [concepto, setConcepto] = useState<Concepto>('PRODUCTOS')
   const [fechaEmision, setFechaEmision] = useState(today)
-  const [items, setItems] = useState<FacturaItem[]>([
-    { descripcion: '', cantidad: 1, precioUnitario: 0, iva: 'IVA_0' }
-  ])
+  const [items, setItems] = useState<FacturaItem[]>([])
   const [servicioDesde, setServicioDesde] = useState(today)
   const [servicioHasta, setServicioHasta] = useState(today)
   const [vencimientoPago, setVencimientoPago] = useState(today)
@@ -81,6 +87,48 @@ export default function EmitirForm() {
     [requiresServicePeriod, fechaEmision, servicioDesde, servicioHasta, vencimientoPago]
   )
 
+  const openCreateItemModal = () => {
+    setItemModal({ index: null, item: { descripcion: '', cantidad: 1, precioUnitario: 0, iva: 'IVA_0' } })
+  }
+
+  const openEditItemModal = (item: FacturaItem, index: number) => {
+    setItemModal({ index, item: { ...item } })
+  }
+
+  const saveItem = (item: FacturaItem) => {
+    setItems(prev => {
+      if (itemModal?.index == null) return [...prev, item]
+      return prev.map((curr, idx) => idx === itemModal.index ? item : curr)
+    })
+    setItemModal(null)
+  }
+
+  const mobileProgressActions = useMemo(() => (
+    <>
+      <div className="mobile-section-summary invoice-progress-pills">
+        {INVOICE_STEPS.map((step, index) => {
+          const Icon = step.icon
+          const active = currentStep === index
+          const complete = currentStep > index
+          return (
+            <span key={step.title} className={active ? 'is-active' : complete ? 'is-complete' : undefined}>
+              {complete ? <IconCheck /> : <Icon />}
+              {step.title}
+            </span>
+          )
+        })}
+      </div>
+      {currentStep === StepEmitir.ITEMS && (
+        <button type="button" className="topbar-icon-action" onClick={openCreateItemModal} aria-label="Agregar ítem">
+          <IconPlus />
+          <span className="topbar-action-label">Agregar ítem</span>
+        </button>
+      )}
+    </>
+  ), [currentStep])
+
+  usePrivateTopbarActions(result == null && error == null ? mobileProgressActions : null)
+
   const downloadFileName = useMemo(() => {
     if (!result) return 'factura.pdf'
     const pvFormatted = String(result.puntoVenta).padStart(4, '0')
@@ -117,6 +165,7 @@ export default function EmitirForm() {
     setLoading(false)
     setError(undefined)
     setResult(null)
+    setItemModal(null)
     setPv(2)
     setPuntosVentaError(null)
     setDocTipo('DNI')
@@ -124,7 +173,7 @@ export default function EmitirForm() {
     setCond('CONSUMIDOR_FINAL')
     setConcepto('PRODUCTOS')
     setFechaEmision(today)
-    setItems([{ descripcion: '', cantidad: 1, precioUnitario: 0, iva: 'IVA_0' }])
+    setItems([])
     setServicioDesde(today)
     setServicioHasta(today)
     setVencimientoPago(today)
@@ -207,7 +256,7 @@ export default function EmitirForm() {
                 }
 
                 {currentStep == StepEmitir.ITEMS &&
-                  <TercerPaso {...{ items, setItems, totalAmount }} />
+                  <TercerPaso {...{ items, setItems, totalAmount }} onAddItem={openCreateItemModal} onEditItem={openEditItemModal} />
                 }
               </div>
 
@@ -232,6 +281,14 @@ export default function EmitirForm() {
               </aside>
 
               <Footer {...{ loading, currentStep, volverAtras }} />
+              {itemModal && (
+                <InvoiceItemModal
+                  item={itemModal.item}
+                  title={itemModal.index == null ? 'Agregar ítem' : `Editar ítem ${itemModal.index + 1}`}
+                  onClose={() => setItemModal(null)}
+                  onSave={saveItem}
+                />
+              )}
             </form>
           )}
         </Fragment>
@@ -245,15 +302,9 @@ export default function EmitirForm() {
 }
 
 const Header = ({ currentStep }: { currentStep: StepEmitir }) => {
-  const steps = [
-    { title: "Comprobante", icon: IconReceipt },
-    { title: "Receptor", icon: IconUser },
-    { title: "Ítems", icon: IconFileInvoice }
-  ]
-
   return (
     <ol className="invoice-progress">
-      {steps.map((step, index) => {
+      {INVOICE_STEPS.map((step, index) => {
         const Icon = step.icon
         const active = currentStep === index
         const complete = currentStep > index
@@ -407,7 +458,16 @@ const SegundoPaso = ({ cond, setCond, requiresCustomerIdentification, docTipo, s
   </section>)
 }
 
-const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
+const TercerPaso = ({ items, setItems, totalAmount, onAddItem, onEditItem }: TercerPasoProps) => {
+  const [autoOpened, setAutoOpened] = useState(false)
+
+  useEffect(() => {
+    if (items.length === 0 && !autoOpened) {
+      onAddItem()
+      setAutoOpened(true)
+    }
+  }, [autoOpened, items.length, onAddItem])
+
   return (<section className="invoice-section">
     <div className="invoice-section__head">
       <SectionTitle
@@ -417,10 +477,7 @@ const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
       <button
         type="button"
         className="btn invoice-add-item"
-        onClick={() => setItems(prev => ([
-          ...prev,
-          { descripcion: '', cantidad: 1, precioUnitario: 0, iva: 'IVA_0' }
-        ]))}
+        onClick={onAddItem}
       >
         <IconPlus />
         Agregar ítem
@@ -432,6 +489,14 @@ const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
           <div className="invoice-item__meta">
             <span>Ítem {index + 1}</span>
             <small>IVA 0% para factura C</small>
+            <button
+              type="button"
+              className="invoice-item__edit"
+              onClick={() => onEditItem(item, index)}
+              aria-label={`Editar ítem ${index + 1}`}
+            >
+              <IconPencil />
+            </button>
             {items.length > 1 && (
               <button
                 type="button"
@@ -443,45 +508,12 @@ const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
               </button>
             )}
           </div>
-          <div className="invoice-item__fields">
-            <div className="invoice-field">
-              <label className="label">Descripción</label>
-              <input
-                className="input py-2 text-sm"
-                value={item.descripcion}
-                onChange={e => {
-                  const value = e.target.value
-                  setItems(prev => prev.map((curr, idx) => idx === index ? { ...curr, descripcion: value } : curr))
-                }}
-              />
-            </div>
-            <div className="invoice-field">
-              <label className="label">Cantidad</label>
-              <input
-                className="input py-2 text-sm"
-                type="number"
-                min={0}
-                step="0.01"
-                value={item.cantidad}
-                onChange={e => {
-                  const value = Number(e.target.value)
-                  setItems(prev => prev.map((curr, idx) => idx === index ? { ...curr, cantidad: Number.isNaN(value) ? 0 : value } : curr))
-                }}
-              />
-            </div>
-            <div className="invoice-field">
-              <label className="label">Precio unitario</label>
-              <input
-                className="input py-2 text-sm"
-                type="number"
-                min={0}
-                step="0.01"
-                value={item.precioUnitario}
-                onChange={e => {
-                  const value = Number(e.target.value)
-                  setItems(prev => prev.map((curr, idx) => idx === index ? { ...curr, precioUnitario: Number.isNaN(value) ? 0 : value } : curr))
-                }}
-              />
+          <div className="invoice-item__summary">
+            <strong>{item.descripcion.trim() || 'Sin descripción'}</strong>
+            <div>
+              <span>Cantidad: {item.cantidad}</span>
+              <span>Unitario: {currencyFormatter.format(item.precioUnitario)}</span>
+              <span>Subtotal: {currencyFormatter.format(item.cantidad * item.precioUnitario)}</span>
             </div>
           </div>
         </div>
@@ -494,23 +526,104 @@ const TercerPaso = ({ items, setItems, totalAmount }: TercerPasoProps) => {
   </section>)
 }
 
+const InvoiceItemModal = ({ item, title, onClose, onSave }: { item: FacturaItem; title: string; onClose: () => void; onSave: (item: FacturaItem) => void }) => {
+  const [draft, setDraft] = useState<FacturaItem>(item)
+
+  const updateDraft = (patch: Partial<FacturaItem>) => {
+    setDraft(prev => ({ ...prev, ...patch }))
+  }
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    onSave({
+      ...draft,
+      descripcion: draft.descripcion.trim(),
+      cantidad: Number.isFinite(draft.cantidad) && draft.cantidad > 0 ? draft.cantidad : 1,
+      precioUnitario: Number.isFinite(draft.precioUnitario) && draft.precioUnitario >= 0 ? draft.precioUnitario : 0
+    })
+  }
+
+  return createPortal(
+    <div className="invoice-item-modal" role="dialog" aria-modal="true" aria-labelledby="invoice-item-modal-title">
+      <button type="button" className="invoice-item-modal__backdrop" aria-label="Cerrar ítem" onClick={onClose} />
+      <form className="invoice-item-modal__panel" onSubmit={handleSubmit}>
+        <header className="invoice-item-modal__header">
+          <h2 id="invoice-item-modal-title">{title}</h2>
+          <button type="button" className="invoice-item-modal__close" aria-label="Cerrar ítem" onClick={onClose}>
+            <IconX />
+          </button>
+        </header>
+        <div className="invoice-item-modal__fields">
+          <div className="invoice-field">
+            <label className="label">Descripción</label>
+            <input
+              className="input py-2 text-sm"
+              value={draft.descripcion}
+              onChange={e => updateDraft({ descripcion: e.target.value })}
+              autoFocus
+            />
+          </div>
+          <div className="invoice-field">
+            <label className="label">Cantidad</label>
+            <input
+              className="input py-2 text-sm"
+              type="number"
+              min={0}
+              step="0.01"
+              value={draft.cantidad}
+              onChange={e => {
+                const value = Number(e.target.value)
+                updateDraft({ cantidad: Number.isNaN(value) ? 0 : value })
+              }}
+            />
+          </div>
+          <div className="invoice-field">
+            <label className="label">Precio unitario</label>
+            <input
+              className="input py-2 text-sm"
+              type="number"
+              min={0}
+              step="0.01"
+              value={draft.precioUnitario}
+              onChange={e => {
+                const value = Number(e.target.value)
+                updateDraft({ precioUnitario: Number.isNaN(value) ? 0 : value })
+              }}
+            />
+          </div>
+        </div>
+        <div className="invoice-item-modal__total">
+          <span>Subtotal</span>
+          <strong>{currencyFormatter.format(draft.cantidad * draft.precioUnitario)}</strong>
+        </div>
+        <footer className="invoice-item-modal__actions">
+          <button type="button" className="btn" onClick={onClose}>Cancelar</button>
+          <button type="submit" className="btn btn-primary">Guardar ítem</button>
+        </footer>
+      </form>
+    </div>,
+    document.body
+  )
+}
+
 const Footer = ({ loading, currentStep, volverAtras }: FooterProps) => {
   const buttonText =
     loading
       ? "Emitiendo…"
       : currentStep !== StepEmitir.ITEMS
-        ? "Siguiente paso"
+        ? "Siguiente"
         : "Emitir comprobante";
 
   return (<div className="invoice-footer">
     <p />
-    <button className="btn md:w-auto" type='button' onClick={volverAtras} disabled={loading || currentStep === StepEmitir.CONFIGURACION}>
-      <IconArrowLeft />
-      Volver
-    </button>
+    {currentStep !== StepEmitir.CONFIGURACION && (
+      <button className="btn md:w-auto" type='button' onClick={volverAtras} disabled={loading}>
+        Volver
+      </button>
+    )}
     <button className="btn btn-primary md:w-auto" type="submit" disabled={loading}>
       {buttonText}
-      {currentStep !== StepEmitir.ITEMS ? <IconArrowRight /> : <IconDeviceFloppy />}
     </button>
   </div>)
 }

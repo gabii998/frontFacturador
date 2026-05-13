@@ -2,6 +2,7 @@
 import { createPortal } from 'react-dom'
 import {
   IconAlertCircle,
+  IconBan,
   IconCircleCheck,
   IconClockExclamation,
   IconDownload,
@@ -132,6 +133,8 @@ const humanizeStatus = (status?: string | null) => {
       return 'Procesando'
     case 'FAILED':
       return 'Falló'
+    case 'CANCELLED':
+      return 'Sin reintentos'
     default:
       return status ?? '-'
   }
@@ -156,6 +159,9 @@ const canDownloadComprobante = (comprobante: ComprobanteEmitido) =>
   && comprobante.numero > 0
   && Boolean(comprobante.cae)
 
+const canCancelFailedQueueItem = (comprobante: ComprobanteEmitido) =>
+  getStatus(comprobante) === 'FAILED' && Boolean(comprobante.queueId)
+
 const METADATA_ERROR_MESSAGE = 'No es posible descargar el comprobante hasta completar los datos del emisor en la configuración.'
 
 function CaeStatusBadge({ comprobante, hasCAE, caeValid }: { comprobante: ComprobanteEmitido, hasCAE: boolean, caeValid: boolean }) {
@@ -173,6 +179,14 @@ function CaeStatusBadge({ comprobante, hasCAE, caeValid }: { comprobante: Compro
       <span className="comprobante-card__status comprobante-card__status--error">
         <IconAlertCircle />
         Falló
+      </span>
+    )
+  }
+  if (status === 'CANCELLED') {
+    return (
+      <span className="comprobante-card__status comprobante-card__status--cancelled">
+        <IconBan />
+        Sin reintentos
       </span>
     )
   }
@@ -205,10 +219,18 @@ function extractErrorCode(error: ApiError): string | undefined {
   return undefined
 }
 
-export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[] }) {
+export default function ComprobantesTable({
+  data,
+  onQueueItemCancelled
+}: {
+  data: ComprobanteEmitido[]
+  onQueueItemCancelled?: () => Promise<void> | void
+}) {
   const today = new Date()
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [cancellingQueueId, setCancellingQueueId] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [queueActionError, setQueueActionError] = useState<string | null>(null)
   const [metadataUnavailable, setMetadataUnavailable] = useState(false)
   const [selectedComprobante, setSelectedComprobante] = useState<ComprobanteEmitido | null>(null)
 
@@ -270,6 +292,22 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
     }
   }
 
+  async function handleCancelFailedQueueItem(comprobante: ComprobanteEmitido) {
+    if (!canCancelFailedQueueItem(comprobante) || !comprobante.queueId) return
+    setCancellingQueueId(comprobante.queueId)
+    setQueueActionError(null)
+    try {
+      await AfipService.cancelarReintentosComprobanteFallido(comprobante.queueId)
+      setSelectedComprobante(null)
+      await onQueueItemCancelled?.()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No pudimos detener los reintentos de emisión'
+      setQueueActionError(message)
+    } finally {
+      setCancellingQueueId(null)
+    }
+  }
+
   return (
     <section className="comprobantes-list">
       <header className="comprobantes-list__header">
@@ -282,9 +320,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
         <div className="comprobantes-list__summary">
           <SummaryItem label="Total" value={summary.total.toString()} />
           <SummaryItem label="En proceso" value={summary.enProceso.toString()} tone="queue" />
-          <SummaryItem label="CAE vigente" value={summary.vigentes.toString()} tone="ok" />
           <SummaryItem label="Observados" value={summary.observados.toString()} tone="warn" />
-          <SummaryItem label="Importe" value={currencyFormatter.format(summary.importe)} />
         </div>
       </header>
 
@@ -297,6 +333,7 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
           const id = getComprobanteId(comprobante)
           const docLabel = formatDoc(comprobante.docTipo, comprobante.docNro)
           const downloadable = canDownloadComprobante(comprobante)
+          const cancellable = canCancelFailedQueueItem(comprobante)
 
           return (
             <article
@@ -316,7 +353,10 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                 <div className="comprobante-card__content">
                   <div className="comprobante-card__details">
                     <div className="comprobante-card__identity">
-                      <strong className="comprobante-card__number">{getNumeroLabel(comprobante)}</strong>
+                      <div className="comprobante-card__title-row">
+                        <strong className="comprobante-card__number">{getNumeroLabel(comprobante)}</strong>
+                        <span className="comprobante-card__date-inline">{formatAfipDate(comprobante.fechaCbte ?? comprobante.queuedAt)}</span>
+                      </div>
                       <div className="comprobante-card__pills">
                         <span className="comprobante-card__pill comprobante-card__pill--type">{tipoMap[comprobante.tipoAfip] ?? `Tipo ${comprobante.tipoAfip}`}</span>
                         <span className="comprobante-card__pill comprobante-card__pill--concept">{typeof comprobante.concepto === 'number' ? conceptoMap[comprobante.concepto] ?? `Concepto ${comprobante.concepto}` : 'Concepto sin informar'}</span>
@@ -329,7 +369,22 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
                   </div>
                   <div className="comprobante-card__amount">
                     <CaeStatusBadge comprobante={comprobante} hasCAE={hasCAE} caeValid={caeValid} />
-                    {metadataUnavailable ? (
+                    {cancellable ? (
+                      <button
+                        type="button"
+                        className="btn comprobante-card__action comprobante-card__queue-action"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleCancelFailedQueueItem(comprobante)
+                        }}
+                        disabled={cancellingQueueId === comprobante.queueId}
+                        aria-label="Dejar de reintentar emisión"
+                        title="Dejar de reintentar emisión"
+                      >
+                        <IconBan />
+                        <span>{cancellingQueueId === comprobante.queueId ? 'Deteniendo' : 'No reintentar'}</span>
+                      </button>
+                    ) : metadataUnavailable ? (
                       <span className="comprobante-card__metadata-error">
                         {METADATA_ERROR_MESSAGE}
                       </span>
@@ -375,15 +430,17 @@ export default function ComprobantesTable({ data }: { data: ComprobanteEmitido[]
           today={today}
           downloading={downloadingId === `${selectedComprobante.puntoVenta}-${selectedComprobante.tipoAfip}-${selectedComprobante.numero}`}
           metadataUnavailable={metadataUnavailable}
+          cancelling={cancellingQueueId === selectedComprobante.queueId}
           onClose={() => setSelectedComprobante(null)}
           onDownload={() => handleDownload(selectedComprobante)}
+          onCancelRetries={() => handleCancelFailedQueueItem(selectedComprobante)}
         />,
         document.body
       )}
 
-      {downloadError && (
+      {(downloadError || queueActionError) && (
         <div className="comprobantes-list__error">
-          {downloadError}
+          {downloadError ?? queueActionError}
         </div>
       )}
     </section>
@@ -395,21 +452,26 @@ const ComprobanteDetailModal = ({
   today,
   downloading,
   metadataUnavailable,
+  cancelling,
   onClose,
-  onDownload
+  onDownload,
+  onCancelRetries
 }: {
   comprobante: ComprobanteEmitido
   today: Date
   downloading: boolean
   metadataUnavailable: boolean
+  cancelling: boolean
   onClose: () => void
   onDownload: () => void
+  onCancelRetries: () => void
 }) => {
   const caeExpiry = parseAfipDate(comprobante.caeVto)
   const hasCAE = Boolean(comprobante.cae)
   const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
   const hasAlerts = comprobante.errores.length > 0 || comprobante.observaciones.length > 0
   const downloadable = canDownloadComprobante(comprobante)
+  const cancellable = canCancelFailedQueueItem(comprobante)
   const attempts = comprobante.attempts ?? []
 
   return (
@@ -446,14 +508,27 @@ const ComprobanteDetailModal = ({
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <CaeStatusBadge comprobante={comprobante} hasCAE={hasCAE} caeValid={caeValid} />
-            {metadataUnavailable ? (
-              <span className="comprobante-card__metadata-error">{METADATA_ERROR_MESSAGE}</span>
-            ) : (
-              <button type="button" className="btn comprobante-card__action" onClick={onDownload} disabled={!downloadable || downloading}>
-                <IconDownload />
-                <span>{downloadable ? (downloading ? 'Descargando' : 'Descargar') : 'PDF pendiente'}</span>
-              </button>
-            )}
+            <div className="comprobante-detail__actions">
+              {cancellable && (
+                <button
+                  type="button"
+                  className="btn comprobante-card__action comprobante-detail__queue-action"
+                  onClick={onCancelRetries}
+                  disabled={cancelling}
+                >
+                  <IconBan />
+                  <span>{cancelling ? 'Deteniendo' : 'No reintentar'}</span>
+                </button>
+              )}
+              {metadataUnavailable ? (
+                <span className="comprobante-card__metadata-error">{METADATA_ERROR_MESSAGE}</span>
+              ) : (
+                <button type="button" className="btn comprobante-card__action comprobante-detail__download" onClick={onDownload} disabled={!downloadable || downloading}>
+                  <IconDownload />
+                  <span>{downloadable ? (downloading ? 'Descargando' : 'Descargar') : 'PDF pendiente'}</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="comprobante-detail-grid">

@@ -10,8 +10,12 @@ export default function HeroProcessIllustration() {
         <marker id="hero-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
           <path d="M1 1 L9 5 L1 9 Z" fill="#F97316" />
         </marker>
+        <marker id="hero-arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <path d="M1 1 L9 5 L1 9 Z" fill="#22C55E" />
+        </marker>
       </defs>
 
+      <g className="hero-process__scene hero-process__scene--invoice">
       <g className="hero-process__paper">
         <rect x="66" y="118" width="188" height="250" rx="20" fill="#fff" stroke="#CBD5E1" strokeWidth="3" />
         <path d="M205 118 L254 167 L212 167 C208 167 205 164 205 160 Z" fill="#FFE8D5" stroke="#FDBA74" strokeWidth="3" />
@@ -68,7 +72,7 @@ export default function HeroProcessIllustration() {
         </g>
       </g>
 
-      <path className="hero-process__path hero-process__path--three" d="M816 188 C798 260 754 308 684 346" fill="none" stroke="#22C55E" strokeWidth="5" strokeLinecap="round" markerEnd="url(#hero-arrow)" />
+      <path className="hero-process__path hero-process__path--three" d="M816 188 C798 260 754 308 684 346" fill="none" stroke="#22C55E" strokeWidth="5" strokeLinecap="round" markerEnd="url(#hero-arrow-green)" />
       <circle className="hero-process__packet hero-process__packet--three" r="12" fill="#22C55E" />
 
       <g className="hero-process__approved">
@@ -76,6 +80,50 @@ export default function HeroProcessIllustration() {
         <circle cx="704" cy="383" r="34" fill="#22C55E" />
         <path d="M687 382 L699 394 L724 367" fill="none" stroke="#fff" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
         <text x="754" y="394" className="hero-process__small-label">Listo</text>
+      </g>
+      </g>
+
+      <rect className="hero-process__wash" x="0" y="0" width="960" height="520" fill="#fff" />
+
+      <g className="hero-process__scene hero-process__scene--whatsapp">
+        <g className="hero-process__phone">
+          <rect x="96" y="76" width="190" height="340" rx="34" fill="#1F2937" />
+          <rect x="112" y="104" width="158" height="280" rx="22" fill="#F8FAFC" />
+          <rect x="142" y="91" width="72" height="8" rx="4" fill="#475569" />
+          <circle cx="191" cy="400" r="8" fill="#475569" />
+          <rect x="132" y="130" width="118" height="34" rx="17" fill="#22C55E" />
+          <circle cx="151" cy="147" r="10" fill="#fff" />
+          <path d="M146 147 C148 142 154 142 156 147 C154 152 148 152 146 147 Z" fill="#22C55E" />
+          <rect x="132" y="190" width="100" height="30" rx="15" fill="#DCFCE7" />
+          <rect x="146" y="203" width="58" height="5" rx="2.5" fill="#22C55E" opacity="0.75" />
+          <rect x="150" y="238" width="88" height="30" rx="15" fill="#fff" stroke="#CBD5E1" strokeWidth="2" />
+          <rect x="164" y="251" width="46" height="5" rx="2.5" fill="#94A3B8" />
+          <rect x="132" y="286" width="106" height="44" rx="16" fill="#DCFCE7" />
+          <rect x="148" y="300" width="64" height="6" rx="3" fill="#22C55E" opacity="0.75" />
+          <rect x="148" y="314" width="42" height="6" rx="3" fill="#22C55E" opacity="0.5" />
+        </g>
+
+        <path className="hero-process__path hero-process__path--whatsapp-one" d="M300 244 C382 216 446 204 520 190" fill="none" stroke="#22C55E" strokeWidth="5" strokeLinecap="round" markerEnd="url(#hero-arrow-green)" />
+        <circle className="hero-process__packet hero-process__packet--whatsapp-one" r="12" fill="#22C55E" />
+
+        <g className="hero-process__whatsapp-arca">
+          <rect x="520" y="104" width="178" height="134" rx="20" fill="#fff" stroke="#CBD5E1" strokeWidth="3" />
+          <image href="/illustrations/features/arca-logo.png" x="548" y="142" width="122" height="68" preserveAspectRatio="xMidYMid meet" />
+          <g className="hero-process__whatsapp-arca-check">
+            <circle cx="676" cy="121" r="19" fill="#F97316" />
+            <path d="M667 121 L674 128 L687 113" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+        </g>
+
+        <path className="hero-process__path hero-process__path--whatsapp-two" d="M618 250 C634 312 676 352 740 378" fill="none" stroke="#22C55E" strokeWidth="5" strokeLinecap="round" markerEnd="url(#hero-arrow-green)" />
+        <circle className="hero-process__packet hero-process__packet--whatsapp-two" r="12" fill="#22C55E" />
+
+        <g className="hero-process__whatsapp-approved">
+          <rect x="700" y="330" width="176" height="104" rx="20" fill="#fff" stroke="#CBD5E1" strokeWidth="3" />
+          <circle cx="750" cy="382" r="32" fill="#22C55E" />
+          <path d="M734 381 L746 393 L770 366" fill="none" stroke="#fff" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+          <text x="798" y="391" className="hero-process__small-label">Listo</text>
+        </g>
       </g>
     </svg>
   )

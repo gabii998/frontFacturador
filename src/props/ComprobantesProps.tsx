@@ -15,6 +15,7 @@ export interface ComprobanteHeaderInfoProps {
 
 export interface FiltrosProps {
     loading:boolean;
+    onClose:() => void;
     setPv:React.Dispatch<React.SetStateAction<number>>;
     setTipo:React.Dispatch<React.SetStateAction<number>>;
     setLimite:React.Dispatch<React.SetStateAction<number>>;

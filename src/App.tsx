@@ -47,7 +47,59 @@ const LANDING_FEATURES = [
   }
 ] as const
 
-function Navbar() {
+function getPrivateSection(pathname: string) {
+  const sections = [
+    {
+      match: (path: string) => path === '/dashboard',
+      title: 'Dashboard',
+      subtitle: 'Resumen operativo y estado general de tu facturación.'
+    },
+    {
+      match: (path: string) => path.startsWith('/puntos-venta'),
+      title: 'Puntos de venta',
+      subtitle: 'Consultá y administrá los puntos habilitados para emitir.'
+    },
+    {
+      match: (path: string) => path.startsWith('/comprobantes/carga-masiva'),
+      title: 'Carga masiva',
+      subtitle: 'Importá comprobantes desde archivos y revisá el resultado.'
+    },
+    {
+      match: (path: string) => path.startsWith('/comprobantes'),
+      title: 'Comprobantes',
+      subtitle: 'Buscá, revisá y descargá comprobantes emitidos.'
+    },
+    {
+      match: (path: string) => path.startsWith('/emitir'),
+      title: 'Emitir',
+      subtitle: 'Generá comprobantes y prepará la documentación asociada.'
+    },
+    {
+      match: (path: string) => path.startsWith('/configuracion/planes'),
+      title: 'Planes',
+      subtitle: 'Gestioná tu suscripción y el alcance de tu cuenta.'
+    },
+    {
+      match: (path: string) => path.startsWith('/configuracion'),
+      title: 'Configuración',
+      subtitle: 'Administrá datos de cuenta, emisor y seguridad.'
+    },
+    {
+      match: (path: string) => path.startsWith('/admin/ops'),
+      title: 'Ops',
+      subtitle: 'Monitoreo técnico, colas y métricas operativas.'
+    },
+    {
+      match: (path: string) => path.startsWith('/admin/usuarios'),
+      title: 'Superusuario',
+      subtitle: 'Gestión de usuarios, roles y permisos.'
+    }
+  ]
+
+  return sections.find(({ match }) => match(pathname)) ?? sections[0]
+}
+
+function Navbar({ mobileTitle, mobileActions }: { mobileTitle: string; mobileActions: ReactNode | null }) {
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileVisible, setMobileVisible] = useState(false)
@@ -130,11 +182,11 @@ function Navbar() {
         </div>
       </aside>
 
-      <header className="fixed left-0 right-0 top-0 z-40 border-b border-slate-200 bg-white md:hidden">
+      <header className="mobile-appbar">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             type="button"
-            className="md:hidden inline-flex items-center justify-center rounded-xl border border-gray-200 p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="mobile-appbar__menu"
             aria-label="Abrir menú"
             onClick={openMobileMenu}
           >
@@ -144,8 +196,14 @@ function Navbar() {
               <path d="M4 18h16" />
             </svg>
           </button>
-          <Brand/>
-          <span className="h-10 w-10" aria-hidden="true" />
+          <h1 className="mobile-appbar__title">{mobileTitle}</h1>
+          {mobileActions ? (
+            <div className="mobile-appbar__actions">
+              {mobileActions}
+            </div>
+          ) : (
+            <span className="h-10 w-10" aria-hidden="true" />
+          )}
         </div>
       </header>
 
@@ -209,6 +267,7 @@ function PrivateLayout() {
   const { isAuthenticated } = useAuth()
   const location = useLocation()
   const [topbarActions, setTopbarActions] = useState<ReactNode | null>(null)
+  const section = getPrivateSection(location.pathname)
 
   useEffect(() => {
     setTopbarActions(null)
@@ -219,8 +278,8 @@ function PrivateLayout() {
   }
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1 px-4 pb-6 pt-20 md:ml-72 md:px-8 md:pb-8 md:pt-0">
+      <Navbar mobileTitle={section.title} mobileActions={topbarActions} />
+      <main className="flex-1 px-4 pb-6 pt-16 md:ml-72 md:px-8 md:pb-8 md:pt-0">
         <PrivateTopbarActionsProvider setActions={setTopbarActions}>
           <PrivateTopbar pathname={location.pathname} actions={topbarActions} />
           <div className="mx-auto max-w-6xl">
@@ -233,59 +292,11 @@ function PrivateLayout() {
 }
 
 function PrivateTopbar({ pathname, actions }: { pathname: string; actions: ReactNode | null }) {
-  const sections = [
-    {
-      match: (path: string) => path === '/dashboard',
-      title: 'Dashboard',
-      subtitle: 'Resumen operativo y estado general de tu facturación.'
-    },
-    {
-      match: (path: string) => path.startsWith('/puntos-venta'),
-      title: 'Puntos de venta',
-      subtitle: 'Consultá y administrá los puntos habilitados para emitir.'
-    },
-    {
-      match: (path: string) => path.startsWith('/comprobantes/carga-masiva'),
-      title: 'Carga masiva',
-      subtitle: 'Importá comprobantes desde archivos y revisá el resultado.'
-    },
-    {
-      match: (path: string) => path.startsWith('/comprobantes'),
-      title: 'Comprobantes',
-      subtitle: 'Buscá, revisá y descargá comprobantes emitidos.'
-    },
-    {
-      match: (path: string) => path.startsWith('/emitir'),
-      title: 'Emitir',
-      subtitle: 'Generá comprobantes y prepará la documentación asociada.'
-    },
-    {
-      match: (path: string) => path.startsWith('/configuracion/planes'),
-      title: 'Planes',
-      subtitle: 'Gestioná tu suscripción y el alcance de tu cuenta.'
-    },
-    {
-      match: (path: string) => path.startsWith('/configuracion'),
-      title: 'Configuración',
-      subtitle: 'Administrá datos de cuenta, emisor y seguridad.'
-    },
-    {
-      match: (path: string) => path.startsWith('/admin/ops'),
-      title: 'Ops',
-      subtitle: 'Monitoreo técnico, colas y métricas operativas.'
-    },
-    {
-      match: (path: string) => path.startsWith('/admin/usuarios'),
-      title: 'Superusuario',
-      subtitle: 'Gestión de usuarios, roles y permisos.'
-    }
-  ]
-
-  const section = sections.find(({ match }) => match(pathname)) ?? sections[0]
+  const section = getPrivateSection(pathname)
 
   return (
-    <header className="private-topbar">
-      <div>
+    <header className={`private-topbar ${actions ? 'private-topbar--with-actions' : ''}`}>
+      <div className="private-topbar__heading">
         <h1 className="private-topbar__title">{section.title}</h1>
         <p className="private-topbar__subtitle">{section.subtitle}</p>
       </div>
@@ -304,6 +315,11 @@ function SuperuserOnlyRoute() {
     return <Navigate to="/dashboard" replace />
   }
   return <Outlet />
+}
+
+function RootRoute() {
+  const { isAuthenticated } = useAuth()
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <PublicPage />
 }
 
 function PublicPage() {
@@ -609,7 +625,7 @@ function PlanCard({ plan }: { plan: typeof PLAN_DETAILS[number] }) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<PublicPage />} />
+      <Route path="/" element={<RootRoute />} />
       <Route path="/login" element={<PublicPage />} />
       <Route path="/registrarse" element={<PublicPage />} />
       <Route path="/recuperar-clave" element={<PublicPage />} />

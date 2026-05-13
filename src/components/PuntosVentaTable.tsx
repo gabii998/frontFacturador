@@ -1,8 +1,11 @@
-import { IconBuildingStore, IconCircleCheck, IconCircleX, IconLock, IconLockOpen } from '@tabler/icons-react'
+import { IconBuildingStore, IconCircleCheck, IconCircleX, IconLock, IconLockOpen, IconX } from '@tabler/icons-react'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 import type { PuntoVenta } from '../models/afip'
 
 export default function PuntosVentaTable({ data }: { data: PuntoVenta[] }) {
+  const [selectedPv, setSelectedPv] = useState<PuntoVenta | null>(null)
   const activos = data.filter((pv) => !pv.bloqueado && !pv.fchBaja).length
   const bloqueados = data.filter((pv) => pv.bloqueado).length
   const dadosDeBaja = data.filter((pv) => pv.fchBaja).length
@@ -35,7 +38,7 @@ export default function PuntosVentaTable({ data }: { data: PuntoVenta[] }) {
               : 'punto-venta-card__status--ok'
 
           return (
-            <article key={pv.nro} className="punto-venta-card">
+            <button key={pv.nro} type="button" className="punto-venta-card" onClick={() => setSelectedPv(pv)}>
               <div className="punto-venta-card__icon" aria-hidden="true">
                 <IconBuildingStore />
               </div>
@@ -53,18 +56,16 @@ export default function PuntosVentaTable({ data }: { data: PuntoVenta[] }) {
 
                 <div className="punto-venta-card__details">
                   <DetailItem label="Emisión" value={pv.emisionTipo} />
-                  <DetailItem
-                    label="Bloqueo"
-                    value={isBlocked ? 'No disponible' : 'Disponible'}
-                    icon={isBlocked ? <IconLock /> : <IconLockOpen />}
-                  />
-                  <DetailItem label="Fecha de baja" value={pv.fchBaja ?? '-'} />
                 </div>
               </div>
-            </article>
+            </button>
           )
         })}
       </div>
+
+      {selectedPv && (
+        <PuntoVentaDetailModal puntoVenta={selectedPv} onClose={() => setSelectedPv(null)} />
+      )}
     </section>
   )
 }
@@ -87,5 +88,39 @@ const DetailItem = ({ label, value, icon }: { label: string; value: string; icon
         {value}
       </strong>
     </div>
+  )
+}
+
+const PuntoVentaDetailModal = ({ puntoVenta, onClose }: { puntoVenta: PuntoVenta; onClose: () => void }) => {
+  const isInactive = Boolean(puntoVenta.fchBaja)
+  const isBlocked = puntoVenta.bloqueado
+  const status = isInactive ? 'Baja' : isBlocked ? 'Bloqueado' : 'Activo'
+
+  return createPortal(
+    <div className="punto-venta-modal" role="dialog" aria-modal="true" aria-labelledby="punto-venta-modal-title">
+      <button type="button" className="punto-venta-modal__backdrop" aria-label="Cerrar detalle" onClick={onClose} />
+      <div className="punto-venta-modal__panel">
+        <header className="punto-venta-modal__header">
+          <div>
+            <span>Punto de venta</span>
+            <h2 id="punto-venta-modal-title">{String(puntoVenta.nro).padStart(4, '0')}</h2>
+          </div>
+          <button type="button" className="punto-venta-modal__close" aria-label="Cerrar detalle" onClick={onClose}>
+            <IconX />
+          </button>
+        </header>
+        <div className="punto-venta-modal__grid">
+          <DetailItem label="Estado" value={status} icon={isInactive ? <IconCircleX /> : isBlocked ? <IconLock /> : <IconCircleCheck />} />
+          <DetailItem label="Emisión" value={puntoVenta.emisionTipo} />
+          <DetailItem
+            label="Bloqueo"
+            value={isBlocked ? 'No disponible' : 'Disponible'}
+            icon={isBlocked ? <IconLock /> : <IconLockOpen />}
+          />
+          <DetailItem label="Fecha de baja" value={puntoVenta.fchBaja ?? '-'} />
+        </div>
+      </div>
+    </div>,
+    document.body
   )
 }

@@ -55,7 +55,7 @@ export default function RegisterPage() {
         cuit: form.cuit || undefined,
         password: form.password
       })
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err)
     } finally {
