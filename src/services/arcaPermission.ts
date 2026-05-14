@@ -8,6 +8,7 @@ export const ArcaPermissionService = {
   start: () => post<ArcaPermissionWizardResponse>(`${BASE_PATH}/start`),
   markAdminRelationsFound: () => post<ArcaPermissionWizardResponse>(`${BASE_PATH}/admin-relations-found`),
   markWebservicesFound: () => post<ArcaPermissionWizardResponse>(`${BASE_PATH}/webservices-found`),
+  markAuthorizedCuitDefined: () => post<ArcaPermissionWizardResponse>(`${BASE_PATH}/authorized-cuit-defined`),
   markDelegated: () => post<ArcaPermissionWizardResponse>(`${BASE_PATH}/delegated`),
   verify: () => post<ArcaPermissionWizardResponse>(`${BASE_PATH}/verify`)
 }

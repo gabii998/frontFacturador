@@ -145,6 +145,36 @@ export interface InvoiceQueuePageResponse {
   items: InvoiceQueueItem[]
 }
 
+export interface WhatsAppHistoryItem {
+  id: string
+  phone: string
+  direction: string
+  status: string
+  messageType: string | null
+  messageId: string | null
+  textPreview: string | null
+  payloadJson: string
+  createdAt: string
+}
+
+export interface WhatsAppHistoryPageResponse {
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  items: WhatsAppHistoryItem[]
+}
+
+export interface WhatsAppHistoryParams {
+  page?: number
+  size?: number
+  phone?: string
+  direction?: string
+  status?: string
+  from?: string
+  to?: string
+}
+
 export const OpsService = {
   dashboard: () => get<DashboardSnapshot>('/api/admin/ops/dashboard'),
   timeseries: ({ metrics, from, to, stepMinutes }: TimeseriesParams = {}) => {
@@ -168,5 +198,16 @@ export const OpsService = {
   deadLetter: (page = 0, size = 25) =>
     get<DeadLetterPageResponse>(`/api/admin/outbox/dead-letter?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`),
   invoiceQueue: (page = 0, size = 25) =>
-    get<InvoiceQueuePageResponse>(`/api/admin/ops/invoice-queue?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`)
+    get<InvoiceQueuePageResponse>(`/api/admin/ops/invoice-queue?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`),
+  whatsappHistory: ({ page = 0, size = 25, phone, direction, status, from, to }: WhatsAppHistoryParams = {}) => {
+    const query = new URLSearchParams()
+    query.set('page', String(page))
+    query.set('size', String(size))
+    if (phone) query.set('phone', phone)
+    if (direction) query.set('direction', direction)
+    if (status) query.set('status', status)
+    if (from) query.set('from', from)
+    if (to) query.set('to', to)
+    return get<WhatsAppHistoryPageResponse>(`/api/admin/whatsapp/history?${query.toString()}`)
+  }
 }

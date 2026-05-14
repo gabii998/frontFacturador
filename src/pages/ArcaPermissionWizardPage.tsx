@@ -18,7 +18,7 @@ import { useAuth } from '../contexts/AuthContext'
 import type { ArcaPermissionWizardResponse, ArcaPermissionWizardStep } from '../models/arca'
 import { ArcaPermissionService } from '../services/arcaPermission'
 
-type WizardAction = 'start' | 'admin' | 'webservices' | 'delegated' | 'verify'
+type WizardAction = 'start' | 'admin' | 'webservices' | 'authorized' | 'delegated' | 'verify'
 
 interface Props {
   initialState: ArcaPermissionWizardResponse | null
@@ -67,6 +67,8 @@ export default function ArcaPermissionWizardPage({
             ? await ArcaPermissionService.markAdminRelationsFound()
             : nextAction === 'webservices'
               ? await ArcaPermissionService.markWebservicesFound()
+              : nextAction === 'authorized'
+                ? await ArcaPermissionService.markAuthorizedCuitDefined()
               : nextAction === 'delegated'
                 ? await ArcaPermissionService.markDelegated()
                 : await ArcaPermissionService.verify()
@@ -149,6 +151,7 @@ export default function ArcaPermissionWizardPage({
                 onStart={() => runAction('start')}
                 onAdminFound={() => runAction('admin')}
                 onWebservicesFound={() => runAction('webservices')}
+                onAuthorizedCuitDefined={() => runAction('authorized')}
                 onDelegated={() => runAction('delegated')}
                 onVerify={() => runAction('verify')}
               />
@@ -176,23 +179,31 @@ function normalizeWizardSteps(wizard: ArcaPermissionWizardResponse): ArcaPermiss
 
 function buildCanonicalSteps(wizard: ArcaPermissionWizardResponse): ArcaPermissionWizardStep[] {
   const completedKeys = new Set(wizard.steps.filter((step) => step.completed).map((step) => step.key))
-  const servicesLabel = wizard.requiredServices?.filter(Boolean).join(', ') || 'WSFE, ws_sr_padron_a13'
+  const servicesLabel = wizard.requiredServices?.filter(Boolean).join(', ') || 'wsfe, ws_sr_padron_a13'
   const delegateCuit = wizard.delegateCuit || 'CUIT autorizado'
   const status = wizard.status
   const started = Boolean(wizard.startedAt) || completedKeys.has('login') || status !== 'NOT_STARTED'
   const adminFound =
     status === 'ADMIN_RELATIONS_FOUND' ||
     status === 'WEBSERVICES_FOUND' ||
+    status === 'AUTHORIZED_CUIT_DEFINED' ||
     status === 'WAITING_VERIFICATION' ||
     status === 'VERIFICATION_FAILED' ||
     status === 'VERIFIED' ||
     completedKeys.has('admin')
   const webservicesFound =
     status === 'WEBSERVICES_FOUND' ||
+    status === 'AUTHORIZED_CUIT_DEFINED' ||
     status === 'WAITING_VERIFICATION' ||
     status === 'VERIFICATION_FAILED' ||
     status === 'VERIFIED' ||
     completedKeys.has('webservices')
+  const authorizedCuitDefined =
+    status === 'AUTHORIZED_CUIT_DEFINED' ||
+    status === 'WAITING_VERIFICATION' ||
+    status === 'VERIFICATION_FAILED' ||
+    status === 'VERIFIED' ||
+    completedKeys.has('delegate')
   const delegated =
     status === 'WAITING_VERIFICATION' ||
     status === 'VERIFICATION_FAILED' ||
@@ -204,45 +215,37 @@ function buildCanonicalSteps(wizard: ArcaPermissionWizardResponse): ArcaPermissi
     {
       key: 'login',
       title: 'Loguearse en ARCA',
-      description: 'Ingresá con el CUIT emisor y tu clave fiscal.',
-      actionLabel: 'Ir a ARCA',
-      actionUrl: wizard.arcaLoginUrl,
+      description: 'Ingresá con tu CUIT y clave fiscal.',
       completed: started
     },
     {
       key: 'admin',
       title: 'Buscar el administrador de relaciones',
-      description: 'Dentro de ARCA, buscá y abrí el administrador de relaciones.',
-      actionLabel: 'Ver ayuda de ARCA',
-      actionUrl: wizard.adminRelationsUrl,
+      description: 'Buscá y abrí Administrador de Relaciones desde el menú o el buscador de ARCA.',
       completed: adminFound
     },
     {
       key: 'webservices',
       title: 'Buscar los webservices',
-      description: `Buscá los servicios que necesita el facturador: ${servicesLabel}.`,
-      actionLabel: 'Ver ayuda de ARCA',
-      actionUrl: wizard.adminRelationsUrl,
+      description: `En “Nueva Relación”, buscá WebServices y seleccioná cada servicio requerido: ${servicesLabel}.`,
       completed: webservicesFound
     },
     {
       key: 'delegate',
-      title: 'Autorizar los webservices',
-      description: `Autorizá los servicios encontrados para el CUIT ${delegateCuit}.`,
-      actionLabel: 'Ver ayuda de ARCA',
-      actionUrl: wizard.adminRelationsUrl,
-      completed: delegated
+      title: 'Cargar el CUIT autorizado',
+      description: `En la selección del representante, cargá el CUIT ${delegateCuit} como autorizado.`,
+      completed: authorizedCuitDefined
     },
     {
       key: 'confirm',
-      title: 'Confirmar la autorización',
-      description: 'Cuando ARCA muestre la relación activa, volvé al asistente y confirmá.',
+      title: 'Confirmar la delegación',
+      description: 'Revisá la relación, confirmala en ARCA y dejala lista para validación.',
       completed: delegated
     },
     {
       key: 'verify',
       title: 'Verificar permisos',
-      description: 'Validamos WSFE y padrón contra ARCA antes de habilitar el panel.',
+      description: 'Probamos WSFE y padrón en ARCA antes de habilitar el panel.',
       completed: verified
     }
   ]
@@ -252,13 +255,14 @@ function getStepVisual(stepKey?: string, status?: string) {
   if (status === 'VERIFICATION_FAILED') {
     return {
       title: 'Revisión de permisos',
-      description: 'El acceso suele fallar cuando falta uno de los servicios o la relación todavía no impactó.',
+      description: 'Si ARCA todavía no responde, suele faltar un servicio, la aceptación del autorizado o tiempo de propagación.',
       icon: <IconRefresh className="h-5 w-5" />,
-      imageUrl: '/illustrations/arca-wizard/error.png',
+      imageUrl: '/illustrations/arca-wizard/pdf/page-11.png',
       items: [
-        'Volvé a revisar el CUIT autorizado.',
-        'Confirmá WSFE y ws_sr_padron_a13.',
-        'Reintentá la verificación desde esta pantalla.'
+        'Revisá que el CUIT autorizado sea el correcto.',
+        'Confirmá que repetiste la relación para todos los servicios requeridos.',
+        'Si ARCA muestra pendientes de aceptación, completalos antes de verificar.',
+        'Esperá unos minutos y volvé a verificar.'
       ]
     }
   }
@@ -266,73 +270,75 @@ function getStepVisual(stepKey?: string, status?: string) {
   switch (stepKey) {
     case 'login':
       return {
-        title: 'Ingreso a ARCA',
-        description: 'El usuario debe entrar con su propia clave fiscal para autorizar la relación.',
+        title: 'Ingresar con clave fiscal',
+        description: 'El instructivo oficial arranca con el ingreso del contribuyente que va a delegar los servicios.',
         icon: <IconBuildingBank className="h-5 w-5" />,
-        imageUrl: '/illustrations/arca-wizard/01-login.png',
+        imageUrl: '/illustrations/arca-wizard/login.png',
         items: [
-          'Ingresar con CUIT y clave fiscal del emisor.',
-          'Esperar a que ARCA muestre el panel principal.',
-          'Volver a esta pantalla para avanzar al siguiente paso.'
+          'Entrá con el CUIT emisor y su clave fiscal.',
+          'Esperá a ver el panel principal de ARCA.',
+          'Volvé al asistente para seguir.'
         ]
       }
     case 'admin':
       return {
         title: 'Buscar el administrador de relaciones',
-        description: 'Buscá el administrador de relaciones desde el panel de ARCA o desde el buscador interno.',
+        description: 'El PDF muestra este paso con el acceso al servicio Administrador de Relaciones.',
         icon: <IconChecklist className="h-5 w-5" />,
-        imageUrl: '/illustrations/arca-wizard/02-admin-relaciones.png',
+        imageUrl: '/illustrations/arca-wizard/relaciones.png',
         items: [
-          'Abrir el buscador o menú de servicios de ARCA.',
-          'Buscar “administrador de relaciones”.',
-          'Entrar a esa opción.'
-        ]
-      }
-    case 'delegate':
-      return {
-        title: 'Autorizar webservices',
-        description: 'En esta etapa se asignan los servicios web encontrados a nuestro CUIT autorizado.',
-        icon: <IconChecklist className="h-5 w-5" />,
-        imageUrl: '/illustrations/arca-wizard/04-autorizar-webservices.png',
-        items: [
-          'Crear o confirmar la relación nueva.',
-          'Asignar el CUIT autorizado mostrado en datos.'
+          'Abrí el buscador o el listado de servicios.',
+          'Buscá “Administrador de Relaciones”.',
+          'Entrá al servicio.'
         ]
       }
     case 'webservices':
       return {
-        title: 'Buscar webservices',
-        description: 'Buscá los servicios web que necesita el facturador antes de asignarlos.',
+        title: 'Nueva relación y búsqueda del servicio',
+        description: 'El instructivo oficial usa “Nueva Relación”, entra a WebServices y selecciona Facturación Electrónica como ejemplo.',
         icon: <IconChecklist className="h-5 w-5" />,
-        imageUrl: '/illustrations/arca-wizard/03-buscar-webservices.png',
+        imageUrl: '/illustrations/arca-wizard/pdf/page-07.png',
         items: [
-          'Buscar WSFE.',
-          'Buscar ws_sr_padron_a13.',
-          'Dejar ambos servicios seleccionados o ubicados para autorizarlos.'
+          'Entrá por “Nueva Relación”.',
+          'Buscá la agrupación WebServices.',
+          'Seleccioná un servicio requerido.',
+          'Repetí luego la misma operatoria para los demás servicios.'
+        ]
+      }
+    case 'delegate':
+      return {
+        title: 'Cargar el autorizado',
+        description: 'Para tercerización, el PDF indica ingresar el CUIT del tercero en la selección del representante.',
+        icon: <IconChecklist className="h-5 w-5" />,
+        imageUrl: '/illustrations/arca-wizard/pdf/page-09.png',
+        items: [
+          'En “CUIT/CUIL/CDI Usuario”, ingresá el CUIT autorizado.',
+          'Usá exactamente el CUIT mostrado por este asistente.',
+          'Después buscá y dejá cargado el autorizado.'
         ]
       }
     case 'confirm':
       return {
-        title: 'Confirmación',
-        description: 'Una vez que ARCA muestra la relación activa, volvés al asistente para continuar.',
+        title: 'Confirmar la delegación',
+        description: 'El instructivo oficial muestra la revisión final y la constancia emitida por ARCA al confirmar.',
         icon: <IconCheck className="h-5 w-5" />,
-        imageUrl: '/illustrations/arca-wizard/05-confirmar.png',
+        imageUrl: '/illustrations/arca-wizard/pdf/page-10.png',
         items: [
-          'Revisar que ambos servicios estén activos.',
-          'Volver al facturador.',
-          'Presionar “Ya delegué”.'
+          'Revisá autorizante, autorizado y servicio.',
+          'Confirmá la operación en ARCA.',
+          'Repetí el proceso para cada servicio pendiente.'
         ]
       }
     default:
       return {
-        title: 'Verificación final',
-        description: 'Probamos los permisos reales contra ARCA antes de permitir el uso del panel.',
+        title: 'Aceptar pendientes y verificar',
+        description: 'El PDF aclara que puede quedar una autorización pendiente de aceptación. Después de completar eso, validamos el acceso real.',
         icon: <IconShieldCheck className="h-5 w-5" />,
-        imageUrl: '/illustrations/arca-wizard/06-verificar.png',
+        imageUrl: '/illustrations/arca-wizard/pdf/page-11.png',
         items: [
-          'Consultar puntos de venta por WSFE.',
-          'Consultar datos fiscales por padrón.',
-          'Habilitar el panel si ambos permisos responden.'
+          'Si ARCA muestra pendientes, aceptalos desde el autorizado.',
+          'Cuando termines, volvé a esta pantalla.',
+          'La verificación consulta WSFE y padrón para habilitar el panel.'
         ]
       }
   }
@@ -347,6 +353,7 @@ function AssistantPanel({
   onStart,
   onAdminFound,
   onWebservicesFound,
+  onAuthorizedCuitDefined,
   onDelegated,
   onVerify
 }: {
@@ -358,11 +365,12 @@ function AssistantPanel({
   onStart: () => void
   onAdminFound: () => void
   onWebservicesFound: () => void
+  onAuthorizedCuitDefined: () => void
   onDelegated: () => void
   onVerify: () => void
 }) {
   const next = getAssistantNextStep(wizard, activeStep)
-  const primary = getPrimaryAction(wizard, activeStep, action, onStart, onOpenArca, onAdminFound, onWebservicesFound, onDelegated, onVerify)
+  const primary = getPrimaryAction(wizard, activeStep, action, onStart, onOpenArca, onAdminFound, onWebservicesFound, onAuthorizedCuitDefined, onDelegated, onVerify)
 
   return (
     <section className="rounded-lg border border-orange-200 bg-orange-50 p-4 md:p-5">
@@ -410,12 +418,6 @@ function AssistantPanel({
               {primary.icon}
               {primary.label}
             </button>
-            {wizard.adminRelationsUrl && (
-              <a className="btn justify-center bg-white" href={wizard.adminRelationsUrl} target="_blank" rel="noreferrer">
-                <IconExternalLink className="h-4 w-4" />
-                Ayuda de ARCA
-              </a>
-            )}
           </div>
         </div>
       </div>
@@ -427,10 +429,11 @@ function getAssistantNextStep(wizard: ArcaPermissionWizardResponse, activeStep: 
   if (wizard.status === 'VERIFICATION_FAILED') {
     return {
       title: 'ARCA todavía no confirmó todos los permisos',
-      description: 'Revisá que la relación esté aceptada para los servicios requeridos y volvé a verificar.',
+      description: 'El instructivo oficial contempla pendientes de aceptación. Si eso no está resuelto, la validación real va a fallar.',
       items: [
         'Confirmá que el CUIT autorizado sea exactamente el indicado en esta pantalla.',
-        'Confirmá que estén delegados WSFE y ws_sr_padron_a13.',
+        'Revisá que delegaste todos los servicios requeridos.',
+        'Si hay una relación pendiente de aceptación, completala desde el autorizado.',
         'Si acabás de delegar, esperá unos minutos y ejecutá la verificación nuevamente.'
       ]
     }
@@ -440,61 +443,64 @@ function getAssistantNextStep(wizard: ArcaPermissionWizardResponse, activeStep: 
     case 'login':
       return {
         title: 'Primero ingresá a ARCA',
-        description: 'Abrí ARCA en otra pestaña e ingresá con la clave fiscal del CUIT emisor.',
+        description: 'Seguimos el instructivo oficial desde el inicio: el contribuyente que delega debe entrar con su clave fiscal.',
         items: [
           'Usá el CUIT que figura como emisor.',
-          'Completá CUIT, clave fiscal y cualquier validación que pida ARCA.',
-          'Cuando veas el panel principal, volvé a este asistente.'
+          'Completá CUIT, clave fiscal y cualquier validación de ARCA.',
+          'Cuando veas el panel principal, volvé al asistente.'
         ]
       }
     case 'admin':
       return {
         title: 'Buscar el administrador de relaciones',
-        description: 'Ahora necesitás ubicar la herramienta donde ARCA permite delegar servicios.',
+        description: 'El segundo paso del PDF es abrir el servicio Administrador de Relaciones.',
         items: [
-          'Usá el buscador o menú de servicios.',
+          'Usá el buscador o el listado de servicios.',
           'Buscá “administrador de relaciones”.',
-          'Cuando lo abras, volvé y continuá.'
-        ]
-      }
-    case 'delegate':
-      return {
-        title: 'Autorizá los servicios encontrados',
-        description: 'Ahora asigná WSFE y padrón al CUIT autorizado que aparece en esta pantalla.',
-        items: [
-          'Seleccioná los servicios encontrados.',
-          'Ingresá o confirmá el CUIT autorizado.',
-          'Guardá la relación en ARCA.'
+          'Cuando lo abras, volvé y seguí.'
         ]
       }
     case 'webservices':
       return {
         title: 'Buscá los webservices',
-        description: 'Dentro del Administrador de Relaciones, buscá los servicios que necesita el facturador.',
+        description: 'Dentro de “Nueva Relación”, ARCA pide seleccionar el servicio a autorizar.',
         items: [
-          'Buscá WSFE para factura electrónica.',
-          'Buscá ws_sr_padron_a13 para padrón.',
-          'Cuando los tengas ubicados, volvé y continuá.'
+          'Elegí “Nueva Relación”.',
+          'Entrá a la agrupación WebServices.',
+          'Seleccioná uno de los servicios requeridos.',
+          'Más adelante repetís la misma operatoria para los demás.'
+        ]
+      }
+    case 'delegate':
+      return {
+        title: 'Cargá el CUIT autorizado',
+        description: 'Para tercerización, el instructivo oficial pide ingresar el CUIT del tercero en la selección del representante.',
+        items: [
+          'Buscá el autorizado en el campo “CUIT/CUIL/CDI Usuario”.',
+          'Usá exactamente el CUIT que muestra este asistente.',
+          'Cuando quede cargado, seguí con la confirmación en ARCA.'
         ]
       }
     case 'confirm':
       return {
         title: 'Confirmá la delegación',
-        description: 'Cuando ARCA muestre la relación activa, marcá este paso como completado.',
+        description: 'ARCA muestra una revisión final. Confirmá esa relación antes de volver al sistema.',
         items: [
-          'La relación debe quedar aceptada o activa en ARCA.',
-          'No cierres sesión hasta terminar la verificación.',
-          'Después de confirmar, ejecutá la verificación desde esta pantalla.'
+          'Revisá el autorizante, el autorizado y el servicio.',
+          'Presioná “Confirmar” en ARCA.',
+          'Repetí la misma operatoria para cada servicio requerido.',
+          'Después volvé acá para validar.'
         ]
       }
     default:
       return {
-        title: 'Verificá el acceso',
-        description: 'Vamos a probar los permisos reales contra ARCA antes de liberar el panel.',
+        title: 'Aceptá pendientes y verificá el acceso',
+        description: 'Según el PDF, puede quedar una aceptación pendiente del lado autorizado. Cuando eso esté completo, probamos el acceso real.',
         items: [
-          'Se consulta WSFE para validar puntos de venta.',
-          'Se consulta padrón para validar datos fiscales.',
-          'Si ambas llamadas responden, el acceso queda habilitado.'
+          'Si ARCA muestra relaciones pendientes, aceptalas antes de seguir.',
+          'La validación consulta WSFE para puntos de venta.',
+          'También consulta padrón para datos fiscales.',
+          'Si ambas responden, el panel queda habilitado.'
         ]
       }
   }
@@ -508,6 +514,7 @@ function getPrimaryAction(
   onOpenArca: () => void,
   onAdminFound: () => void,
   onWebservicesFound: () => void,
+  onAuthorizedCuitDefined: () => void,
   onDelegated: () => void,
   onVerify: () => void
 ) {
@@ -524,10 +531,10 @@ function getPrimaryAction(
     return { label: 'Ya encontré los webservices', onClick: onWebservicesFound, icon: <IconArrowRight className="h-4 w-4" /> }
   }
   if (activeStep?.key === 'delegate') {
-    return { label: 'Ya autoricé los webservices', onClick: onDelegated, icon: <IconCheck className="h-4 w-4" /> }
+    return { label: 'Ya cargué el CUIT autorizado', onClick: onAuthorizedCuitDefined, icon: <IconArrowRight className="h-4 w-4" /> }
   }
   if (activeStep?.key === 'confirm') {
-    return { label: 'Ya delegué', onClick: onDelegated, icon: <IconCheck className="h-4 w-4" /> }
+    return { label: 'Ya confirmé en ARCA', onClick: onDelegated, icon: <IconCheck className="h-4 w-4" /> }
   }
   return {
     label: 'Verificar permiso',
@@ -549,17 +556,6 @@ function WizardStepCard({ step, index, active }: { step: ArcaPermissionWizardSte
         </div>
         <p className="text-sm leading-6 text-slate-600">{step.description}</p>
         {active && <StepCapture step={step} />}
-        {step.actionUrl && (
-          <a
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-800"
-            href={step.actionUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {step.actionLabel ?? 'Abrir enlace'}
-            <IconExternalLink className="h-4 w-4" />
-          </a>
-        )}
       </div>
     </article>
   )
@@ -582,7 +578,7 @@ function StepCapture({ step }: { step: ArcaPermissionWizardStep }) {
       <img
         src={visual.imageUrl}
         alt={visual.title}
-        className="aspect-video w-full object-cover"
+        className="max-h-[42rem] w-full object-contain"
         onError={() => setImageUnavailable(true)}
       />
     </div>

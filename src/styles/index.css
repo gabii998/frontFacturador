@@ -1155,6 +1155,20 @@ a,
     @apply bg-sky-50 text-sky-700;
   }
 
+  .ops-status-pill--inbound,
+  .ops-status-pill--received {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+
+  .ops-status-pill--outbound,
+  .ops-status-pill--sent {
+    @apply bg-violet-50 text-violet-700;
+  }
+
+  .ops-status-pill--failed {
+    @apply bg-red-50 text-red-700;
+  }
+
   .ops-status-pill--emitted {
     @apply bg-emerald-50 text-emerald-700;
   }
@@ -1257,6 +1271,70 @@ a,
 
   .mail-card__action svg {
     @apply h-4 w-4;
+  }
+
+  .whatsapp-history-filters {
+    @apply space-y-3 rounded-lg bg-slate-50 p-4;
+  }
+
+  .whatsapp-history-filters__actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .whatsapp-history-filters__grid {
+    @apply grid gap-3 md:grid-cols-2 xl:grid-cols-5;
+  }
+
+  .whatsapp-history-filter {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .whatsapp-history-filter span {
+    @apply text-xs font-semibold uppercase text-slate-500;
+  }
+
+  .whatsapp-history-caption {
+    @apply text-xs text-slate-500;
+  }
+
+  .whatsapp-history-card__icon {
+    @apply text-emerald-600;
+  }
+
+  .whatsapp-history-card__preview {
+    @apply grid gap-2;
+  }
+
+  .whatsapp-history-card__preview .mail-card__meta strong {
+    @apply line-clamp-2 leading-5;
+  }
+
+  .whatsapp-history-modal {
+    @apply max-h-[90vh] w-full max-w-4xl overflow-hidden;
+  }
+
+  .whatsapp-history-modal__body {
+    @apply space-y-5 overflow-y-auto px-6 pb-6;
+  }
+
+  .whatsapp-history-modal__meta {
+    @apply grid gap-3 md:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .whatsapp-history-modal__section {
+    @apply space-y-2;
+  }
+
+  .whatsapp-history-modal__section h3 {
+    @apply text-sm font-semibold text-slate-900;
+  }
+
+  .whatsapp-history-modal__section p {
+    @apply rounded-lg bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600;
+  }
+
+  .whatsapp-history-modal__payload {
+    @apply max-h-[24rem] overflow-auto rounded-lg bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100;
   }
 
   .billing-queue-card {
