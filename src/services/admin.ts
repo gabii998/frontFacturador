@@ -13,6 +13,9 @@ export interface AdminUsersPageResponse {
   size: number
   totalElements: number
   totalPages: number
+  totalCount: number
+  userCount: number
+  superuserCount: number
   items: AdminUserSummary[]
 }
 
@@ -45,8 +48,14 @@ export interface EnqueueNotificationPayload {
 }
 
 export const AdminService = {
-  listUsers: (page = 0, size = 25) =>
-    get<AdminUsersPageResponse>(`/api/auth/users?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`),
+  listUsers: (page = 0, size = 25, role?: 'USER' | 'SUPERUSER') => {
+    const query = new URLSearchParams({
+      page: String(page),
+      size: String(size)
+    })
+    if (role) query.set('role', role)
+    return get<AdminUsersPageResponse>(`/api/auth/users?${query.toString()}`)
+  },
   updateUserRole: (userId: string, payload: UpdateUserRolePayload) =>
     post<AuthUser>(`/api/auth/users/${encodeURIComponent(userId)}/role`, payload),
   updateUserPlan: (userId: string, payload: UpdateUserPlanPayload) =>

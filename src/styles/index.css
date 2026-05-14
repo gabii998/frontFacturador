@@ -1103,6 +1103,34 @@ a,
     @apply space-y-4 md:space-y-6;
   }
 
+  .fatal-error-screen {
+    @apply flex min-h-screen items-center justify-center bg-slate-950 px-6 py-10;
+    background:
+      radial-gradient(circle at top left, rgba(249, 115, 22, 0.24), transparent 32%),
+      radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.9), transparent 45%),
+      #020617;
+  }
+
+  .fatal-error-screen__panel {
+    @apply w-full max-w-xl rounded-[28px] border border-white/10 bg-white px-8 py-10 text-center shadow-2xl;
+  }
+
+  .fatal-error-screen__eyebrow {
+    @apply inline-flex rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-orange-700;
+  }
+
+  .fatal-error-screen__panel h1 {
+    @apply mt-5 text-3xl font-semibold text-slate-950;
+  }
+
+  .fatal-error-screen__panel p {
+    @apply mt-3 text-base leading-7 text-slate-600;
+  }
+
+  .fatal-error-screen__panel .btn-primary {
+    @apply mt-8 inline-flex;
+  }
+
   .ops-panel {
     @apply space-y-4 md:rounded-lg md:bg-white md:p-6;
   }

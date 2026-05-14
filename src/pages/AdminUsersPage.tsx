@@ -4,9 +4,10 @@ import ErrorBox from '../components/ErrorBox'
 import { AdminService, type AdminUserSummary, type AdminUsersPageResponse } from '../services/admin'
 import { getPlanName, type PlanCode } from '../constants/planes'
 import { AdminPlansService, type AdminPlan } from '../services/adminPlans'
-import { IconCalendar, IconId, IconRefresh, IconShield, IconUser } from '@tabler/icons-react'
+import { IconCalendar, IconId, IconShield, IconUser } from '@tabler/icons-react'
 
 const PAGE_SIZE = 25
+type UserFilter = '' | 'USER' | 'SUPERUSER'
 
 type DraftState = {
   role: 'USER' | 'SUPERUSER'
@@ -41,6 +42,7 @@ function formatDate(value: string | null) {
 
 export default function AdminUsersPage() {
   const [response, setResponse] = useState<AdminUsersPageResponse | null>(null)
+  const [roleFilter, setRoleFilter] = useState<UserFilter>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [drafts, setDrafts] = useState<DraftMap>({})
@@ -52,11 +54,15 @@ export default function AdminUsersPage() {
   const [adminPlans, setAdminPlans] = useState<AdminPlan[]>([])
   const usersSentinelRef = useRef<HTMLDivElement | null>(null)
 
-  const loadUsers = useCallback(async (page = 0, mode: 'replace' | 'append' = 'replace') => {
+  const loadUsers = useCallback(async (
+    page = 0,
+    mode: 'replace' | 'append' = 'replace',
+    role: UserFilter = roleFilter
+  ) => {
     setLoading(true)
     setError(null)
     try {
-      const next = await AdminService.listUsers(page, PAGE_SIZE)
+      const next = await AdminService.listUsers(page, PAGE_SIZE, role || undefined)
       setResponse((current) => {
         if (mode === 'append' && current) {
           const existingIds = new Set(current.items.map((user) => user.id))
@@ -71,15 +77,19 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [roleFilter])
 
   useEffect(() => {
     void loadUsers(0)
   }, [loadUsers])
 
   useEffect(() => {
+    void loadUsers(0, 'replace', roleFilter)
+  }, [loadUsers, roleFilter])
+
+  useEffect(() => {
     AdminPlansService.list()
-      .then((items) => setAdminPlans(items.filter((plan) => plan.enabled)))
+      .then((response) => setAdminPlans(response.items.filter((plan) => plan.enabled)))
       .catch((err) => setError(err))
   }, [])
 
@@ -92,7 +102,7 @@ export default function AdminUsersPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting) && !loading) {
-          void loadUsers(response.page + 1, 'append')
+          void loadUsers(response.page + 1, 'append', roleFilter)
         }
       },
       { rootMargin: '180px 0px' }
@@ -100,7 +110,7 @@ export default function AdminUsersPage() {
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [loadUsers, loading, response])
+  }, [loadUsers, loading, response, roleFilter])
 
   const updateDraft = (id: string, patch: Partial<DraftState>) => {
     setDrafts((prev) => ({
@@ -122,7 +132,7 @@ export default function AdminUsersPage() {
       await AdminService.updateUserRole(user.id, { role: draft.role })
       setMessage(`Rol actualizado para ${user.email}.`)
       setRoleModalUser(null)
-      await loadUsers(0)
+      await loadUsers(0, 'replace', roleFilter)
     } catch (err) {
       setError(err)
     } finally {
@@ -144,7 +154,7 @@ export default function AdminUsersPage() {
       })
       setMessage(`Plan actualizado para ${user.email}.`)
       setPlanModalUser(null)
-      await loadUsers(0)
+      await loadUsers(0, 'replace', roleFilter)
     } catch (err) {
       setError(err)
     } finally {
@@ -162,41 +172,51 @@ export default function AdminUsersPage() {
             <h2>Superusuario</h2>
             <p>Administración de usuarios, roles y planes activos.</p>
           </div>
-          <button type="button" className="ops-icon-button" onClick={() => void loadUsers(0)} disabled={loading}>
-            <IconRefresh className={loading ? 'animate-spin' : undefined} />
-            <span>{loading ? 'Actualizando' : 'Actualizar'}</span>
-          </button>
+          {response && (
+            <div className="notifications-page__header-stats">
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${roleFilter === '' ? 'is-active' : ''}`}
+                onClick={() => setRoleFilter('')}
+              >
+                <span>Total</span>
+                <strong>{response.totalCount}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${roleFilter === 'USER' ? 'is-active' : ''}`}
+                onClick={() => setRoleFilter((current) => current === 'USER' ? '' : 'USER')}
+              >
+                <span>Usuarios</span>
+                <strong>{response.userCount}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${roleFilter === 'SUPERUSER' ? 'is-active' : ''}`}
+                onClick={() => setRoleFilter((current) => current === 'SUPERUSER' ? '' : 'SUPERUSER')}
+              >
+                <span>Superusuarios</span>
+                <strong>{response.superuserCount}</strong>
+              </button>
+            </div>
+          )}
         </div>
 
         <ErrorBox error={error} />
         {message && <div className="ops-action-message">{message}</div>}
 
-        <div className="ops-stats-grid admin-users-stats">
-          <div className="ops-stat-card">
-            <span>Usuarios cargados</span>
-            <strong>{response ? users.length : '-'}</strong>
-          </div>
-          <div className="ops-stat-card">
-            <span>Total usuarios</span>
-            <strong>{response ? response.totalElements : '-'}</strong>
-          </div>
-          <div className="ops-stat-card">
-            <span>Superusuarios</span>
-            <strong>{users.filter((user) => user.role === 'SUPERUSER').length}</strong>
-          </div>
-        </div>
+        {!error && (
+          <div className="mail-list-section">
+            <div className="ops-table-section__header">
+              <p>{usersTitle(roleFilter, response)}</p>
+            </div>
 
-        <div className="mail-list-section">
-          <div className="ops-table-section__header">
-            <p>{response ? `Mostrando ${users.length} de ${response.totalElements} usuarios` : 'Cargando usuarios'}</p>
-          </div>
-
-          <div className="mail-list">
-            {users.map((user) => {
-              const savingRole = savingRoleId === user.id
-              const savingPlan = savingPlanId === user.id
-              return (
-                <article key={user.id} className="mail-card admin-user-card">
+            <div className="mail-list">
+              {users.map((user) => {
+                const savingRole = savingRoleId === user.id
+                const savingPlan = savingPlanId === user.id
+                return (
+                  <article key={user.id} className="mail-card admin-user-card">
                   <div className="mail-card__icon admin-user-card__icon">
                     <IconUser />
                   </div>
@@ -262,32 +282,18 @@ export default function AdminUsersPage() {
                     </button>
                   </div>
                 </article>
-              )
-            })}
-            {!loading && users.length === 0 && (
-              <div className="mail-list__empty">
-                No hay usuarios para mostrar.
-              </div>
-            )}
+                )
+              })}
+              {!loading && users.length === 0 && (
+                <div className="mail-list__empty">
+                  {usersEmpty(roleFilter)}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="ops-infinite-status" ref={usersSentinelRef}>
-          <span>
-            {response
-              ? `${users.length} de ${response.totalElements} usuarios`
-              : 'Sin usuarios cargados'}
-          </span>
-          {loading && (
-            <span className="ops-infinite-status__loading">
-              <IconRefresh className="animate-spin" />
-              Cargando más
-            </span>
-          )}
-          {response && response.totalPages > 0 && response.page + 1 >= response.totalPages && users.length > 0 && (
-            <span>Fin del listado</span>
-          )}
-        </div>
+        <div ref={usersSentinelRef} className="h-6" />
       </section>
 
       {roleModalUser && createPortal(
@@ -317,6 +323,29 @@ export default function AdminUsersPage() {
       )}
     </div>
   )
+}
+
+function usersTitle(roleFilter: UserFilter, response: AdminUsersPageResponse | null) {
+  const total = response?.totalElements ?? 0
+  switch (roleFilter) {
+    case 'USER':
+      return `Mostrando ${total} usuarios`
+    case 'SUPERUSER':
+      return `Mostrando ${total} superusuarios`
+    default:
+      return `Mostrando ${total} usuarios`
+  }
+}
+
+function usersEmpty(roleFilter: UserFilter) {
+  switch (roleFilter) {
+    case 'USER':
+      return 'No hay usuarios para mostrar.'
+    case 'SUPERUSER':
+      return 'No hay superusuarios para mostrar.'
+    default:
+      return 'No hay usuarios para mostrar.'
+  }
 }
 
 const RoleModal = ({

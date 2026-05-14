@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import ErrorBox from '../components/ErrorBox'
+import EmptyContent from '../components/EmptyContent'
 import {
   OpsService,
   type DeadLetterItem,
   type DeadLetterPageResponse,
   type OutboxStatsResponse
 } from '../services/ops'
-import { IconAlertCircle, IconClock, IconMail, IconRefresh, IconRotateClockwise, IconTrash } from '@tabler/icons-react'
+import { IconAlertCircle, IconClock, IconInfoCircle, IconMail, IconRefresh, IconRotateClockwise, IconTrash } from '@tabler/icons-react'
 
 const DEAD_LETTER_PAGE_SIZE = 10
+const MAIL_ADMIN_RELOAD_EVENT = 'ops:mail-admin-reload'
+type MailStatusFilter = '' | 'PENDING' | 'PROCESSING' | 'FAILED' | 'SENT' | 'DROPPED'
+type MailAdminReloadDetail = {
+  affectedStatuses?: string[]
+}
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat('es-AR').format(value)
@@ -29,16 +35,17 @@ function formatDateTime(value: string) {
 
 export default function AdminMailPage() {
   const [outboxStats, setOutboxStats] = useState<OutboxStatsResponse | null>(null)
-  const [deadLetterPage, setDeadLetterPage] = useState<DeadLetterPageResponse | null>(null)
+  const [outboxPage, setOutboxPage] = useState<DeadLetterPageResponse | null>(null)
+  const [statusFilter, setStatusFilter] = useState<MailStatusFilter>('')
   const [loadingStats, setLoadingStats] = useState(false)
-  const [loadingDeadLetter, setLoadingDeadLetter] = useState(false)
+  const [loadingOutbox, setLoadingOutbox] = useState(false)
   const [loadingOutboxAction, setLoadingOutboxAction] = useState(false)
   const [loadingRowRequeueId, setLoadingRowRequeueId] = useState<string | null>(null)
   const [deletingRowId, setDeletingRowId] = useState<string | null>(null)
   const [error, setError] = useState<unknown>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
   const [selectedMessage, setSelectedMessage] = useState<DeadLetterItem | null>(null)
-  const deadLetterSentinelRef = useRef<HTMLDivElement | null>(null)
+  const outboxSentinelRef = useRef<HTMLDivElement | null>(null)
 
   const loadStats = useCallback(async () => {
     setLoadingStats(true)
@@ -52,12 +59,16 @@ export default function AdminMailPage() {
     }
   }, [])
 
-  const loadDeadLetter = useCallback(async (page: number, mode: 'replace' | 'append' = 'replace') => {
-    setLoadingDeadLetter(true)
+  const loadOutbox = useCallback(async (
+    page: number,
+    status: MailStatusFilter,
+    mode: 'replace' | 'append' = 'replace'
+  ) => {
+    setLoadingOutbox(true)
     setError(null)
     try {
-      const next = await OpsService.deadLetter(page, DEAD_LETTER_PAGE_SIZE)
-      setDeadLetterPage((current) => {
+      const next = await OpsService.outboxQueue(page, DEAD_LETTER_PAGE_SIZE, status || undefined)
+      setOutboxPage((current) => {
         if (mode === 'append' && current) {
           const existingIds = new Set(current.items.map((item) => item.id))
           const appendedItems = next.items.filter((item) => !existingIds.has(item.id))
@@ -68,25 +79,46 @@ export default function AdminMailPage() {
     } catch (err) {
       setError(err)
     } finally {
-      setLoadingDeadLetter(false)
+      setLoadingOutbox(false)
     }
   }, [])
 
   useEffect(() => {
     void loadStats()
-    void loadDeadLetter(0)
-  }, [loadStats, loadDeadLetter])
+  }, [loadStats])
 
   useEffect(() => {
-    const sentinel = deadLetterSentinelRef.current
-    if (!sentinel || !deadLetterPage) return
-    const hasMore = deadLetterPage.totalPages > 0 && deadLetterPage.page + 1 < deadLetterPage.totalPages
+    void loadOutbox(0, statusFilter)
+  }, [loadOutbox, statusFilter])
+
+  useEffect(() => {
+    const reload = (event: Event) => {
+      const detail = (event as CustomEvent<MailAdminReloadDetail>).detail
+      const affectedStatuses = detail?.affectedStatuses ?? []
+      const shouldReloadList = statusFilter === '' || affectedStatuses.includes(statusFilter)
+
+      if (shouldReloadList) {
+        void Promise.all([loadStats(), loadOutbox(0, statusFilter)])
+        return
+      }
+
+      void loadStats()
+    }
+
+    window.addEventListener(MAIL_ADMIN_RELOAD_EVENT, reload as EventListener)
+    return () => window.removeEventListener(MAIL_ADMIN_RELOAD_EVENT, reload as EventListener)
+  }, [loadStats, loadOutbox, statusFilter])
+
+  useEffect(() => {
+    const sentinel = outboxSentinelRef.current
+    if (!sentinel || !outboxPage) return
+    const hasMore = outboxPage.totalPages > 0 && outboxPage.page + 1 < outboxPage.totalPages
     if (!hasMore) return
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting) && !loadingDeadLetter) {
-          void loadDeadLetter(deadLetterPage.page + 1, 'append')
+        if (entries.some((entry) => entry.isIntersecting) && !loadingOutbox) {
+          void loadOutbox(outboxPage.page + 1, statusFilter, 'append')
         }
       },
       { rootMargin: '180px 0px' }
@@ -94,10 +126,10 @@ export default function AdminMailPage() {
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [deadLetterPage, loadDeadLetter, loadingDeadLetter])
+  }, [outboxPage, loadOutbox, loadingOutbox, statusFilter])
 
   const refreshAll = async () => {
-    await Promise.all([loadStats(), loadDeadLetter(0)])
+    await Promise.all([loadStats(), loadOutbox(0, statusFilter)])
   }
 
   const handleRequeueFromRow = async (id: string) => {
@@ -139,74 +171,84 @@ export default function AdminMailPage() {
             <h2>Mail admin</h2>
             <p>Monitoreo y recuperación de la cola de emails.</p>
           </div>
-          <button type="button" className="ops-icon-button" onClick={() => void refreshAll()} disabled={loadingStats || loadingDeadLetter}>
-            <IconRefresh className={loadingStats || loadingDeadLetter ? 'animate-spin' : undefined} />
-            <span>{loadingStats || loadingDeadLetter ? 'Actualizando' : 'Actualizar'}</span>
-          </button>
+          {outboxStats && (
+            <div className="notifications-page__header-stats">
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'PENDING' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'PENDING' ? '' : 'PENDING')}
+              >
+                <span>Pending</span>
+                <strong>{formatNumber(outboxStats.pending)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'PROCESSING' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'PROCESSING' ? '' : 'PROCESSING')}
+              >
+                <span>Processing</span>
+                <strong>{formatNumber(outboxStats.processing)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'FAILED' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'FAILED' ? '' : 'FAILED')}
+              >
+                <span>Failed</span>
+                <strong>{formatNumber(outboxStats.failed)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'SENT' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'SENT' ? '' : 'SENT')}
+              >
+                <span>Sent</span>
+                <strong>{formatNumber(outboxStats.sent)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'DROPPED' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'DROPPED' ? '' : 'DROPPED')}
+              >
+                <span>Dead letter</span>
+                <strong>{formatNumber(outboxStats.dead_letter)}</strong>
+              </button>
+            </div>
+          )}
         </div>
 
         <ErrorBox error={error} />
 
-        {outboxStats && (
-          <div className="ops-stats-grid">
-            <OpsStatCard label="Pending" value={formatNumber(outboxStats.pending)} />
-            <OpsStatCard label="Processing" value={formatNumber(outboxStats.processing)} />
-            <OpsStatCard label="Failed" value={formatNumber(outboxStats.failed)} tone={outboxStats.failed > 0 ? 'warn' : 'neutral'} />
-            <OpsStatCard label="Sent" value={formatNumber(outboxStats.sent)} tone="ok" />
-            <OpsStatCard label="Dead letter" value={formatNumber(outboxStats.dead_letter)} tone={outboxStats.dead_letter > 0 ? 'warn' : 'neutral'} />
-          </div>
-        )}
-
         {actionMessage && <div className="ops-action-message">{actionMessage}</div>}
 
-        <div className="mail-list-section">
-          <div className="ops-table-section__header">
-            <p>Mensajes en dead-letter</p>
-            <button
-              type="button"
-              className="ops-icon-button"
-              disabled={loadingDeadLetter}
-              onClick={() => void loadDeadLetter(0)}
-            >
-              <IconRefresh className={loadingDeadLetter ? 'animate-spin' : undefined} />
-              <span>{loadingDeadLetter ? 'Actualizando' : 'Actualizar'}</span>
-            </button>
-          </div>
+        {!error && (
+          <div className="mail-list-section">
+            <div className="ops-table-section__header">
+              <p>{mailSectionTitle(statusFilter)}</p>
+            </div>
 
-          <div className="mail-list">
-            {deadLetterPage?.items.map((item) => (
-              <MailDeadLetterCard
-                key={item.id}
-                item={item}
-                loading={loadingOutboxAction || loadingRowRequeueId === item.id}
-                onRequeue={() => handleRequeueFromRow(item.id)}
-                onOpen={() => setSelectedMessage(item)}
-              />
-            ))}
-            {!loadingDeadLetter && (!deadLetterPage || deadLetterPage.items.length === 0) && (
-              <div className="mail-list__empty">
-                No hay mensajes en dead-letter.
-              </div>
-            )}
-          </div>
+            <div className="mail-list">
+              {outboxPage?.items.map((item) => (
+                <MailDeadLetterCard
+                  key={item.id}
+                  item={item}
+                  loading={loadingOutboxAction || loadingRowRequeueId === item.id}
+                  onRequeue={() => handleRequeueFromRow(item.id)}
+                  onOpen={() => setSelectedMessage(item)}
+                />
+              ))}
+              {!loadingOutbox && (!outboxPage || outboxPage.items.length === 0) && (
+                <EmptyContent
+                  title={mailEmptyTitle(statusFilter)}
+                  subtitle={mailEmptySubtitle(statusFilter)}
+                  icon={<IconInfoCircle />}
+                />
+              )}
+            </div>
 
-          <div className="ops-infinite-status" ref={deadLetterSentinelRef}>
-            <span>
-              {deadLetterPage
-                ? `${formatNumber(deadLetterPage.items.length)} de ${formatNumber(deadLetterPage.totalElements)} mensajes`
-                : 'Sin mensajes cargados'}
-            </span>
-            {loadingDeadLetter && (
-              <span className="ops-infinite-status__loading">
-                <IconRefresh className="animate-spin" />
-                Cargando más
-              </span>
-            )}
-            {deadLetterPage && deadLetterPage.totalPages > 0 && deadLetterPage.page + 1 >= deadLetterPage.totalPages && deadLetterPage.items.length > 0 && (
-              <span>Fin del listado</span>
-            )}
+            <div ref={outboxSentinelRef} className="h-6" />
           </div>
-        </div>
+        )}
       </section>
 
       {selectedMessage && createPortal(
@@ -224,20 +266,56 @@ export default function AdminMailPage() {
   )
 }
 
-const OpsStatCard = ({
-  label,
-  value,
-  tone = 'neutral'
-}: {
-  label: string
-  value: string
-  tone?: 'neutral' | 'warn' | 'ok'
-}) => (
-  <div className={`ops-stat-card ops-stat-card--${tone}`}>
-    <span>{label}</span>
-    <strong>{value}</strong>
-  </div>
-)
+function mailSectionTitle(statusFilter: MailStatusFilter) {
+  switch (statusFilter) {
+    case 'PENDING':
+      return 'Mensajes pendientes'
+    case 'PROCESSING':
+      return 'Mensajes en procesamiento'
+    case 'FAILED':
+      return 'Mensajes fallidos'
+    case 'SENT':
+      return 'Mensajes enviados'
+    case 'DROPPED':
+      return 'Mensajes en dead-letter'
+    default:
+      return 'Mensajes de la cola'
+  }
+}
+
+function mailEmptyTitle(statusFilter: MailStatusFilter) {
+  switch (statusFilter) {
+    case 'PENDING':
+      return 'No hay mensajes pendientes'
+    case 'PROCESSING':
+      return 'No hay mensajes en procesamiento'
+    case 'FAILED':
+      return 'No hay mensajes fallidos'
+    case 'SENT':
+      return 'No hay mensajes enviados'
+    case 'DROPPED':
+      return 'No hay mensajes en dead-letter'
+    default:
+      return 'No hay mensajes en la cola'
+  }
+}
+
+function mailEmptySubtitle(statusFilter: MailStatusFilter) {
+  switch (statusFilter) {
+    case 'PENDING':
+      return 'Los correos pendientes de envío aparecerán acá apenas entren a la cola.'
+    case 'PROCESSING':
+      return 'Cuando el worker esté procesando correos, los vas a ver listados en esta vista.'
+    case 'FAILED':
+      return 'Los intentos fallidos quedarán visibles acá para seguimiento operativo.'
+    case 'SENT':
+      return 'Los correos enviados correctamente aparecerán acá cuando existan registros en ese estado.'
+    case 'DROPPED':
+      return 'Los mensajes descartados y listos para recuperación se mostrarán en esta vista.'
+    default:
+      return 'Cuando haya actividad en la cola de mail, los mensajes aparecerán listados acá.'
+  }
+}
 
 const MailDeadLetterCard = ({
   item,
@@ -273,6 +351,7 @@ const MailDeadLetterCard = ({
             <span title={item.id}>{item.id}</span>
           </div>
           <div className="mail-card__pills">
+            <span className="mail-card__pill">{formatMailStatus(item.status)}</span>
             <span className="mail-card__pill mail-card__pill--attempts">
               {formatNumber(item.attemptCount)} intentos
             </span>
@@ -289,18 +368,20 @@ const MailDeadLetterCard = ({
         </div>
 
       </div>
-      <button
-        type="button"
-        className="mail-card__action"
-        disabled={loading}
-        onClick={(event) => {
-          event.stopPropagation()
-          onRequeue()
-        }}
-      >
-        <IconRotateClockwise />
-        <span>{loading ? 'Reencolando' : 'Reencolar'}</span>
-      </button>
+      {item.status === 'DROPPED' && (
+        <button
+          type="button"
+          className="mail-card__action"
+          disabled={loading}
+          onClick={(event) => {
+            event.stopPropagation()
+            onRequeue()
+          }}
+        >
+          <IconRotateClockwise />
+          <span>{loading ? 'Reencolando' : 'Reencolar'}</span>
+        </button>
+      )}
     </article>
   )
 }
@@ -341,8 +422,10 @@ const MailDetailModal = ({
           <div className="mail-detail-grid">
             <MailDetailItem label="Asunto" value={item.subject || 'Sin asunto'} />
             <MailDetailItem label="Destino" value={item.toAddresses} />
+            <MailDetailItem label="Estado" value={formatMailStatus(item.status)} />
             <MailDetailItem label="Intentos" value={formatNumber(item.attemptCount)} />
             <MailDetailItem label="Próximo intento" value={formatDateTime(item.nextAttemptAt)} />
+            <MailDetailItem label="Enviado" value={item.sentAt ? formatDateTime(item.sentAt) : 'Pendiente'} />
             <MailDetailItem label="Creado" value={formatDateTime(item.createdAt)} />
             <MailDetailItem label="Actualizado" value={formatDateTime(item.updatedAt)} />
           </div>
@@ -356,19 +439,40 @@ const MailDetailModal = ({
           </div>
 
           <div className="mail-detail-modal__actions">
-            <button type="button" className="mail-detail-modal__delete" disabled={deleting || loading} onClick={onDelete}>
-              <IconTrash />
-              <span>{deleting ? 'Eliminando' : 'Eliminar de la cola'}</span>
-            </button>
-            <button type="button" className="mail-card__action mail-detail-modal__action" disabled={loading || deleting} onClick={onRequeue}>
-              <IconRotateClockwise />
-              <span>{loading ? 'Reencolando' : 'Reencolar mensaje'}</span>
-            </button>
+            {item.status === 'DROPPED' && (
+              <>
+                <button type="button" className="mail-detail-modal__delete" disabled={deleting || loading} onClick={onDelete}>
+                  <IconTrash />
+                  <span>{deleting ? 'Eliminando' : 'Eliminar de la cola'}</span>
+                </button>
+                <button type="button" className="mail-card__action mail-detail-modal__action" disabled={loading || deleting} onClick={onRequeue}>
+                  <IconRotateClockwise />
+                  <span>{loading ? 'Reencolando' : 'Reencolar mensaje'}</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
     </div>
   )
+}
+
+function formatMailStatus(status: string) {
+  switch (status) {
+    case 'PENDING':
+      return 'Pending'
+    case 'PROCESSING':
+      return 'Processing'
+    case 'FAILED':
+      return 'Failed'
+    case 'SENT':
+      return 'Sent'
+    case 'DROPPED':
+      return 'Dead letter'
+    default:
+      return status
+  }
 }
 
 const MailDetailItem = ({ label, value }: { label: string; value: string }) => (

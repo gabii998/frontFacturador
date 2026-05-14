@@ -6,9 +6,10 @@ import {
   type InvoiceQueuePageResponse
 } from '../services/ops'
 import ErrorBox from '../components/ErrorBox'
-import { IconAlertCircle, IconBuildingBank, IconClock, IconFileInvoice, IconRefresh } from '@tabler/icons-react'
+import { IconAlertCircle, IconBuildingBank, IconClock, IconFileInvoice } from '@tabler/icons-react'
 
 const INVOICE_QUEUE_PAGE_SIZE = 10
+type InvoiceQueueFilter = '' | 'QUEUED' | 'PROCESSING' | 'EMITTED' | 'FAILED' | 'CANCELLED'
 
 const currencyFormatter = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -73,16 +74,21 @@ function humanizeResultado(resultado?: string | null) {
 
 export default function AdminBillingQueuePage() {
   const [invoiceQueuePage, setInvoiceQueuePage] = useState<InvoiceQueuePageResponse | null>(null)
+  const [statusFilter, setStatusFilter] = useState<InvoiceQueueFilter>('')
   const [loadingInvoiceQueue, setLoadingInvoiceQueue] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [selectedRequest, setSelectedRequest] = useState<InvoiceQueueItem | null>(null)
   const invoiceQueueSentinelRef = useRef<HTMLDivElement | null>(null)
 
-  const loadInvoiceQueue = useCallback(async (page: number, mode: 'replace' | 'append' = 'replace') => {
+  const loadInvoiceQueue = useCallback(async (
+    page: number,
+    mode: 'replace' | 'append' = 'replace',
+    status: InvoiceQueueFilter = statusFilter
+  ) => {
     setLoadingInvoiceQueue(true)
     setError(null)
     try {
-      const next = await OpsService.invoiceQueue(page, INVOICE_QUEUE_PAGE_SIZE)
+      const next = await OpsService.invoiceQueue(page, INVOICE_QUEUE_PAGE_SIZE, status || undefined)
       setInvoiceQueuePage((current) => {
         if (mode === 'append' && current) {
           const existingIds = new Set(current.items.map((item) => item.id))
@@ -96,11 +102,15 @@ export default function AdminBillingQueuePage() {
     } finally {
       setLoadingInvoiceQueue(false)
     }
-  }, [])
+  }, [statusFilter])
 
   useEffect(() => {
     void loadInvoiceQueue(0)
   }, [loadInvoiceQueue])
+
+  useEffect(() => {
+    void loadInvoiceQueue(0, 'replace', statusFilter)
+  }, [loadInvoiceQueue, statusFilter])
 
   useEffect(() => {
     const sentinel = invoiceQueueSentinelRef.current
@@ -111,7 +121,7 @@ export default function AdminBillingQueuePage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting) && !loadingInvoiceQueue) {
-          void loadInvoiceQueue(invoiceQueuePage.page + 1, 'append')
+          void loadInvoiceQueue(invoiceQueuePage.page + 1, 'append', statusFilter)
         }
       },
       { rootMargin: '180px 0px' }
@@ -119,7 +129,7 @@ export default function AdminBillingQueuePage() {
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [invoiceQueuePage, loadInvoiceQueue, loadingInvoiceQueue])
+  }, [invoiceQueuePage, loadInvoiceQueue, loadingInvoiceQueue, statusFilter])
 
   return (
     <div className="ops-page">
@@ -129,76 +139,78 @@ export default function AdminBillingQueuePage() {
             <h2>Cola de facturación</h2>
             <p>Solicitudes de emisión, intentos y estado operativo de ARCA.</p>
           </div>
-          <button
-            type="button"
-            className="ops-icon-button"
-            disabled={loadingInvoiceQueue}
-            onClick={() => void loadInvoiceQueue(0)}
-            aria-label="Actualizar cola de facturación"
-          >
-            <IconRefresh className={loadingInvoiceQueue ? 'animate-spin' : undefined} />
-            <span>{loadingInvoiceQueue ? 'Actualizando' : 'Actualizar'}</span>
-          </button>
+          {invoiceQueuePage && (
+            <div className="notifications-page__header-stats">
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'QUEUED' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'QUEUED' ? '' : 'QUEUED')}
+              >
+                <span>En cola</span>
+                <strong>{formatNumber(invoiceQueuePage.stats.queued)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'PROCESSING' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'PROCESSING' ? '' : 'PROCESSING')}
+              >
+                <span>Procesando</span>
+                <strong>{formatNumber(invoiceQueuePage.stats.processing)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'EMITTED' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'EMITTED' ? '' : 'EMITTED')}
+              >
+                <span>Emitidas</span>
+                <strong>{formatNumber(invoiceQueuePage.stats.emitted)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'FAILED' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'FAILED' ? '' : 'FAILED')}
+              >
+                <span>Fallidas</span>
+                <strong>{formatNumber(invoiceQueuePage.stats.failed)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'CANCELLED' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'CANCELLED' ? '' : 'CANCELLED')}
+              >
+                <span>Sin reintentos</span>
+                <strong>{formatNumber(invoiceQueuePage.stats.cancelled)}</strong>
+              </button>
+            </div>
+          )}
         </div>
 
         <ErrorBox error={error} />
 
-        {invoiceQueuePage && (
-          <div className="ops-stats-grid">
-            <OpsStatCard label="En cola" value={formatNumber(invoiceQueuePage.stats.queued)} />
-            <OpsStatCard label="Procesando" value={formatNumber(invoiceQueuePage.stats.processing)} />
-            <OpsStatCard label="Emitidas" value={formatNumber(invoiceQueuePage.stats.emitted)} tone="ok" />
-            <OpsStatCard label="Fallidas" value={formatNumber(invoiceQueuePage.stats.failed)} tone={invoiceQueuePage.stats.failed > 0 ? 'warn' : 'neutral'} />
-            <OpsStatCard label="Sin reintentos" value={formatNumber(invoiceQueuePage.stats.cancelled)} />
+        {!error && (
+          <div className="mail-list-section">
+            <div className="ops-table-section__header">
+              <p>{billingQueueTitle(statusFilter)}</p>
+            </div>
+
+            <div className="mail-list">
+              {invoiceQueuePage?.items.map((item) => (
+                <BillingQueueCard
+                  key={item.id}
+                  item={item}
+                  onOpen={() => setSelectedRequest(item)}
+                />
+              ))}
+              {!loadingInvoiceQueue && (!invoiceQueuePage || invoiceQueuePage.items.length === 0) && (
+                <div className="mail-list__empty">
+                  {billingQueueEmpty(statusFilter)}
+                </div>
+              )}
+            </div>
+
+            <div ref={invoiceQueueSentinelRef} className="h-6" />
           </div>
         )}
-
-        <div className="mail-list-section">
-          <div className="ops-table-section__header">
-            <p>Solicitudes de emisión</p>
-            <button
-              type="button"
-              className="ops-icon-button"
-              disabled={loadingInvoiceQueue}
-              onClick={() => void loadInvoiceQueue(0)}
-            >
-              <IconRefresh className={loadingInvoiceQueue ? 'animate-spin' : undefined} />
-              <span>{loadingInvoiceQueue ? 'Actualizando' : 'Actualizar'}</span>
-            </button>
-          </div>
-
-          <div className="mail-list">
-            {invoiceQueuePage?.items.map((item) => (
-              <BillingQueueCard
-                key={item.id}
-                item={item}
-                onOpen={() => setSelectedRequest(item)}
-              />
-            ))}
-            {!loadingInvoiceQueue && (!invoiceQueuePage || invoiceQueuePage.items.length === 0) && (
-              <div className="mail-list__empty">
-                No hay solicitudes en la cola de facturación.
-              </div>
-            )}
-          </div>
-
-          <div className="ops-infinite-status" ref={invoiceQueueSentinelRef}>
-            <span>
-              {invoiceQueuePage
-                ? `${formatNumber(invoiceQueuePage.items.length)} de ${formatNumber(invoiceQueuePage.totalElements)} solicitudes`
-                : 'Sin solicitudes cargadas'}
-            </span>
-            {loadingInvoiceQueue && (
-              <span className="ops-infinite-status__loading">
-                <IconRefresh className="animate-spin" />
-                Cargando más
-              </span>
-            )}
-            {invoiceQueuePage && invoiceQueuePage.totalPages > 0 && invoiceQueuePage.page + 1 >= invoiceQueuePage.totalPages && invoiceQueuePage.items.length > 0 && (
-              <span>Fin del listado</span>
-            )}
-          </div>
-        </div>
       </section>
 
       {selectedRequest && createPortal(
@@ -212,20 +224,39 @@ export default function AdminBillingQueuePage() {
   )
 }
 
-const OpsStatCard = ({
-  label,
-  value,
-  tone = 'neutral'
-}: {
-  label: string
-  value: string
-  tone?: 'neutral' | 'warn' | 'ok'
-}) => (
-  <div className={`ops-stat-card ops-stat-card--${tone}`}>
-    <span>{label}</span>
-    <strong>{value}</strong>
-  </div>
-)
+function billingQueueTitle(status: InvoiceQueueFilter) {
+  switch (status) {
+    case 'QUEUED':
+      return 'Solicitudes en cola'
+    case 'PROCESSING':
+      return 'Solicitudes en procesamiento'
+    case 'EMITTED':
+      return 'Solicitudes emitidas'
+    case 'FAILED':
+      return 'Solicitudes fallidas'
+    case 'CANCELLED':
+      return 'Solicitudes sin reintentos'
+    default:
+      return 'Solicitudes de emisión'
+  }
+}
+
+function billingQueueEmpty(status: InvoiceQueueFilter) {
+  switch (status) {
+    case 'QUEUED':
+      return 'No hay solicitudes en cola.'
+    case 'PROCESSING':
+      return 'No hay solicitudes en procesamiento.'
+    case 'EMITTED':
+      return 'No hay solicitudes emitidas.'
+    case 'FAILED':
+      return 'No hay solicitudes fallidas.'
+    case 'CANCELLED':
+      return 'No hay solicitudes sin reintentos.'
+    default:
+      return 'No hay solicitudes en la cola de facturación.'
+  }
+}
 
 const BillingQueueCard = ({
   item,

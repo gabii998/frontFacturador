@@ -17,16 +17,20 @@ export interface NotificationPageResponse {
   totalElements: number
   totalPages: number
   unreadCount: number
+  readCount: number
+  totalCount: number
   items: NotificationItem[]
 }
 
 export interface NotificationStatsResponse {
   unread: number
+  read: number
+  total: number
 }
 
 export const NotificationService = {
-  list: (page = 0, size = 10, unreadOnly = false) =>
-    get<NotificationPageResponse>(`/api/notifications?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}&unreadOnly=${encodeURIComponent(unreadOnly)}`),
+  list: (page = 0, size = 10, estado: 'total' | 'unread' | 'read' = 'total') =>
+    get<NotificationPageResponse>(`/api/notifications?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}&estado=${encodeURIComponent(estado)}`),
   stats: () =>
     get<NotificationStatsResponse>('/api/notifications/stats'),
   markAsRead: (id: string) =>

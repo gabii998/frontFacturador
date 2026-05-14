@@ -18,6 +18,13 @@ export interface AdminPlan {
   updatedAt?: string | null
 }
 
+export interface AdminPlanCatalogResponse {
+  totalCount: number
+  activeCount: number
+  inactiveCount: number
+  items: AdminPlan[]
+}
+
 export interface UpdateAdminPlanPayload {
   title?: string
   description?: string
@@ -51,7 +58,8 @@ export interface CreateAdminPlanPayload {
 }
 
 export const AdminPlansService = {
-  list: () => get<AdminPlan[]>('/api/admin/plans'),
+  list: (estado: 'total' | 'active' | 'inactive' = 'total') =>
+    get<AdminPlanCatalogResponse>(`/api/admin/plans?estado=${encodeURIComponent(estado)}`),
   create: (payload: CreateAdminPlanPayload) =>
     post<AdminPlan>('/api/admin/plans', payload),
   update: (code: PlanCode, payload: UpdateAdminPlanPayload) =>

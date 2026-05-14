@@ -1,9 +1,11 @@
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import ErrorBox from '../components/ErrorBox'
 import { getPlanName, type PlanCode } from '../constants/planes'
 import { AdminPlansService, type AdminPlan, type CreateAdminPlanPayload, type UpdateAdminPlanPayload } from '../services/adminPlans'
-import { IconBrandWhatsapp, IconCalendarTime, IconCheck, IconCreditCard, IconFileInvoice, IconFiles, IconPlus, IconRefresh, IconSparkles, IconToggleLeft, IconToggleRight, IconX } from '@tabler/icons-react'
+import { IconBrandWhatsapp, IconCalendarTime, IconCheck, IconCreditCard, IconFileInvoice, IconFiles, IconPlus, IconSparkles, IconToggleLeft, IconToggleRight, IconX } from '@tabler/icons-react'
+import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
+type PlanFilter = 'total' | 'active' | 'inactive'
 
 const currencyFormatter = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -42,6 +44,7 @@ function buildAdminPlanSummary(plan: AdminPlan) {
 
 export default function AdminPlansPage() {
   const [plans, setPlans] = useState<AdminPlan[]>([])
+  const [counts, setCounts] = useState({ total: 0, active: 0, inactive: 0 })
   const [loading, setLoading] = useState(false)
   const [updatingPlan, setUpdatingPlan] = useState<PlanCode | null>(null)
   const [error, setError] = useState<unknown>(null)
@@ -49,22 +52,35 @@ export default function AdminPlansPage() {
   const [editingPlan, setEditingPlan] = useState<AdminPlan | null>(null)
   const [creatingPlan, setCreatingPlan] = useState(false)
   const [activeTab, setActiveTab] = useState<'catalog' | 'preview'>('catalog')
+  const [statusFilter, setStatusFilter] = useState<PlanFilter>('total')
 
-  const loadPlans = useCallback(async () => {
+  const loadPlans = useCallback(async (estado: PlanFilter = statusFilter) => {
     setLoading(true)
     setError(null)
     try {
-      setPlans(await AdminPlansService.list())
+      const response = await AdminPlansService.list(estado)
+      const items = Array.isArray(response)
+        ? response
+        : Array.isArray(response.items)
+          ? response.items
+          : []
+
+      setPlans(items)
+      setCounts({
+        total: Array.isArray(response) ? items.length : response.totalCount ?? items.length,
+        active: Array.isArray(response) ? items.filter((plan) => plan.enabled).length : response.activeCount ?? 0,
+        inactive: Array.isArray(response) ? items.filter((plan) => !plan.enabled).length : response.inactiveCount ?? 0
+      })
     } catch (err) {
       setError(err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [statusFilter])
 
   useEffect(() => {
-    void loadPlans()
-  }, [loadPlans])
+    void loadPlans(statusFilter)
+  }, [loadPlans, statusFilter])
 
   const savePlanSettings = async (plan: AdminPlan, payload: UpdateAdminPlanPayload) => {
     setUpdatingPlan(plan.code)
@@ -72,9 +88,9 @@ export default function AdminPlansPage() {
     setMessage(null)
     try {
       const updated = await AdminPlansService.update(plan.code, payload)
-      setPlans((current) => current.map((item) => item.code === updated.code ? updated : item))
       setEditingPlan(null)
       setMessage(`${updated.title || getPlanName(updated.code)} actualizado.`)
+      await loadPlans(statusFilter)
     } catch (err) {
       setError(err)
     } finally {
@@ -88,11 +104,11 @@ export default function AdminPlansPage() {
     setMessage(null)
     try {
       const created = await AdminPlansService.create(payload)
-      setPlans((current) => [...current, created])
       setCreatingPlan(false)
       setEditingPlan(created)
       setActiveTab('catalog')
       setMessage(`${created.title || getPlanName(created.code)} creado.`)
+      await loadPlans(statusFilter)
     } catch (err) {
       setError(err)
     } finally {
@@ -100,8 +116,17 @@ export default function AdminPlansPage() {
     }
   }
 
-  const enabledCount = plans.filter((plan) => plan.enabled).length
-  const disabledCount = plans.length - enabledCount
+  const topbarActions = useMemo(
+    () => (
+      <button type="button" className="ops-icon-button" onClick={() => setCreatingPlan(true)}>
+        <IconPlus />
+        <span>Nuevo plan</span>
+      </button>
+    ),
+    []
+  )
+
+  usePrivateTopbarActions(topbarActions)
 
   return (
     <div className="ops-page">
@@ -111,35 +136,36 @@ export default function AdminPlansPage() {
             <h2>Planes</h2>
             <p>Alta y baja de los planes disponibles para contratación.</p>
           </div>
-          <div className="ops-panel__actions">
-            <button type="button" className="ops-icon-button" onClick={() => setCreatingPlan(true)}>
-              <IconPlus />
-              <span>Nuevo plan</span>
+          <div className="notifications-page__header-stats">
+            <button
+              type="button"
+              className={`notifications-page__header-pill ${statusFilter === 'total' ? 'is-active' : ''}`}
+              onClick={() => setStatusFilter('total')}
+            >
+              <span>Planes</span>
+              <strong>{counts.total}</strong>
             </button>
-            <button type="button" className="ops-icon-button" onClick={() => void loadPlans()} disabled={loading}>
-              <IconRefresh className={loading ? 'animate-spin' : undefined} />
-              <span>{loading ? 'Actualizando' : 'Actualizar'}</span>
+            <button
+              type="button"
+              className={`notifications-page__header-pill ${statusFilter === 'active' ? 'is-active' : ''}`}
+              onClick={() => setStatusFilter('active')}
+            >
+              <span>Activos</span>
+              <strong>{counts.active}</strong>
+            </button>
+            <button
+              type="button"
+              className={`notifications-page__header-pill ${statusFilter === 'inactive' ? 'is-active' : ''}`}
+              onClick={() => setStatusFilter('inactive')}
+            >
+              <span>Inactivos</span>
+              <strong>{counts.inactive}</strong>
             </button>
           </div>
         </div>
 
         <ErrorBox error={error} />
         {message && <div className="ops-action-message">{message}</div>}
-
-        <div className="ops-stats-grid admin-plans-stats">
-          <div className="ops-stat-card">
-            <span>Planes</span>
-            <strong>{plans.length || '-'}</strong>
-          </div>
-          <div className="ops-stat-card ops-stat-card--ok">
-            <span>Activos</span>
-            <strong>{enabledCount}</strong>
-          </div>
-          <div className="ops-stat-card ops-stat-card--warn">
-            <span>Inactivos</span>
-            <strong>{disabledCount}</strong>
-          </div>
-        </div>
 
         <div className="ops-tabs" role="tablist" aria-label="Vista de planes">
           <button
@@ -165,7 +191,7 @@ export default function AdminPlansPage() {
         {activeTab === 'catalog' && (
           <div className="mail-list-section" role="tabpanel">
           <div className="ops-table-section__header">
-            <p>Catálogo de planes</p>
+            <p>{plansTitle(statusFilter)}</p>
           </div>
 
           <div className="mail-list">
@@ -233,9 +259,9 @@ export default function AdminPlansPage() {
               )
             })}
 
-            {!loading && plans.length === 0 && (
+            {!loading && !error && plans.length === 0 && (
               <div className="mail-list__empty">
-                No hay planes para mostrar.
+                {plansEmpty(statusFilter)}
               </div>
             )}
           </div>
@@ -255,7 +281,7 @@ export default function AdminPlansPage() {
           </div>
         )}
 
-        {activeTab === 'preview' && !loading && plans.length === 0 && (
+        {activeTab === 'preview' && !loading && !error && plans.length === 0 && (
           <div className="mail-list__empty" role="tabpanel">
             No hay planes para previsualizar.
           </div>
@@ -282,6 +308,28 @@ export default function AdminPlansPage() {
       )}
     </div>
   )
+}
+
+function plansTitle(statusFilter: PlanFilter) {
+  switch (statusFilter) {
+    case 'active':
+      return 'Planes activos'
+    case 'inactive':
+      return 'Planes inactivos'
+    default:
+      return 'Catálogo de planes'
+  }
+}
+
+function plansEmpty(statusFilter: PlanFilter) {
+  switch (statusFilter) {
+    case 'active':
+      return 'No hay planes activos para mostrar.'
+    case 'inactive':
+      return 'No hay planes inactivos para mostrar.'
+    default:
+      return 'No hay planes para mostrar.'
+  }
 }
 
 const FeatureIndicator = ({

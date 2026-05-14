@@ -86,9 +86,11 @@ export interface DeadLetterItem {
   id: string
   toAddresses: string
   subject: string
+  status: string
   attemptCount: number
   lastError: string | null
   nextAttemptAt: string
+  sentAt?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -230,8 +232,22 @@ export const OpsService = {
     post<RequeueDeadLetterResponse>(`/api/admin/outbox/requeue-dead-letter?limit=${encodeURIComponent(limit)}`),
   deadLetter: (page = 0, size = 25) =>
     get<DeadLetterPageResponse>(`/api/admin/outbox/dead-letter?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`),
-  invoiceQueue: (page = 0, size = 25) =>
-    get<InvoiceQueuePageResponse>(`/api/admin/ops/invoice-queue?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`),
+  outboxQueue: (page = 0, size = 25, status?: string) => {
+    const query = new URLSearchParams({
+      page: String(page),
+      size: String(size)
+    })
+    if (status) query.set('status', status)
+    return get<DeadLetterPageResponse>(`/api/admin/outbox?${query.toString()}`)
+  },
+  invoiceQueue: (page = 0, size = 25, status?: string) => {
+    const query = new URLSearchParams({
+      page: String(page),
+      size: String(size)
+    })
+    if (status) query.set('status', status)
+    return get<InvoiceQueuePageResponse>(`/api/admin/ops/invoice-queue?${query.toString()}`)
+  },
   whatsappHistory: ({ page = 0, size = 25, phone, direction, status, from, to }: WhatsAppHistoryParams = {}) => {
     const query = new URLSearchParams()
     query.set('page', String(page))

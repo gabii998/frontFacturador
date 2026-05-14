@@ -36,16 +36,21 @@ const ComprobantesPage = () => {
   const [tipo, setTipo] = useState(DEFAULT_TIPO) // Factura C
   const [limite, setLimite] = useState(DEFAULT_LIMITE)
   const [data, setData] = useState<ComprobanteEmitido[]>([])
+  const [summaryData, setSummaryData] = useState<ComprobanteEmitido[]>([])
   const [viewMode, setViewMode] = useState<'total' | 'proceso' | 'observados'>('total')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<unknown>()
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  async function fetchData(nextPv = pv, nextTipo = tipo, nextLimite = limite) {
+  async function fetchData(nextPv = pv, nextTipo = tipo, nextLimite = limite, nextViewMode = viewMode) {
     setLoading(true); setError(undefined)
     try {
-      const res = await AfipService.listar(nextPv, nextTipo, { limite: nextLimite })
-      setData(res)
+      const [summaryRes, filteredRes] = await Promise.all([
+        AfipService.listar(nextPv, nextTipo, { limite: nextLimite, estado: 'total' }),
+        AfipService.listar(nextPv, nextTipo, { limite: nextLimite, estado: nextViewMode })
+      ])
+      setSummaryData(summaryRes)
+      setData(filteredRes)
     } catch (e) {
       setError(e)
     } finally {
@@ -53,11 +58,12 @@ const ComprobantesPage = () => {
     }
   }
 
-  useEffect(() => { void fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE) }, [])
+  useEffect(() => { void fetchData(DEFAULT_PV, DEFAULT_TIPO, DEFAULT_LIMITE, viewMode) }, [])
+  useEffect(() => { void fetchData(pv, tipo, limite, viewMode) }, [viewMode])
 
   const summary = useMemo(() => {
     const today = new Date()
-    return data.reduce(
+    return summaryData.reduce(
       (acc, comprobante) => {
         const hasCAE = Boolean(comprobante.cae)
         const caeExpiry = parseAfipDate(comprobante.caeVto)
@@ -72,21 +78,7 @@ const ComprobantesPage = () => {
       },
       { total: 0, importe: 0, vigentes: 0, observados: 0, enProceso: 0 }
     )
-  }, [data])
-
-  const filteredData = useMemo(() => {
-    switch (viewMode) {
-      case 'proceso':
-        return data.filter((comprobante) => {
-          const status = getComprobanteStatus(comprobante)
-          return status === 'QUEUED' || status === 'PROCESSING'
-        })
-      case 'observados':
-        return data.filter((comprobante) => comprobante.errores.length > 0 || comprobante.observaciones.length > 0)
-      default:
-        return data
-    }
-  }, [data, viewMode])
+  }, [summaryData])
 
   const topbarActions = useMemo(
     () => (
@@ -130,15 +122,15 @@ const ComprobantesPage = () => {
         {loading && <LoadingContent/>}
         <ErrorBox error={error} />
         {!loading && !error && (
-          data.length > 0 ? (
+          summaryData.length > 0 ? (
             <>
-              {filteredData.length > 0 ? (
+              {data.length > 0 ? (
                 <ComprobantesTable
-                  data={filteredData}
+                  data={data}
                   summary={{ total: summary.total, enProceso: summary.enProceso, observados: summary.observados }}
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
-                  onQueueItemCancelled={() => fetchData(pv, tipo, limite)}
+                  onQueueItemCancelled={() => fetchData(pv, tipo, limite, viewMode)}
                 />
               ) : (
                 <>
@@ -147,7 +139,7 @@ const ComprobantesPage = () => {
                     summary={{ total: summary.total, enProceso: summary.enProceso, observados: summary.observados }}
                     viewMode={viewMode}
                     onViewModeChange={setViewMode}
-                    onQueueItemCancelled={() => fetchData(pv, tipo, limite)}
+                    onQueueItemCancelled={() => fetchData(pv, tipo, limite, viewMode)}
                   />
                   <EmptyContent
                     title={

@@ -434,6 +434,15 @@ type ActiveToast = {
   item: NotificationItem
 }
 
+type NotificationMetadata = {
+  scope?: string
+  event?: string
+  silent?: boolean
+  affectedStatuses?: string[]
+}
+
+const MAIL_ADMIN_RELOAD_EVENT = 'ops:mail-admin-reload'
+
 function notificationToastToneClass(type: NotificationItem['type']) {
   switch (type) {
     case 'SUCCESS':
@@ -466,6 +475,25 @@ function NotificationToaster() {
   const initializedRef = useRef(false)
   const knownUnreadIdsRef = useRef<Set<string>>(new Set())
   const toastTimersRef = useRef<Map<string, number>>(new Map())
+
+  const parseMetadata = (item: NotificationItem): NotificationMetadata | null => {
+    if (!item.metadataJson) return null
+    try {
+      return JSON.parse(item.metadataJson) as NotificationMetadata
+    } catch {
+      return null
+    }
+  }
+
+  const handleSilentNotification = async (item: NotificationItem, metadata: NotificationMetadata) => {
+    if (metadata.scope === 'mail-admin' && metadata.event === 'reload') {
+      window.dispatchEvent(new CustomEvent(MAIL_ADMIN_RELOAD_EVENT, { detail: metadata }))
+    }
+
+    if (!item.readAt) {
+      await NotificationService.markAsRead(item.id).catch(() => undefined)
+    }
+  }
 
   const removeToast = (id: string) => {
     const timer = toastTimersRef.current.get(id)
@@ -500,7 +528,7 @@ function NotificationToaster() {
 
     const pollNotifications = async () => {
       try {
-        const response = await NotificationService.list(0, 10, false)
+        const response = await NotificationService.list(0, 10, 'total')
         if (cancelled) return
 
         const unreadIds = new Set(
@@ -515,11 +543,24 @@ function NotificationToaster() {
           return
         }
 
-        response.items
-          .filter((item) => !item.readAt && !knownUnreadIdsRef.current.has(item.id))
-          .forEach((item) => enqueueToast(item))
+        const newUnreadItems = response.items.filter((item) => !item.readAt && !knownUnreadIdsRef.current.has(item.id))
+        const visibleUnreadIds = new Set<string>()
 
-        knownUnreadIdsRef.current = unreadIds
+        for (const item of newUnreadItems) {
+          const metadata = parseMetadata(item)
+          if (metadata?.silent) {
+            await handleSilentNotification(item, metadata)
+            continue
+          }
+
+          visibleUnreadIds.add(item.id)
+          enqueueToast(item)
+        }
+
+        knownUnreadIdsRef.current = new Set([
+          ...response.items.filter((item) => !item.readAt).map((item) => item.id),
+          ...visibleUnreadIds
+        ])
       } catch {
         return
       }

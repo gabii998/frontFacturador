@@ -10,38 +10,32 @@ import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
 
 const PuntosVentaPage = () => {
   const [data, setData] = useState<PuntoVenta[]>([])
+  const [summaryData, setSummaryData] = useState<PuntoVenta[]>([])
   const [viewMode, setViewMode] = useState<'activos' | 'bloqueados' | 'baja'>('activos')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>()
 
   const summary = useMemo(() => {
-    const activos = data.filter((pv) => !pv.bloqueado && !pv.fchBaja).length
-    const bloqueados = data.filter((pv) => pv.bloqueado).length
-    const dadosDeBaja = data.filter((pv) => pv.fchBaja).length
+    const activos = summaryData.filter((pv) => !pv.bloqueado && !pv.fchBaja).length
+    const bloqueados = summaryData.filter((pv) => pv.bloqueado).length
+    const dadosDeBaja = summaryData.filter((pv) => pv.fchBaja).length
     return { activos, bloqueados, dadosDeBaja }
-  }, [data])
-
-  const filteredData = useMemo(() => {
-    switch (viewMode) {
-      case 'bloqueados':
-        return data.filter((pv) => pv.bloqueado)
-      case 'baja':
-        return data.filter((pv) => Boolean(pv.fchBaja))
-      default:
-        return data.filter((pv) => !pv.bloqueado && !pv.fchBaja)
-    }
-  }, [data, viewMode])
+  }, [summaryData])
 
   useEffect(() => {
     setLoading(true)
     setError(undefined)
-    AfipService.puntosVenta()
-      .then(list => {
-        setData(list)
+    Promise.all([
+      AfipService.puntosVenta(),
+      AfipService.puntosVenta(viewMode)
+    ])
+      .then(([summaryList, filteredList]) => {
+        setSummaryData(summaryList)
+        setData(filteredList)
       })
       .catch(setError)
       .finally(() => setLoading(false))
-  }, [])
+  }, [viewMode])
 
   const topbarActions = useMemo(() => {
     if (loading || error || data.length === 0) return null
@@ -72,11 +66,11 @@ const PuntosVentaPage = () => {
         <ErrorBox error={error} />
 
         {!loading && !error && (
-          data.length > 0 ? (
+          summaryData.length > 0 ? (
             <>
-              {filteredData.length > 0 ? (
+              {data.length > 0 ? (
                 <PuntosVentaTable
-                  data={filteredData}
+                  data={data}
                   summary={summary}
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}

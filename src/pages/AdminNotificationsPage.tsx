@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { IconBell, IconClock, IconRefresh, IconRotateClockwise } from '@tabler/icons-react'
 import ErrorBox from '../components/ErrorBox'
+import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
 import { AdminService, type AdminUserSummary } from '../services/admin'
 import {
   OpsService,
@@ -53,7 +54,7 @@ export default function AdminNotificationsPage() {
   const [loadingQueue, setLoadingQueue] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [requeueingId, setRequeueingId] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('')
   const [selectedItem, setSelectedItem] = useState<NotificationQueueItem | null>(null)
   const [creatingNotification, setCreatingNotification] = useState(false)
   const [error, setError] = useState<unknown>(null)
@@ -68,6 +69,25 @@ export default function AdminNotificationsPage() {
     metadataJson: ''
   })
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+
+  const topbarActions = useMemo(
+    () => (
+      <button
+        type="button"
+        className="ops-icon-button"
+        onClick={() => {
+          setFormError(null)
+          setCreatingNotification(true)
+        }}
+      >
+        <IconBell />
+        <span>Emitir notificación</span>
+      </button>
+    ),
+    []
+  )
+
+  usePrivateTopbarActions(topbarActions)
 
   const loadStats = useCallback(async () => {
     setLoadingStats(true)
@@ -105,6 +125,10 @@ export default function AdminNotificationsPage() {
     void loadStats()
     void loadQueue(0)
   }, [loadStats, loadQueue])
+
+  useEffect(() => {
+    void loadQueue(0, 'replace', statusFilter)
+  }, [statusFilter, loadQueue])
 
   useEffect(() => {
     AdminService.listUsers(0, 200)
@@ -215,112 +239,82 @@ export default function AdminNotificationsPage() {
             <h2>Notificaciones admin</h2>
             <p>Monitoreo y recuperación de la cola de notificaciones.</p>
           </div>
-          <div className="notifications-page__header-actions">
-            <button
-              type="button"
-              className="ops-icon-button"
-              onClick={() => {
-                setFormError(null)
-                setCreatingNotification(true)
-              }}
-            >
-              <IconBell />
-              <span>Emitir notificación</span>
-            </button>
-            <button type="button" className="ops-icon-button" onClick={() => void refreshAll()} disabled={loadingStats || loadingQueue}>
-              <IconRefresh className={loadingStats || loadingQueue ? 'animate-spin' : undefined} />
-              <span>{loadingStats || loadingQueue ? 'Actualizando' : 'Actualizar'}</span>
-            </button>
-          </div>
+          {stats && (
+            <div className="notifications-page__header-stats">
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'PENDING' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'PENDING' ? '' : 'PENDING')}
+              >
+                <span>Pending</span>
+                <strong>{formatNumber(stats.pending)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'PROCESSING' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'PROCESSING' ? '' : 'PROCESSING')}
+              >
+                <span>Processing</span>
+                <strong>{formatNumber(stats.processing)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'FAILED' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'FAILED' ? '' : 'FAILED')}
+              >
+                <span>Failed</span>
+                <strong>{formatNumber(stats.failed)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'DELIVERED' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'DELIVERED' ? '' : 'DELIVERED')}
+              >
+                <span>Delivered</span>
+                <strong>{formatNumber(stats.delivered)}</strong>
+              </button>
+              <button
+                type="button"
+                className={`notifications-page__header-pill ${statusFilter === 'DROPPED' ? 'is-active' : ''}`}
+                onClick={() => setStatusFilter((current) => current === 'DROPPED' ? '' : 'DROPPED')}
+              >
+                <span>Dead letter</span>
+                <strong>{formatNumber(stats.dead_letter)}</strong>
+              </button>
+            </div>
+          )}
         </div>
 
         <ErrorBox error={error} />
 
-        {stats && (
-          <div className="ops-stats-grid">
-            <OpsStatCard label="Pending" value={formatNumber(stats.pending)} />
-            <OpsStatCard label="Processing" value={formatNumber(stats.processing)} />
-            <OpsStatCard label="Failed" value={formatNumber(stats.failed)} tone={stats.failed > 0 ? 'warn' : 'neutral'} />
-            <OpsStatCard label="Delivered" value={formatNumber(stats.delivered)} tone="ok" />
-            <OpsStatCard label="Dead letter" value={formatNumber(stats.dead_letter)} tone={stats.dead_letter > 0 ? 'warn' : 'neutral'} />
-          </div>
-        )}
-
         {actionMessage && <div className="ops-action-message">{actionMessage}</div>}
 
-        <div className="whatsapp-history-filters">
-          <div className="ops-table-section__header">
-            <p>Filtro de estado</p>
-          </div>
-          <div className="whatsapp-history-filters__grid">
-            <label className="whatsapp-history-filter">
-              <span>Estado</span>
-              <select className="input" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                <option value="">Todos</option>
-                <option value="PENDING">Pending</option>
-                <option value="PROCESSING">Processing</option>
-                <option value="FAILED">Failed</option>
-                <option value="DELIVERED">Delivered</option>
-                <option value="DROPPED">Dead letter</option>
-              </select>
-            </label>
-            <div className="whatsapp-history-filters__actions">
-              <button type="button" className="ops-icon-button" onClick={() => void loadQueue(0)} disabled={loadingQueue}>
-                <IconRefresh className={loadingQueue ? 'animate-spin' : undefined} />
-                <span>{loadingQueue ? 'Aplicando' : 'Aplicar filtro'}</span>
-              </button>
+        {!error && (
+          <div className="mail-list-section">
+            <div className="ops-table-section__header">
+              <p>Notificaciones en cola</p>
             </div>
-          </div>
-        </div>
 
-        <div className="mail-list-section">
-          <div className="ops-table-section__header">
-            <p>Notificaciones en cola</p>
-            <button
-              type="button"
-              className="ops-icon-button"
-              disabled={loadingQueue}
-              onClick={() => void loadQueue(0)}
-            >
-              <IconRefresh className={loadingQueue ? 'animate-spin' : undefined} />
-              <span>{loadingQueue ? 'Actualizando' : 'Actualizar'}</span>
-            </button>
-          </div>
+            <div className="mail-list">
+              {queuePage?.items.map((item) => (
+                <NotificationQueueCard
+                  key={item.id}
+                  item={item}
+                  loading={requeueingId === item.id}
+                  onOpen={() => setSelectedItem(item)}
+                  onRequeue={() => handleRequeue(item.id)}
+                />
+              ))}
+              {!loadingQueue && (!queuePage || queuePage.items.length === 0) && (
+                <div className="mail-list__empty">
+                  No hay notificaciones en la cola.
+                </div>
+              )}
+            </div>
 
-          <div className="mail-list">
-            {queuePage?.items.map((item) => (
-              <NotificationQueueCard
-                key={item.id}
-                item={item}
-                loading={requeueingId === item.id}
-                onOpen={() => setSelectedItem(item)}
-                onRequeue={() => handleRequeue(item.id)}
-              />
-            ))}
-            {!loadingQueue && (!queuePage || queuePage.items.length === 0) && (
-              <div className="mail-list__empty">
-                No hay notificaciones en la cola.
-              </div>
-            )}
+            <div ref={sentinelRef} className="h-6" />
           </div>
-
-          <div className="ops-infinite-status" ref={sentinelRef}>
-            <span>
-              {queuePage
-                ? `${formatNumber(queuePage.items.length)} de ${formatNumber(queuePage.totalElements)} notificaciones`
-                : 'Sin notificaciones cargadas'}
-            </span>
-            {loadingQueue && (
-              <span className="ops-infinite-status__loading">
-                <IconRefresh className="animate-spin" />
-                Cargando más
-              </span>
-            )}
-            {queuePage && queuePage.totalPages > 0 && queuePage.page + 1 >= queuePage.totalPages && queuePage.items.length > 0 && (
-              <span>Fin del listado</span>
-            )}
-          </div>
-        </div>
+        )}
       </section>
 
       {selectedItem && createPortal(
@@ -352,21 +346,6 @@ export default function AdminNotificationsPage() {
     </div>
   )
 }
-
-const OpsStatCard = ({
-  label,
-  value,
-  tone = 'neutral'
-}: {
-  label: string
-  value: string
-  tone?: 'neutral' | 'warn' | 'ok'
-}) => (
-  <div className={`ops-stat-card ops-stat-card--${tone}`}>
-    <span>{label}</span>
-    <strong>{value}</strong>
-  </div>
-)
 
 function NotificationQueueCard({
   item,

@@ -247,46 +247,33 @@ export default function AdminWhatsAppPage() {
           </div>
         </div>
 
-        <div className="mail-list-section">
-          <div className="ops-table-section__header">
-            <p>Mensajes auditados</p>
-            <span className="whatsapp-history-caption">
-              Click para ver payload completo y metadatos.
-            </span>
-          </div>
-
-          <div className="mail-list">
-            {historyPage?.items.map((item) => (
-              <WhatsAppHistoryCard
-                key={item.id}
-                item={item}
-                onOpen={() => setSelectedItem(item)}
-              />
-            ))}
-            {!loadingHistory && (!historyPage || historyPage.items.length === 0) && (
-              <div className="mail-list__empty">
-                No hay mensajes de WhatsApp para los filtros seleccionados.
-              </div>
-            )}
-          </div>
-
-          <div className="ops-infinite-status" ref={sentinelRef}>
-            <span>
-              {historyPage
-                ? `${formatNumber(historyPage.items.length)} de ${formatNumber(historyPage.totalElements)} mensajes`
-                : 'Sin mensajes cargados'}
-            </span>
-            {loadingHistory && (
-              <span className="ops-infinite-status__loading">
-                <IconRefresh className="animate-spin" />
-                Cargando más
+        {!error && (
+          <div className="mail-list-section">
+            <div className="ops-table-section__header">
+              <p>Mensajes auditados</p>
+              <span className="whatsapp-history-caption">
+                Click para ver payload completo y metadatos.
               </span>
-            )}
-            {historyPage && historyPage.totalPages > 0 && historyPage.page + 1 >= historyPage.totalPages && historyPage.items.length > 0 && (
-              <span>Fin del listado</span>
-            )}
+            </div>
+
+            <div className="mail-list">
+              {historyPage?.items.map((item) => (
+                <WhatsAppHistoryCard
+                  key={item.id}
+                  item={item}
+                  onOpen={() => setSelectedItem(item)}
+                />
+              ))}
+              {!loadingHistory && (!historyPage || historyPage.items.length === 0) && (
+                <div className="mail-list__empty">
+                  No hay mensajes de WhatsApp para los filtros seleccionados.
+                </div>
+              )}
+            </div>
+
+            <div ref={sentinelRef} className="h-6" />
           </div>
-        </div>
+        )}
       </section>
 
       {selectedItem && createPortal(

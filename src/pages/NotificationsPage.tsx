@@ -66,17 +66,12 @@ export default function NotificationsPage() {
   const [viewMode, setViewMode] = useState<'unread' | 'read' | 'total'>('total')
   const [stats, setStats] = useState<NotificationStatsResponse | null>(null)
   const [pageData, setPageData] = useState<NotificationPageResponse | null>(null)
-  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [loadingStats, setLoadingStats] = useState(false)
   const [markingId, setMarkingId] = useState<string | null>(null)
   const [error, setError] = useState<unknown>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
-  const unreadOnly = viewMode === 'unread'
-  const displayItems = viewMode === 'read'
-    ? (pageData?.items.filter((item) => Boolean(item.readAt)) ?? [])
-    : (pageData?.items ?? [])
-  const readCount = Math.max(0, totalCount - (stats?.unread ?? 0))
+  const displayItems = pageData?.items ?? []
 
   const loadStats = useCallback(async () => {
     setLoadingStats(true)
@@ -89,13 +84,10 @@ export default function NotificationsPage() {
     }
   }, [])
 
-  const loadPage = useCallback(async (page: number, mode: 'replace' | 'append' = 'replace', onlyUnread = unreadOnly) => {
+  const loadPage = useCallback(async (page: number, mode: 'replace' | 'append' = 'replace', estado = viewMode) => {
     setLoading(true)
     try {
-      const next = await NotificationService.list(page, PAGE_SIZE, onlyUnread)
-      if (!onlyUnread) {
-        setTotalCount(next.totalElements)
-      }
+      const next = await NotificationService.list(page, PAGE_SIZE, estado)
       setPageData((current) => {
         if (mode === 'append' && current) {
           const existingIds = new Set(current.items.map((item) => item.id))
@@ -109,11 +101,11 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false)
     }
-  }, [unreadOnly])
+  }, [viewMode])
 
   useEffect(() => {
-    void Promise.all([loadStats(), loadPage(0, 'replace', unreadOnly)])
-  }, [loadPage, loadStats, unreadOnly])
+    void Promise.all([loadStats(), loadPage(0, 'replace', viewMode)])
+  }, [loadPage, loadStats, viewMode])
 
   useEffect(() => {
     const sentinel = sentinelRef.current
@@ -124,7 +116,7 @@ export default function NotificationsPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting) && !loading) {
-          void loadPage(pageData.page + 1, 'append', unreadOnly)
+          void loadPage(pageData.page + 1, 'append', viewMode)
         }
       },
       { rootMargin: '220px 0px' }
@@ -132,7 +124,7 @@ export default function NotificationsPage() {
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [loadPage, loading, pageData, unreadOnly])
+  }, [loadPage, loading, pageData, viewMode])
 
   const handleMarkAsRead = async (item: NotificationItem) => {
     if (item.readAt) return
@@ -140,7 +132,7 @@ export default function NotificationsPage() {
     setError(null)
     try {
       await NotificationService.markAsRead(item.id)
-      await Promise.all([loadStats(), loadPage(0, 'replace', unreadOnly)])
+      await Promise.all([loadStats(), loadPage(0, 'replace', viewMode)])
     } catch (err) {
       setError(err)
     } finally {
@@ -172,7 +164,7 @@ export default function NotificationsPage() {
                 onClick={() => setViewMode('read')}
               >
                 <span>Leídas</span>
-                <strong>{readCount}</strong>
+                <strong>{stats?.read ?? 0}</strong>
               </button>
               <button
                 type="button"
@@ -180,7 +172,7 @@ export default function NotificationsPage() {
                 onClick={() => setViewMode('total')}
               >
                 <span>Total</span>
-                <strong>{totalCount}</strong>
+                <strong>{stats?.total ?? 0}</strong>
               </button>
             </div>
           </div>
@@ -234,12 +226,12 @@ export default function NotificationsPage() {
                 </div>
               </article>
             ))
-          ) : (
+          ) : !error ? (
             <EmptyContent
               title={
                 loading
                   ? 'Cargando notificaciones...'
-                  : unreadOnly
+                  : viewMode === 'unread'
                     ? 'No hay notificaciones sin leer'
                     : viewMode === 'read'
                       ? 'No hay notificaciones leídas para mostrar'
@@ -248,7 +240,7 @@ export default function NotificationsPage() {
               subtitle={
                 loading
                   ? 'Estamos consultando tu historial de avisos del sistema.'
-                  : unreadOnly
+                  : viewMode === 'unread'
                     ? 'Cuando llegue una nueva notificación pendiente, la vas a ver en esta vista.'
                     : viewMode === 'read'
                       ? 'Todavía no registrás notificaciones marcadas como leídas.'
@@ -256,7 +248,7 @@ export default function NotificationsPage() {
               }
               icon={<IconInfoCircle />}
             />
-          )}
+          ) : null}
         </div>
 
         <div ref={sentinelRef} className="h-6" />
