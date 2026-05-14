@@ -4,11 +4,18 @@ import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 import type { PuntoVenta } from '../models/afip'
 
-export default function PuntosVentaTable({ data }: { data: PuntoVenta[] }) {
+export default function PuntosVentaTable({
+  data,
+  summary,
+  viewMode,
+  onViewModeChange
+}: {
+  data: PuntoVenta[]
+  summary: { activos: number; bloqueados: number; dadosDeBaja: number }
+  viewMode: 'activos' | 'bloqueados' | 'baja'
+  onViewModeChange: (mode: 'activos' | 'bloqueados' | 'baja') => void
+}) {
   const [selectedPv, setSelectedPv] = useState<PuntoVenta | null>(null)
-  const activos = data.filter((pv) => !pv.bloqueado && !pv.fchBaja).length
-  const bloqueados = data.filter((pv) => pv.bloqueado).length
-  const dadosDeBaja = data.filter((pv) => pv.fchBaja).length
 
   return (
     <section className="puntos-venta-list">
@@ -19,10 +26,31 @@ export default function PuntosVentaTable({ data }: { data: PuntoVenta[] }) {
             Estado de los puntos habilitados para emitir comprobantes.
           </p>
         </div>
-        <div className="puntos-venta-list__summary">
-          <StatusCounter label="Activos" value={activos} tone="ok" />
-          <StatusCounter label="Bloqueados" value={bloqueados} tone="warn" />
-          <StatusCounter label="Baja" value={dadosDeBaja} tone="muted" />
+        <div className="notifications-page__header-stats">
+          <button
+            type="button"
+            className={`notifications-page__header-pill ${viewMode === 'activos' ? 'is-active' : ''}`}
+            onClick={() => onViewModeChange('activos')}
+          >
+            <span>Activos</span>
+            <strong>{summary.activos}</strong>
+          </button>
+          <button
+            type="button"
+            className={`notifications-page__header-pill ${viewMode === 'bloqueados' ? 'is-active' : ''}`}
+            onClick={() => onViewModeChange('bloqueados')}
+          >
+            <span>Bloqueados</span>
+            <strong>{summary.bloqueados}</strong>
+          </button>
+          <button
+            type="button"
+            className={`notifications-page__header-pill ${viewMode === 'baja' ? 'is-active' : ''}`}
+            onClick={() => onViewModeChange('baja')}
+          >
+            <span>Baja</span>
+            <strong>{summary.dadosDeBaja}</strong>
+          </button>
         </div>
       </header>
 
@@ -67,15 +95,6 @@ export default function PuntosVentaTable({ data }: { data: PuntoVenta[] }) {
         <PuntoVentaDetailModal puntoVenta={selectedPv} onClose={() => setSelectedPv(null)} />
       )}
     </section>
-  )
-}
-
-const StatusCounter = ({ label, value, tone }: { label: string; value: number; tone: 'ok' | 'warn' | 'muted' }) => {
-  return (
-    <div className={`puntos-venta-counter puntos-venta-counter--${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
   )
 }
 

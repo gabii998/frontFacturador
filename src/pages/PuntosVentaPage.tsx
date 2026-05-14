@@ -10,6 +10,7 @@ import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
 
 const PuntosVentaPage = () => {
   const [data, setData] = useState<PuntoVenta[]>([])
+  const [viewMode, setViewMode] = useState<'activos' | 'bloqueados' | 'baja'>('activos')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>()
 
@@ -19,6 +20,17 @@ const PuntosVentaPage = () => {
     const dadosDeBaja = data.filter((pv) => pv.fchBaja).length
     return { activos, bloqueados, dadosDeBaja }
   }, [data])
+
+  const filteredData = useMemo(() => {
+    switch (viewMode) {
+      case 'bloqueados':
+        return data.filter((pv) => pv.bloqueado)
+      case 'baja':
+        return data.filter((pv) => Boolean(pv.fchBaja))
+      default:
+        return data.filter((pv) => !pv.bloqueado && !pv.fchBaja)
+    }
+  }, [data, viewMode])
 
   useEffect(() => {
     setLoading(true)
@@ -61,7 +73,36 @@ const PuntosVentaPage = () => {
 
         {!loading && !error && (
           data.length > 0 ? (
-            <PuntosVentaTable data={data} />
+            <>
+              {filteredData.length > 0 ? (
+                <PuntosVentaTable
+                  data={filteredData}
+                  summary={summary}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                />
+              ) : (
+                <>
+                  <PuntosVentaTable
+                    data={[]}
+                    summary={summary}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                  />
+                  <EmptyContent
+                    title={
+                      viewMode === 'bloqueados'
+                        ? 'No hay puntos de venta bloqueados'
+                        : viewMode === 'baja'
+                          ? 'No hay puntos de venta dados de baja'
+                          : 'No hay puntos de venta activos'
+                    }
+                    subtitle='Cambiá la vista o revisá el estado publicado por AFIP para este contribuyente.'
+                    icon={<IconExclamationCircle size={50}/>}
+                  />
+                </>
+              )}
+            </>
           ) : (
             <EmptyContent 
             title='Sin puntos de venta disponibles' 

@@ -175,6 +175,39 @@ export interface WhatsAppHistoryParams {
   to?: string
 }
 
+export interface NotificationQueueStatsResponse {
+  pending: number
+  processing: number
+  failed: number
+  delivered: number
+  dead_letter: number
+}
+
+export interface NotificationQueueItem {
+  id: string
+  userId: string
+  userEmail: string
+  type: string
+  title: string
+  body: string
+  actionUrl?: string | null
+  status: string
+  attemptCount: number
+  nextAttemptAt: string
+  lastError?: string | null
+  deliveredAt?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NotificationQueuePageResponse {
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  items: NotificationQueueItem[]
+}
+
 export const OpsService = {
   dashboard: () => get<DashboardSnapshot>('/api/admin/ops/dashboard'),
   timeseries: ({ metrics, from, to, stepMinutes }: TimeseriesParams = {}) => {
@@ -209,5 +242,17 @@ export const OpsService = {
     if (from) query.set('from', from)
     if (to) query.set('to', to)
     return get<WhatsAppHistoryPageResponse>(`/api/admin/whatsapp/history?${query.toString()}`)
-  }
+  },
+  notificationQueueStats: () =>
+    get<NotificationQueueStatsResponse>('/api/admin/notifications/queue/stats'),
+  notificationQueue: (page = 0, size = 25, status?: string) => {
+    const query = new URLSearchParams({
+      page: String(page),
+      size: String(size)
+    })
+    if (status) query.set('status', status)
+    return get<NotificationQueuePageResponse>(`/api/admin/notifications/queue?${query.toString()}`)
+  },
+  requeueNotificationById: (id: string) =>
+    post<void>(`/api/admin/notifications/queue/${encodeURIComponent(id)}/requeue`)
 }

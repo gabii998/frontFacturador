@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import DashboardPage from './pages/DashboardPage'
+import NotificationsPage from './pages/NotificationsPage'
 import PuntosVentaPage from './pages/PuntosVentaPage'
 import ComprobantesPage from './pages/ComprobantesPage'
 import ComprobantesCargaMasivaPage from './pages/ComprobantesCargaMasivaPage'
@@ -11,6 +12,7 @@ import AdminUsersPage from './pages/AdminUsersPage'
 import AdminOpsPage from './pages/AdminOpsPage'
 import AdminMailPage from './pages/AdminMailPage'
 import AdminBillingQueuePage from './pages/AdminBillingQueuePage'
+import AdminNotificationsPage from './pages/AdminNotificationsPage'
 import AdminWhatsAppPage from './pages/AdminWhatsAppPage'
 import AdminPlansPage from './pages/AdminPlansPage'
 import LoginPage from './pages/LoginPage'
@@ -27,9 +29,10 @@ import { PLAN_DETAILS } from './constants/planes'
 import { Brand } from './components/Brand'
 import HeroProcessIllustration from './components/HeroProcessIllustration'
 import { PrivateTopbarActionsProvider } from './contexts/PrivateTopbarContext'
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { IconAlertCircle, IconAlertTriangle, IconChevronLeft, IconChevronRight, IconCircleCheck, IconInfoCircle } from '@tabler/icons-react'
 import { ArcaPermissionService } from './services/arcaPermission'
 import type { ArcaPermissionWizardResponse } from './models/arca'
+import { NotificationService, type NotificationItem } from './services/notifications'
 
 const LANDING_FEATURES = [
   {
@@ -82,6 +85,11 @@ function getPrivateSection(pathname: string) {
       subtitle: 'Generá comprobantes y prepará la documentación asociada.'
     },
     {
+      match: (path: string) => path.startsWith('/notificaciones'),
+      title: 'Notificaciones',
+      subtitle: 'Avisos del sistema, pendientes y confirmaciones recientes.'
+    },
+    {
       match: (path: string) => path.startsWith('/configuracion/planes'),
       title: 'Planes',
       subtitle: 'Gestioná tu suscripción y el alcance de tu cuenta.'
@@ -95,6 +103,11 @@ function getPrivateSection(pathname: string) {
       match: (path: string) => path.startsWith('/admin/ops'),
       title: 'Ops',
       subtitle: 'Monitoreo técnico y métricas operativas.'
+    },
+    {
+      match: (path: string) => path.startsWith('/admin/notificaciones'),
+      title: 'Notificaciones',
+      subtitle: 'Monitoreo y recuperación de la cola de notificaciones.'
     },
     {
       match: (path: string) => path.startsWith('/admin/whatsapp'),
@@ -130,12 +143,14 @@ function Navbar({ mobileTitle, mobileActions }: { mobileTitle: string; mobileAct
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileVisible, setMobileVisible] = useState(false)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const link = 'rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-orange-50 hover:text-orange-700'
   const active = 'bg-orange-50 text-orange-700'
 
   const links = [
     { to: '/dashboard', label: 'Dashboard', end: true },
+    { to: '/notificaciones', label: 'Notificaciones' },
     { to: '/puntos-venta', label: 'Puntos de venta' },
     { to: '/comprobantes', label: 'Comprobantes' },
     { to: '/emitir', label: 'Emitir' },
@@ -143,6 +158,7 @@ function Navbar({ mobileTitle, mobileActions }: { mobileTitle: string; mobileAct
     ...(user?.role === 'SUPERUSER'
       ? [
           { to: '/admin/ops', label: 'Ops' },
+          { to: '/admin/notificaciones', label: 'Notificaciones' },
           { to: '/admin/whatsapp', label: 'WhatsApp' },
           { to: '/admin/mail', label: 'Mail' },
           { to: '/admin/facturacion', label: 'Facturación' },
@@ -155,6 +171,38 @@ function Navbar({ mobileTitle, mobileActions }: { mobileTitle: string; mobileAct
   useEffect(() => () => {
     if (closeTimeout.current) clearTimeout(closeTimeout.current)
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadNotifications(0)
+      return
+    }
+
+    let cancelled = false
+
+    const loadUnread = async () => {
+      try {
+        const stats = await NotificationService.stats()
+        if (!cancelled) {
+          setUnreadNotifications(stats.unread)
+        }
+      } catch {
+        if (!cancelled) {
+          setUnreadNotifications(0)
+        }
+      }
+    }
+
+    void loadUnread()
+    const interval = window.setInterval(() => {
+      void loadUnread()
+    }, 30000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
+  }, [user])
 
   const openMobileMenu = () => {
     if (closeTimeout.current) {
@@ -187,7 +235,14 @@ function Navbar({ mobileTitle, mobileActions }: { mobileTitle: string; mobileAct
           className={({ isActive }) => `${link} ${isActive ? active : ''}`}
           onClick={closeOnClick ? closeMobileMenu : undefined}
         >
-          {label}
+          <span className="sidebar-link__content">
+            <span>{label}</span>
+            {to === '/notificaciones' && unreadNotifications > 0 && (
+              <span className="sidebar-link__badge">
+                {unreadNotifications > 99 ? '99+' : unreadNotifications}
+              </span>
+            )}
+          </span>
         </NavLink>
       ))}
     </nav>
@@ -351,6 +406,7 @@ function PrivateLayout() {
           </div>
         </PrivateTopbarActionsProvider>
       </main>
+      <NotificationToaster />
     </div>
   )
 }
@@ -370,6 +426,166 @@ function PrivateTopbar({ pathname, actions }: { pathname: string; actions: React
         </div>
       )}
     </header>
+  )
+}
+
+type ActiveToast = {
+  id: string
+  item: NotificationItem
+}
+
+function notificationToastToneClass(type: NotificationItem['type']) {
+  switch (type) {
+    case 'SUCCESS':
+      return 'notification-toast__icon--success'
+    case 'WARNING':
+      return 'notification-toast__icon--warning'
+    case 'ERROR':
+      return 'notification-toast__icon--error'
+    default:
+      return 'notification-toast__icon--info'
+  }
+}
+
+function NotificationToastIcon({ type }: { type: NotificationItem['type'] }) {
+  switch (type) {
+    case 'SUCCESS':
+      return <IconCircleCheck />
+    case 'WARNING':
+      return <IconAlertTriangle />
+    case 'ERROR':
+      return <IconAlertCircle />
+    default:
+      return <IconInfoCircle />
+  }
+}
+
+function NotificationToaster() {
+  const navigate = useNavigate()
+  const [toasts, setToasts] = useState<ActiveToast[]>([])
+  const initializedRef = useRef(false)
+  const knownUnreadIdsRef = useRef<Set<string>>(new Set())
+  const toastTimersRef = useRef<Map<string, number>>(new Map())
+
+  const removeToast = (id: string) => {
+    const timer = toastTimersRef.current.get(id)
+    if (timer) {
+      window.clearTimeout(timer)
+      toastTimersRef.current.delete(id)
+    }
+    setToasts((current) => current.filter((toast) => toast.id !== id))
+  }
+
+  const enqueueToast = (item: NotificationItem) => {
+    setToasts((current) => {
+      if (current.some((toast) => toast.id === item.id)) {
+        return current
+      }
+      return [{ id: item.id, item }, ...current].slice(0, 3)
+    })
+
+    const existingTimer = toastTimersRef.current.get(item.id)
+    if (existingTimer) {
+      window.clearTimeout(existingTimer)
+    }
+    const timer = window.setTimeout(() => {
+      toastTimersRef.current.delete(item.id)
+      setToasts((current) => current.filter((toast) => toast.id !== item.id))
+    }, 7000)
+    toastTimersRef.current.set(item.id, timer)
+  }
+
+  useEffect(() => {
+    let cancelled = false
+
+    const pollNotifications = async () => {
+      try {
+        const response = await NotificationService.list(0, 10, false)
+        if (cancelled) return
+
+        const unreadIds = new Set(
+          response.items
+            .filter((item) => !item.readAt)
+            .map((item) => item.id)
+        )
+
+        if (!initializedRef.current) {
+          knownUnreadIdsRef.current = unreadIds
+          initializedRef.current = true
+          return
+        }
+
+        response.items
+          .filter((item) => !item.readAt && !knownUnreadIdsRef.current.has(item.id))
+          .forEach((item) => enqueueToast(item))
+
+        knownUnreadIdsRef.current = unreadIds
+      } catch {
+        return
+      }
+    }
+
+    void pollNotifications()
+    const interval = window.setInterval(() => {
+      void pollNotifications()
+    }, 15000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      toastTimersRef.current.forEach((timer) => window.clearTimeout(timer))
+      toastTimersRef.current.clear()
+    }
+  }, [])
+
+  const handleToastClick = async (toast: ActiveToast) => {
+    if (!toast.item.readAt) {
+      await NotificationService.markAsRead(toast.item.id).catch(() => undefined)
+    }
+    knownUnreadIdsRef.current.delete(toast.item.id)
+    removeToast(toast.id)
+    navigate(toast.item.actionUrl || '/notificaciones')
+  }
+
+  if (toasts.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="notification-toast-stack" aria-live="polite" aria-atomic="false">
+      {toasts.map((toast) => (
+        <div
+          key={toast.id}
+          className={`notification-toast notification-toast--${toast.item.type.toLowerCase()}`}
+        >
+          <button
+            type="button"
+            className="notification-toast__body"
+            onClick={() => void handleToastClick(toast)}
+          >
+            <div className="notification-toast__layout">
+              <div className="notification-toast__icon-col">
+                <span className={`notification-toast__icon ${notificationToastToneClass(toast.item.type)}`}>
+                  <NotificationToastIcon type={toast.item.type} />
+                </span>
+              </div>
+              <div className="notification-toast__text">
+                <strong>{toast.item.title}</strong>
+                <p>{toast.item.body}</p>
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            className="notification-toast__close"
+            aria-label="Cerrar notificación"
+            onClick={() => removeToast(toast.id)}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -695,6 +911,7 @@ export default function App() {
       <Route path="/recuperar-clave" element={<PublicPage />} />
       <Route element={<PrivateLayout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/notificaciones" element={<NotificationsPage />} />
         <Route path="/puntos-venta" element={<PuntosVentaPage />} />
         <Route path="/comprobantes" element={<ComprobantesPage />} />
         <Route path="/comprobantes/carga-masiva" element={<ComprobantesCargaMasivaPage />} />
@@ -703,6 +920,7 @@ export default function App() {
         <Route path="/configuracion/planes" element={<PlanesPage />} />
         <Route element={<SuperuserOnlyRoute />}>
           <Route path="/admin/ops" element={<AdminOpsPage />} />
+          <Route path="/admin/notificaciones" element={<AdminNotificationsPage />} />
           <Route path="/admin/whatsapp" element={<AdminWhatsAppPage />} />
           <Route path="/admin/mail" element={<AdminMailPage />} />
           <Route path="/admin/facturacion" element={<AdminBillingQueuePage />} />

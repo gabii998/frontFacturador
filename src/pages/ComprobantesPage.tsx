@@ -36,6 +36,7 @@ const ComprobantesPage = () => {
   const [tipo, setTipo] = useState(DEFAULT_TIPO) // Factura C
   const [limite, setLimite] = useState(DEFAULT_LIMITE)
   const [data, setData] = useState<ComprobanteEmitido[]>([])
+  const [viewMode, setViewMode] = useState<'total' | 'proceso' | 'observados'>('total')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<unknown>()
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -72,6 +73,20 @@ const ComprobantesPage = () => {
       { total: 0, importe: 0, vigentes: 0, observados: 0, enProceso: 0 }
     )
   }, [data])
+
+  const filteredData = useMemo(() => {
+    switch (viewMode) {
+      case 'proceso':
+        return data.filter((comprobante) => {
+          const status = getComprobanteStatus(comprobante)
+          return status === 'QUEUED' || status === 'PROCESSING'
+        })
+      case 'observados':
+        return data.filter((comprobante) => comprobante.errores.length > 0 || comprobante.observaciones.length > 0)
+      default:
+        return data
+    }
+  }, [data, viewMode])
 
   const topbarActions = useMemo(
     () => (
@@ -116,7 +131,38 @@ const ComprobantesPage = () => {
         <ErrorBox error={error} />
         {!loading && !error && (
           data.length > 0 ? (
-            <ComprobantesTable data={data} onQueueItemCancelled={() => fetchData(pv, tipo, limite)} />
+            <>
+              {filteredData.length > 0 ? (
+                <ComprobantesTable
+                  data={filteredData}
+                  summary={{ total: summary.total, enProceso: summary.enProceso, observados: summary.observados }}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  onQueueItemCancelled={() => fetchData(pv, tipo, limite)}
+                />
+              ) : (
+                <>
+                  <ComprobantesTable
+                    data={[]}
+                    summary={{ total: summary.total, enProceso: summary.enProceso, observados: summary.observados }}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    onQueueItemCancelled={() => fetchData(pv, tipo, limite)}
+                  />
+                  <EmptyContent
+                    title={
+                      viewMode === 'proceso'
+                        ? 'No hay comprobantes en proceso'
+                        : viewMode === 'observados'
+                          ? 'No hay comprobantes observados'
+                          : 'No hay comprobantes para mostrar'
+                    }
+                    subtitle='Probá otra vista o ajustá los filtros de búsqueda para ampliar el resultado.'
+                    icon={ <IconInfoCircle/> }
+                  />
+                </>
+              )}
+            </>
           ) : (
             <EmptyContent
               title='No hay comprobantes para mostrar'

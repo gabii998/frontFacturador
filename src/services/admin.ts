@@ -35,11 +35,22 @@ export interface PlanStatusResponse {
   paymentStatus?: string | null
 }
 
+export interface EnqueueNotificationPayload {
+  userId: string
+  type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR'
+  title: string
+  body: string
+  actionUrl?: string
+  metadata?: Record<string, unknown>
+}
+
 export const AdminService = {
   listUsers: (page = 0, size = 25) =>
     get<AdminUsersPageResponse>(`/api/auth/users?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`),
   updateUserRole: (userId: string, payload: UpdateUserRolePayload) =>
     post<AuthUser>(`/api/auth/users/${encodeURIComponent(userId)}/role`, payload),
   updateUserPlan: (userId: string, payload: UpdateUserPlanPayload) =>
-    post<PlanStatusResponse>(`/api/auth/users/${encodeURIComponent(userId)}/plan`, payload)
+    post<PlanStatusResponse>(`/api/auth/users/${encodeURIComponent(userId)}/plan`, payload),
+  enqueueNotification: (payload: EnqueueNotificationPayload) =>
+    post<{ queueId: string }>('/api/admin/notifications/enqueue', payload)
 }

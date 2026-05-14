@@ -221,9 +221,15 @@ function extractErrorCode(error: ApiError): string | undefined {
 
 export default function ComprobantesTable({
   data,
+  summary,
+  viewMode,
+  onViewModeChange,
   onQueueItemCancelled
 }: {
   data: ComprobanteEmitido[]
+  summary: { total: number; enProceso: number; observados: number }
+  viewMode: 'total' | 'proceso' | 'observados'
+  onViewModeChange: (mode: 'total' | 'proceso' | 'observados') => void
   onQueueItemCancelled?: () => Promise<void> | void
 }) {
   const today = new Date()
@@ -233,26 +239,6 @@ export default function ComprobantesTable({
   const [queueActionError, setQueueActionError] = useState<string | null>(null)
   const [metadataUnavailable, setMetadataUnavailable] = useState(false)
   const [selectedComprobante, setSelectedComprobante] = useState<ComprobanteEmitido | null>(null)
-
-  const summary = useMemo(() => {
-    return data.reduce(
-      (acc, comprobante) => {
-        const hasCAE = Boolean(comprobante.cae)
-        const caeExpiry = parseAfipDate(comprobante.caeVto)
-        const caeValid = hasCAE && (!caeExpiry || caeExpiry >= today)
-        const status = getStatus(comprobante)
-        acc.total += 1
-        acc.importe += typeof comprobante.impTotal === 'number' ? comprobante.impTotal : 0
-        if (status === 'QUEUED' || status === 'PROCESSING') acc.enProceso += 1
-        if (hasCAE && caeValid) acc.vigentes += 1
-        if (!hasCAE) acc.sinCae += 1
-        if (hasCAE && !caeValid) acc.vencidos += 1
-        if (comprobante.errores.length > 0 || comprobante.observaciones.length > 0) acc.observados += 1
-        return acc
-      },
-      { total: 0, importe: 0, vigentes: 0, sinCae: 0, vencidos: 0, observados: 0, enProceso: 0 }
-    )
-  }, [data, today])
 
   async function handleDownload(comprobante: ComprobanteEmitido) {
     if (!canDownloadComprobante(comprobante)) return
@@ -317,10 +303,31 @@ export default function ComprobantesTable({
             Últimas emisiones y comprobantes en proceso para los filtros seleccionados.
           </p>
         </div>
-        <div className="comprobantes-list__summary">
-          <SummaryItem label="Total" value={summary.total.toString()} />
-          <SummaryItem label="En proceso" value={summary.enProceso.toString()} tone="queue" />
-          <SummaryItem label="Observados" value={summary.observados.toString()} tone="warn" />
+        <div className="notifications-page__header-stats">
+          <button
+            type="button"
+            className={`notifications-page__header-pill ${viewMode === 'total' ? 'is-active' : ''}`}
+            onClick={() => onViewModeChange('total')}
+          >
+            <span>Total</span>
+            <strong>{summary.total}</strong>
+          </button>
+          <button
+            type="button"
+            className={`notifications-page__header-pill ${viewMode === 'proceso' ? 'is-active' : ''}`}
+            onClick={() => onViewModeChange('proceso')}
+          >
+            <span>En proceso</span>
+            <strong>{summary.enProceso}</strong>
+          </button>
+          <button
+            type="button"
+            className={`notifications-page__header-pill ${viewMode === 'observados' ? 'is-active' : ''}`}
+            onClick={() => onViewModeChange('observados')}
+          >
+            <span>Observados</span>
+            <strong>{summary.observados}</strong>
+          </button>
         </div>
       </header>
 
@@ -584,15 +591,6 @@ const ComprobanteDetailModal = ({
           )}
         </div>
       </div>
-    </div>
-  )
-}
-
-const SummaryItem = ({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'neutral' | 'ok' | 'warn' | 'queue' }) => {
-  return (
-    <div className={`comprobantes-summary comprobantes-summary--${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
     </div>
   )
 }
