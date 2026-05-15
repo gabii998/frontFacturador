@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { IconAlertCircle, IconBrandWhatsapp, IconFilter, IconMessageCircle, IconRefresh, IconSend, IconX } from '@tabler/icons-react'
+import { IconAlertCircle, IconBrandWhatsapp, IconFilter, IconInfoCircle, IconMessageCircle, IconRefresh, IconSend, IconX } from '@tabler/icons-react'
+import EmptyContent from '../components/EmptyContent'
 import ErrorBox from '../components/ErrorBox'
+import LoadingContent from '../components/LoadingContent'
 import {
   OpsService,
   type WhatsAppHistoryItem,
@@ -168,6 +170,7 @@ export default function AdminWhatsAppPage() {
         </div>
 
         <ErrorBox error={error} />
+        {loadingHistory && !historyPage && <LoadingContent />}
 
         <div className="ops-stats-grid">
           <OpsStatCard label="Resultados" value={formatNumber(stats.total)} />
@@ -247,7 +250,7 @@ export default function AdminWhatsAppPage() {
           </div>
         </div>
 
-        {!error && (
+        {!error && !loadingHistory && (
           <div className="mail-list-section">
             <div className="ops-table-section__header">
               <p>Mensajes auditados</p>
@@ -265,9 +268,11 @@ export default function AdminWhatsAppPage() {
                 />
               ))}
               {!loadingHistory && (!historyPage || historyPage.items.length === 0) && (
-                <div className="mail-list__empty">
-                  No hay mensajes de WhatsApp para los filtros seleccionados.
-                </div>
+                <EmptyContent
+                  title="No hay mensajes de WhatsApp para los filtros seleccionados"
+                  subtitle="Ajustá los filtros de auditoría o esperá nueva actividad para ver mensajes en esta vista."
+                  icon={<IconInfoCircle />}
+                />
               )}
             </div>
 

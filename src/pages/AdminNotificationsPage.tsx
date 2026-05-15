@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { IconBell, IconClock, IconRefresh, IconRotateClockwise } from '@tabler/icons-react'
+import { IconBell, IconClock, IconInfoCircle, IconRefresh, IconRotateClockwise } from '@tabler/icons-react'
+import EmptyContent from '../components/EmptyContent'
 import ErrorBox from '../components/ErrorBox'
+import LoadingContent from '../components/LoadingContent'
 import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
 import { AdminService, type AdminUserSummary } from '../services/admin'
 import {
@@ -286,10 +288,11 @@ export default function AdminNotificationsPage() {
         </div>
 
         <ErrorBox error={error} />
+        {loadingQueue && !queuePage && <LoadingContent />}
 
         {actionMessage && <div className="ops-action-message">{actionMessage}</div>}
 
-        {!error && (
+        {!error && !loadingQueue && (
           <div className="mail-list-section">
             <div className="ops-table-section__header">
               <p>Notificaciones en cola</p>
@@ -306,9 +309,11 @@ export default function AdminNotificationsPage() {
                 />
               ))}
               {!loadingQueue && (!queuePage || queuePage.items.length === 0) && (
-                <div className="mail-list__empty">
-                  No hay notificaciones en la cola.
-                </div>
+                <EmptyContent
+                  title="No hay notificaciones en la cola"
+                  subtitle="Cuando existan eventos pendientes o recuperables, van a aparecer listados en esta vista."
+                  icon={<IconInfoCircle />}
+                />
               )}
             </div>
 

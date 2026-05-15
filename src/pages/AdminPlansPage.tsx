@@ -1,9 +1,11 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import EmptyContent from '../components/EmptyContent'
 import ErrorBox from '../components/ErrorBox'
+import LoadingContent from '../components/LoadingContent'
 import { getPlanName, type PlanCode } from '../constants/planes'
 import { AdminPlansService, type AdminPlan, type CreateAdminPlanPayload, type UpdateAdminPlanPayload } from '../services/adminPlans'
-import { IconBrandWhatsapp, IconCalendarTime, IconCheck, IconCreditCard, IconFileInvoice, IconFiles, IconPlus, IconSparkles, IconToggleLeft, IconToggleRight, IconX } from '@tabler/icons-react'
+import { IconBrandWhatsapp, IconCalendarTime, IconCheck, IconCreditCard, IconFileInvoice, IconFiles, IconInfoCircle, IconPlus, IconSparkles, IconToggleLeft, IconToggleRight, IconX } from '@tabler/icons-react'
 import { usePrivateTopbarActions } from '../contexts/PrivateTopbarContext'
 type PlanFilter = 'total' | 'active' | 'inactive'
 
@@ -166,6 +168,7 @@ export default function AdminPlansPage() {
 
         <ErrorBox error={error} />
         {message && <div className="ops-action-message">{message}</div>}
+        {loading && plans.length === 0 && <LoadingContent />}
 
         <div className="ops-tabs" role="tablist" aria-label="Vista de planes">
           <button
@@ -188,7 +191,7 @@ export default function AdminPlansPage() {
           </button>
         </div>
 
-        {activeTab === 'catalog' && (
+        {activeTab === 'catalog' && !loading && (
           <div className="mail-list-section" role="tabpanel">
           <div className="ops-table-section__header">
             <p>{plansTitle(statusFilter)}</p>
@@ -260,9 +263,11 @@ export default function AdminPlansPage() {
             })}
 
             {!loading && !error && plans.length === 0 && (
-              <div className="mail-list__empty">
-                {plansEmpty(statusFilter)}
-              </div>
+              <EmptyContent
+                title={plansEmptyTitle(statusFilter)}
+                subtitle={plansEmptySubtitle(statusFilter)}
+                icon={<IconInfoCircle />}
+              />
             )}
           </div>
           </div>
@@ -282,8 +287,12 @@ export default function AdminPlansPage() {
         )}
 
         {activeTab === 'preview' && !loading && !error && plans.length === 0 && (
-          <div className="mail-list__empty" role="tabpanel">
-            No hay planes para previsualizar.
+          <div role="tabpanel">
+            <EmptyContent
+              title="No hay planes para previsualizar"
+              subtitle="Cuando existan planes en el catálogo, vas a poder revisarlos en esta vista previa."
+              icon={<IconInfoCircle />}
+            />
           </div>
         )}
       </section>
@@ -321,14 +330,25 @@ function plansTitle(statusFilter: PlanFilter) {
   }
 }
 
-function plansEmpty(statusFilter: PlanFilter) {
+function plansEmptyTitle(statusFilter: PlanFilter) {
   switch (statusFilter) {
     case 'active':
-      return 'No hay planes activos para mostrar.'
+      return 'No hay planes activos para mostrar'
     case 'inactive':
-      return 'No hay planes inactivos para mostrar.'
+      return 'No hay planes inactivos para mostrar'
     default:
-      return 'No hay planes para mostrar.'
+      return 'No hay planes para mostrar'
+  }
+}
+
+function plansEmptySubtitle(statusFilter: PlanFilter) {
+  switch (statusFilter) {
+    case 'active':
+      return 'Los planes habilitados para contratación aparecerán en esta vista.'
+    case 'inactive':
+      return 'Los planes deshabilitados aparecerán acá para administración interna.'
+    default:
+      return 'Cuando exista catálogo administrable, los planes aparecerán listados en esta sección.'
   }
 }
 

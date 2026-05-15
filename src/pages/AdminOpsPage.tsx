@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import ErrorBox from '../components/ErrorBox'
+import EmptyContent from '../components/EmptyContent'
+import LoadingContent from '../components/LoadingContent'
 import {
   OpsService,
   type DashboardSnapshot,
@@ -122,6 +124,7 @@ export default function AdminOpsPage() {
         </div>
 
         <ErrorBox error={error} />
+        {loading && !snapshot && <LoadingContent />}
 
         {snapshot && (
           <div className="ops-metrics-grid">
@@ -140,7 +143,13 @@ export default function AdminOpsPage() {
             <p>Ventana de las últimas 24 horas.</p>
           </div>
         </div>
-        {!series && !loading && <p className="ops-empty">Sin series para mostrar.</p>}
+        {!series && !loading && !error && (
+          <EmptyContent
+            title="No hay series para mostrar"
+            subtitle="Cuando existan métricas temporales disponibles, las vas a ver resumidas en esta vista."
+            icon={<IconChartLine />}
+          />
+        )}
         {series && (
           <div className="ops-series-grid">
             {series.series.map((s) => {
@@ -187,4 +196,3 @@ const OpsMetricCard = ({
     </div>
   </div>
 )
-

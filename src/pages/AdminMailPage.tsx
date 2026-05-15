@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import ErrorBox from '../components/ErrorBox'
 import EmptyContent from '../components/EmptyContent'
+import LoadingContent from '../components/LoadingContent'
 import {
   OpsService,
   type DeadLetterItem,
@@ -218,10 +219,11 @@ export default function AdminMailPage() {
         </div>
 
         <ErrorBox error={error} />
+        {loadingOutbox && !outboxPage && <LoadingContent />}
 
         {actionMessage && <div className="ops-action-message">{actionMessage}</div>}
 
-        {!error && (
+        {!error && !loadingOutbox && (
           <div className="mail-list-section">
             <div className="ops-table-section__header">
               <p>{mailSectionTitle(statusFilter)}</p>

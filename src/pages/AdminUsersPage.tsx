@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import EmptyContent from '../components/EmptyContent'
 import ErrorBox from '../components/ErrorBox'
+import LoadingContent from '../components/LoadingContent'
 import { AdminService, type AdminUserSummary, type AdminUsersPageResponse } from '../services/admin'
 import { getPlanName, type PlanCode } from '../constants/planes'
 import { AdminPlansService, type AdminPlan } from '../services/adminPlans'
-import { IconCalendar, IconId, IconShield, IconUser } from '@tabler/icons-react'
+import { IconCalendar, IconId, IconInfoCircle, IconShield, IconUser } from '@tabler/icons-react'
 
 const PAGE_SIZE = 25
 type UserFilter = '' | 'USER' | 'SUPERUSER'
@@ -204,8 +206,9 @@ export default function AdminUsersPage() {
 
         <ErrorBox error={error} />
         {message && <div className="ops-action-message">{message}</div>}
+        {loading && users.length === 0 && <LoadingContent />}
 
-        {!error && (
+        {!error && !loading && (
           <div className="mail-list-section">
             <div className="ops-table-section__header">
               <p>{usersTitle(roleFilter, response)}</p>
@@ -285,9 +288,11 @@ export default function AdminUsersPage() {
                 )
               })}
               {!loading && users.length === 0 && (
-                <div className="mail-list__empty">
-                  {usersEmpty(roleFilter)}
-                </div>
+                <EmptyContent
+                  title={usersEmptyTitle(roleFilter)}
+                  subtitle={usersEmptySubtitle(roleFilter)}
+                  icon={<IconInfoCircle />}
+                />
               )}
             </div>
           </div>
@@ -337,14 +342,25 @@ function usersTitle(roleFilter: UserFilter, response: AdminUsersPageResponse | n
   }
 }
 
-function usersEmpty(roleFilter: UserFilter) {
+function usersEmptyTitle(roleFilter: UserFilter) {
   switch (roleFilter) {
     case 'USER':
-      return 'No hay usuarios para mostrar.'
+      return 'No hay usuarios para mostrar'
     case 'SUPERUSER':
-      return 'No hay superusuarios para mostrar.'
+      return 'No hay superusuarios para mostrar'
     default:
-      return 'No hay usuarios para mostrar.'
+      return 'No hay usuarios para mostrar'
+  }
+}
+
+function usersEmptySubtitle(roleFilter: UserFilter) {
+  switch (roleFilter) {
+    case 'USER':
+      return 'Los usuarios finales aparecerán en esta vista cuando existan registros cargados.'
+    case 'SUPERUSER':
+      return 'Los perfiles con privilegios elevados aparecerán listados en esta vista.'
+    default:
+      return 'Cuando haya cuentas registradas, las vas a ver listadas acá para administración.'
   }
 }
 

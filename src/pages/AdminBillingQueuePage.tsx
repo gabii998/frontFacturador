@@ -5,8 +5,10 @@ import {
   type InvoiceQueueItem,
   type InvoiceQueuePageResponse
 } from '../services/ops'
+import EmptyContent from '../components/EmptyContent'
 import ErrorBox from '../components/ErrorBox'
-import { IconAlertCircle, IconBuildingBank, IconClock, IconFileInvoice } from '@tabler/icons-react'
+import LoadingContent from '../components/LoadingContent'
+import { IconAlertCircle, IconBuildingBank, IconClock, IconFileInvoice, IconInfoCircle } from '@tabler/icons-react'
 
 const INVOICE_QUEUE_PAGE_SIZE = 10
 type InvoiceQueueFilter = '' | 'QUEUED' | 'PROCESSING' | 'EMITTED' | 'FAILED' | 'CANCELLED'
@@ -186,8 +188,9 @@ export default function AdminBillingQueuePage() {
         </div>
 
         <ErrorBox error={error} />
+        {loadingInvoiceQueue && !invoiceQueuePage && <LoadingContent />}
 
-        {!error && (
+        {!error && !loadingInvoiceQueue && (
           <div className="mail-list-section">
             <div className="ops-table-section__header">
               <p>{billingQueueTitle(statusFilter)}</p>
@@ -202,9 +205,11 @@ export default function AdminBillingQueuePage() {
                 />
               ))}
               {!loadingInvoiceQueue && (!invoiceQueuePage || invoiceQueuePage.items.length === 0) && (
-                <div className="mail-list__empty">
-                  {billingQueueEmpty(statusFilter)}
-                </div>
+                <EmptyContent
+                  title={billingQueueEmptyTitle(statusFilter)}
+                  subtitle={billingQueueEmptySubtitle(statusFilter)}
+                  icon={<IconInfoCircle />}
+                />
               )}
             </div>
 
@@ -241,20 +246,37 @@ function billingQueueTitle(status: InvoiceQueueFilter) {
   }
 }
 
-function billingQueueEmpty(status: InvoiceQueueFilter) {
+function billingQueueEmptyTitle(status: InvoiceQueueFilter) {
   switch (status) {
     case 'QUEUED':
-      return 'No hay solicitudes en cola.'
+      return 'No hay solicitudes en cola'
     case 'PROCESSING':
-      return 'No hay solicitudes en procesamiento.'
+      return 'No hay solicitudes en procesamiento'
     case 'EMITTED':
-      return 'No hay solicitudes emitidas.'
+      return 'No hay solicitudes emitidas'
     case 'FAILED':
-      return 'No hay solicitudes fallidas.'
+      return 'No hay solicitudes fallidas'
     case 'CANCELLED':
-      return 'No hay solicitudes sin reintentos.'
+      return 'No hay solicitudes sin reintentos'
     default:
-      return 'No hay solicitudes en la cola de facturación.'
+      return 'No hay solicitudes en la cola de facturación'
+  }
+}
+
+function billingQueueEmptySubtitle(status: InvoiceQueueFilter) {
+  switch (status) {
+    case 'QUEUED':
+      return 'Las nuevas solicitudes pendientes de emisión aparecerán en esta vista.'
+    case 'PROCESSING':
+      return 'Cuando el worker esté procesando solicitudes, las vas a ver listadas acá.'
+    case 'EMITTED':
+      return 'Las solicitudes emitidas correctamente aparecerán en esta vista.'
+    case 'FAILED':
+      return 'Las solicitudes con error quedarán listadas acá para seguimiento operativo.'
+    case 'CANCELLED':
+      return 'Las solicitudes canceladas o sin más reintentos aparecerán en esta vista.'
+    default:
+      return 'Cuando exista actividad en la cola de facturación, las solicitudes aparecerán listadas acá.'
   }
 }
 
