@@ -697,6 +697,13 @@ function validateAfipDates(input: DateValidationInput): string | null {
   if (!isIsoDate(input.fechaEmision)) {
     return 'Ingresá una fecha de comprobante válida.'
   }
+  const todayUtc = new Date().toISOString().slice(0, 10)
+  if (
+    compareIsoDates(input.fechaEmision, offsetIsoDate(todayUtc, -10)) < 0 ||
+    compareIsoDates(input.fechaEmision, offsetIsoDate(todayUtc, 10)) > 0
+  ) {
+    return 'La fecha del comprobante debe estar dentro de los 10 días anteriores o posteriores a hoy (restricción ARCA).'
+  }
   if (!input.requiresServicePeriod) {
     return null
   }
@@ -729,6 +736,12 @@ function compareIsoDates(a: string, b: string): number {
 
 function maxIsoDate(a: string, b: string): string {
   return compareIsoDates(a, b) >= 0 ? a : b
+}
+
+function offsetIsoDate(isoDate: string, days: number): string {
+  const date = new Date(isoDate)
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
 }
 
 function createPdfUrl(base64: string): string {
