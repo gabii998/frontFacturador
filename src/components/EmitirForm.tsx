@@ -368,6 +368,8 @@ const PrimerPaso = (props: PrimerPasoProps) => {
           className="input"
           type="date"
           value={props.fechaEmision}
+          min={offsetIsoDate(today, -10)}
+          max={offsetIsoDate(today, 10)}
           onChange={e => props.setFechaEmision(e.target.value)}
         />
         <p className="invoice-help"><IconCalendar /> ARCA exige que la fecha respete el período informado.</p>
